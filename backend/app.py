@@ -21,6 +21,9 @@ from models.usuario.Usuario import Usuario
 from models.cliente.GrupoCliente import GrupoCliente
 
 from routes.RestGenerica import RestGenerica
+from routes.auth import auth
+
+app.register_blueprint(auth)
 
 from services.adaptersRest.AdapterUsuario import AdapterUsuario
 from services.adaptersRest.AdapterGrupoCliente import AdapterGrupoCliente
