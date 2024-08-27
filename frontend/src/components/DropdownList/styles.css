@@ -1,0 +1,5 @@
+/* Esto es para que no aparezca un pequenio div vacio*/
+.MuiAutocomplete-noOptions {
+    display: none !important;
+  }
+  
