@@ -1,4 +1,4 @@
-from db.serverMysql import db
+from db.serverPostgres import db
 
 class Usuario(db.Model):
     __tablename__ = 'usuario'
@@ -6,5 +6,5 @@ class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nombre = db.Column(db.String(45))
     apellido = db.Column(db.String(45))
-    id_grupo_cliente = db.Column(db.Integer, db.ForeignKey('grupo_cliente.id'))
-    id_credencial = db.Column(db.Integer, db.ForeignKey('credencial.id'))
+    idGrupoCliente = db.Column(db.Integer, db.ForeignKey('grupoCliente.id'))
+    idCredencial = db.Column(db.Integer, db.ForeignKey('credencial.id'))
