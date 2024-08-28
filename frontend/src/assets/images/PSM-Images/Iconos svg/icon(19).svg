@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0.00 0.00 100.00 100.00">
+<g stroke-width="2.00" fill="none" stroke-linecap="butt">
+<path stroke="#0d999b" vector-effect="non-scaling-stroke" d="
+  M 100.00 31.99
+  L 0.00 31.99"
+/>
+<path stroke="#4c587f" vector-effect="non-scaling-stroke" d="
+  M 100.00 42.34
+  Q 97.31 47.98 91.25 47.98
+  Q 50.00 48.02 8.75 47.99
+  Q 3.30 47.99 0.00 42.81"
+/>
+</g>
+<path fill="#1ad3bb" d="
+  M 100.00 16.04
+  L 100.00 31.99
+  L 0.00 31.99
+  L 0.00 22.82
+  Q 0.95 18.94 3.80 17.21
+  Q 5.64 16.10 9.93 16.08
+  Q 54.96 15.91 100.00 16.04
+  Z"
+/>
+<path fill="#005e7a" d="
+  M 0.00 31.99
+  L 100.00 31.99
+  L 100.00 42.34
+  Q 97.31 47.98 91.25 47.98
+  Q 50.00 48.02 8.75 47.99
+  Q 3.30 47.99 0.00 42.81
+  L 0.00 31.99
+  Z"
+/>
+<path fill="#985184" d="
+  M 100.00 42.34
+  L 100.00 77.20
+  Q 98.93 81.43 95.73 83.07
+  Q 93.89 84.00 89.14 84.00
+  Q 44.57 84.04 0.00 83.94
+  L 0.00 42.81
+  Q 3.30 47.99 8.75 47.99
+  Q 50.00 48.02 91.25 47.98
+  Q 97.31 47.98 100.00 42.34
+  Z"
+/>
+</svg>
