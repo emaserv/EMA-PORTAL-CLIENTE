@@ -11,7 +11,7 @@ import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import SoftBox from 'components/SoftBox';
 import { Link, NavLink } from 'react-router-dom';
-import brand from "assets/images/PSM-Images/Logo-ema.png";
+import brand from "assets/images/Portal-Cliente-Images/Logo-ema.png";
 import SoftTypography from 'components/SoftTypography';
 
 const pages = [];

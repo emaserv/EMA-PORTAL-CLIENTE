@@ -11,7 +11,7 @@ import { useForm, Controller } from "react-hook-form";
 import CoverLayout from "layouts/auth/components/CoverLayout";
 
 // Imagenes
-import logoPSM from "assets/images/PSM-Images/PSM2.svg";
+import logoEma from "assets/images/Portal-Cliente-Images/Logo-ema.png";
 import SoftInputBase from "components/SoftInputBase";
 
 const SignIn = ({ setToken }) => {
@@ -37,7 +37,7 @@ const SignIn = ({ setToken }) => {
     <CoverLayout
       title="Bienvenido a Portal Clientes!"
       description="Ingrese sus credenciales para iniciar sesión"
-      image={logoPSM}
+      image={logoEma}
     >
       <SoftBox >
         <form onSubmit={handleSubmit(onSubmit)}>

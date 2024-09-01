@@ -1,11 +1,13 @@
 .gradient-background {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center; /* Alinea el contenido al centro */
   padding: 2rem;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0) 30%, rgba(0, 0, 0, 0.4) 70%);
   z-index: -1;
   height: 100vh;
-  width: 100vw
+  width: 100vw;
+  overflow: hidden; /* Esto evita el desplazamiento */
 }
+
 

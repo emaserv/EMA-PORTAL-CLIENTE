@@ -2,7 +2,7 @@ import * as React from 'react';
 import SoftBox from 'components/SoftBox';
 import ResponsiveAppBar from './components/responsiveAppBar';
 
-import brand from "assets/images/PSM-Images/Logo-ema.png";
+import camionetas from "assets/images/Portal-Cliente-Images/top-10.jpg";
 
 import { Link } from "react-router-dom";
 import Grid from "@mui/material/Grid";
@@ -10,18 +10,8 @@ import Grid from "@mui/material/Grid";
 import './GradientBackground.css';
 import SoftButton from 'components/SoftButton';
 
-import { useSoftUIController, setOpenImportador } from "context";
-import ImportadorSideBar from 'components/ImportadorSideBar';
-
 const Home = () => {
 
-  const [controller, dispatch] = useSoftUIController();
-
-  const {openImportador} = controller;
-
-  //Change the handleImportadorState state
-  const handleImportadorState = () => setOpenImportador(dispatch, !openImportador);
-  
   return (
     <SoftBox alignItems="center">
       
@@ -29,10 +19,8 @@ const Home = () => {
         <ResponsiveAppBar/>
       </SoftBox>
       
-      <ImportadorSideBar/>
-
-      <div className="gradient-background" >
-        <SoftBox marginLeft="2rem">
+      <div className="gradient-background" style={{display: "flex", alignItems:"center" }}>
+        <SoftBox marginLeft="2rem" marginTop="3rem">
           <Grid container spacing={3}>
             <Grid
               sx={{ textAlign: "left" }} // Centering the text
@@ -40,7 +28,7 @@ const Home = () => {
               xs={10}
             >
               <div className="content" display="flex">            
-                <SoftButton variant="gradient" color="info" size="large" sx={{width: '30rem'}} onClick={handleImportadorState}> Importador</SoftButton>
+                <SoftButton variant="gradient" color="info" size="large" sx={{width: '30rem'}} > Importador</SoftButton>
               </div>
             </Grid>
             <Grid
@@ -67,9 +55,41 @@ const Home = () => {
             </Grid>
           </Grid>
         </SoftBox>
-        <div className="image" style={{zIndex: '-1'}}>
-          <SoftBox component="img" src={brand} alt="Logo EMA SERVICIOS" width='25rem' />
-        </div>
+
+        <Grid
+          container
+          justifyContent="center"
+          sx={{
+            minHeight: "75vh",
+            zIndex: -2
+          }}
+        >
+          <Grid item xs={12} md={20}>
+            <SoftBox
+              height="100%"
+              display={{ xs: "none", md: "block" }}
+              position="relative"
+              right={{ md: "-1rem", xl: "-1rem" }}
+              mr={-16}
+              sx={{
+                transform: "skewX(-10deg)",
+                overflow: "hidden",
+                borderBottomLeftRadius: ({ borders: { borderRadius } }) => borderRadius.lg,
+              }}
+            >
+              <SoftBox
+                ml={-8}
+                height="100%"
+                sx={{
+                  backgroundImage: `url(${camionetas})`,
+                  backgroundSize: "cover",
+                  transform: "skewX(10deg)",
+                }}
+              />
+            </SoftBox>
+          </Grid>
+      </Grid>
+
       </div>
     </SoftBox>
   );

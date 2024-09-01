@@ -69,7 +69,6 @@ function ImportadorSideBar() {
         alignItems="baseline"
         pt={0.5}
         pb={0.8}
-        style={{zIndex: '100000000000'}}
       >
         <SoftBox>
           <SoftTypography variant="h5">Clima</SoftTypography>

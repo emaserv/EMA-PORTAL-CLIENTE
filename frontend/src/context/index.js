@@ -63,7 +63,7 @@ function SoftUIControllerProvider({ children }) {
     openConfigurator: false,
     openImportador: false,
     direction: "ltr",
-    layout: "dashboard",
+    layout: "home",
   };
 
   const [controller, dispatch] = useReducer(reducer, initialState);

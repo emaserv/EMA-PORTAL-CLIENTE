@@ -16,7 +16,6 @@ Coded by www.creative-tim.com
 // @mui material components
 import Drawer from "@mui/material/Drawer";
 import { styled } from "@mui/material/styles";
-import zIndex from "@mui/material/styles/zIndex";
 
 export default styled(Drawer)(({ theme, ownerState }) => {
   const { boxShadows, functions, transitions } = theme;
@@ -55,7 +54,6 @@ export default styled(Drawer)(({ theme, ownerState }) => {
       borderRadius: 0,
       boxShadow: lg,
       overflowY: "auto",
-      zIndex: 100000,
       ...(openImportadorBar ? drawerOpenStyles() : drawerCloseStyles()),
     },
   };
