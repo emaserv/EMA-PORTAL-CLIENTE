@@ -1,5 +1,6 @@
 import json
 from flask import Blueprint, jsonify, request, json
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from sqlalchemy import text, cast, Text
 from db.masterRepo import DatabaseSession
 import hashlib
@@ -31,10 +32,36 @@ def login():
 
         password = get_sha256_hash(pswrd)
 
+        print(user_name)
+        print(password)
+
         with DatabaseSession().get_session() as session:
             query = text('SELECT * FROM get_credenciales(:userName, :password)')
             data_query = session.execute(query, {'userName': user_name, 'password': password})
-        
-        return jsonify({"message": "Conexión y consulta exitosas"})
+
+        dataQueryJson = []
+        for row in data_query:
+            dataQueryJson.append({
+                'userName': row.userN,
+                'psswrd': row.contra,
+                'found': row.found
+            })
+
+        print(dataQueryJson)
+        '''
+        if dataQueryJson[0]['found']:
+            access_token = create_access_token(identity=dataQueryJson[0]['userName'])
+            return jsonify(access_token=access_token)
+        else:
+            return jsonify({"message": "Bad username or password"}), 401
+        '''
+        return jsonify({"message": f"Consulta ejecutada correctamente"}), 200
+    
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+    
+@auth.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200

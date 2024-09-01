@@ -1,15 +1,18 @@
 from flask import Flask
 from flask_cors import CORS
 from flask import Blueprint
+#from flask_jwt_extended import JWTManager
 from db.serverPostgres import db
 
 import os
 import varEntorno 
 
 app = Flask(__name__)
+#jwt = JWTManager(app)
 CORS(app)
 
 try:
+    #app.config['JWT_SECRET_KEY'] = 'prueba1'
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("URL_DB")
     db.init_app(app)
 except Exception as e:

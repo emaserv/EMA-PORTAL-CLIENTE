@@ -26,5 +26,4 @@ SoftInputBase.propTypes = {
       value: PropTypes.string,
       name: PropTypes.string,
     }),
-    
   };

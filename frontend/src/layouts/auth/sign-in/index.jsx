@@ -14,7 +14,7 @@ import CoverLayout from "layouts/auth/components/CoverLayout";
 import logoPSM from "assets/images/PSM-Images/PSM2.svg";
 import SoftInputBase from "components/SoftInputBase";
 
-function SignIn() {
+const SignIn = ({ setToken }) => {
   const { handleSubmit, control } = useForm();
 
   const onSubmit = async (data) => {
@@ -23,12 +23,15 @@ function SignIn() {
     console.log(formData);
 
     const response = await axios.post(`${API_BACK}/api/login`, formData);
-
+    //setToken(response.data.access_token);
+    
     if (response.status === 200) document.location = "/home";
 
-    //if (response.status === 400) que chequee si los campos estan llenos y si no que ponga que la contrasenia y o nom usuario tan mal 
-
+    //if (response.status === 401 ) que chequee si los campos estan llenos y si no que ponga que la contrasenia y o nom usuario tan mal 
+    //if (response.status === 500 ) que chequee si los campos estan llenos y si no que ponga que la contrasenia y o nom usuario tan mal 
+ 
   };
+
 
   return (
     <CoverLayout
@@ -157,9 +160,7 @@ function SignIn() {
             }
             
               <SoftButton variant="gradient" color="info" fullWidth>
-                <input
-                  type="submit"
-                  value="Iniciar Sesion"
+                <input type="submit" value="Iniciar Sesion"
                   style={{
                     background: "transparent",
                     border: "none",

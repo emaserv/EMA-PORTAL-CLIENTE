@@ -25,7 +25,7 @@ import SignIn from "./layouts/auth/sign-in";
 import FechaCliente from "./layouts/fechaCliente";
 import Home from "./layouts/home";
 import Importador from "./layouts/importador";
-import RutaCliente from "./layouts/rutaCliente";
+import RutaCliente from "./layouts/radioCliente";
 
 const routes = [
   {
@@ -60,9 +60,9 @@ const routes = [
   },
   {
     type: "collapse",
-    name: "Ruta Cliente",
-    key: "ruta-cliente",
-    route: "/ruta-cliente",
+    name: "Radio Cliente",
+    key: "radio-cliente",
+    route: "/radio-cliente",
     component: <RutaCliente />,
     noCollapse: true,
   },
