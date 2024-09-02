@@ -22,3 +22,4 @@ class ItemEmision(db.Model):
     geoCliente = db.Column(db.String(255))
     geoVisita = db.Column(db.String(255))
     foto = db.Column(db.String(255))
+    idGrupoCliente = db.Column(db.Integer, db.ForeignKey('grupoCliente.id'))

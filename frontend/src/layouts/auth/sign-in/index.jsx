@@ -60,7 +60,7 @@ const SignIn = ({ setToken }) => {
               render={({ field }) => (
                 <SoftInputBase
                   type="text"
-                  placeholder="User"
+                  placeholder="Usuario"
                   field = {field}
                   sx={{
                     fontFamily: "Roboto, Helvetica, Arial, sans-serif",

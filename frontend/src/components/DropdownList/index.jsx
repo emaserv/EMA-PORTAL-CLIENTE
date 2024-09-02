@@ -20,11 +20,7 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
   const stackRef = React.useRef(null);
   const [popperWidth, setPopperWidth] = React.useState(null);
 
-  React.useEffect(() => {
-    if (stackRef.current) {
-      setPopperWidth(stackRef.current.offsetWidth);
-    }
-  }, []);
+  
 
   return (
     <Stack 
@@ -67,7 +63,7 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
           </li>
         )}
         PopperComponent={(props) => (
-          <Popper {...props} style={{ width: popperWidth, zIndex: 9999, position: 'relative'}}>
+          <Popper {...props} style={{ width: width, zIndex: 9999, position: 'relative'}}>
             {props.children}
           </Popper>
         )}
