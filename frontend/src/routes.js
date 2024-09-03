@@ -24,7 +24,6 @@
 import SignIn from "./layouts/auth/sign-in";
 import FechaCliente from "./layouts/fechaCliente";
 import Home from "./layouts/home";
-import Importador from "./layouts/importador";
 import RutaCliente from "./layouts/radioCliente";
 
 const routes = [
@@ -34,14 +33,6 @@ const routes = [
     route: "/home",
     component: <Home />,
   },  
-  {
-    type: "collapse",
-    name: "Importador",
-    key: "importador",
-    route: "/importador",
-    component: <Importador />,
-    noCollapse: true,
-  },
   {
     type: "collapse",
     name: "Wiki",

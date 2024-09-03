@@ -6,7 +6,7 @@ import SoftTypography from "components/SoftTypography";
 import DatePickerValue from "components/DatePicker";
 import DropdownList from "components/DropdownList";
 import { useForm, Controller } from "react-hook-form";
-import EnhancedTable from "./data/fechaClienteTable";
+import EnhancedTable from "./data/radioClienteTable";
 import { API_BACK } from "../../config";
 
 const RadioCliente = () => {
@@ -14,10 +14,15 @@ const RadioCliente = () => {
   const [primerFetch, setPrimerFetchCompletado] = useState(false);
   const [segundoFetch, setSegundoFetchCompletado] = useState(false);
   const [tercerFetch, setTercerFetchCompletado] = useState(false);
+  const [cuartoFetch, setCuartoFetchCompletado] = useState(false);
   const [dataDropDwnSucursal, setDataDropDwnSucursal] = useState([]);
   const [dataDropDwnPlan, setDataDropDwnPlan] = useState([]);
   const [dataDropDwnRadio, setDataDropDwnRadio] = useState([]);
+  const [multiplesUsuario, setMultiplesUsuario] = useState([]);
+  const [columnsU, setColumnsU] = useState([]);
   const [dataTabla, setDataTabla] = useState([]);
+  const [dataTablaEDESUR, setDataTablaEDESUR] = useState([]);
+  const [dataTablaMETROGAS, setDataTablaMETROGAS] = useState([]);
   const [columns, setColumns] = useState([]);
 
   useEffect(() => {
@@ -28,6 +33,9 @@ const RadioCliente = () => {
           setDataTabla(apiData.dataTabla);
           setColumns(apiData.columns);
           setPrimerFetchCompletado(true);
+
+          setDataTablaEDESUR(apiData.dataTabla.filter((registro) => registro.idGrupoCliente === "EDESUR"));
+          setDataTablaMETROGAS(apiData.dataTabla.filter((registro) => registro.idGrupoCliente === "METROGAS S.A."));
         }
       })
       .catch((error) => {});
@@ -68,11 +76,26 @@ const RadioCliente = () => {
       .then((apiData) => {
         if (apiData.dataDropDwnSucursal) {
           setDataDropDwnSucursal(apiData.dataDropDwnSucursal);
+          setCuartoFetchCompletado(true);
         }
       })
       .catch((error) => {});
     }
   }, [tercerFetch]);
+
+  useEffect(() => {
+    if(cuartoFetch){
+      fetch(`${API_BACK}/rest/usuario`, { mode: "cors" })
+      .then((response) => response.json())
+      .then((apiData) => {
+        if (apiData.multiplesUsuario && apiData.columns) {
+          setMultiplesUsuario(apiData.multiplesUsuario);
+          setColumnsU(apiData.columns);
+        }
+      })
+      .catch((error) => {});
+    }
+  }, [cuartoFetch]);
 
   return (
     <SoftBox display="flex" flexDirection="column" alignItems="center">

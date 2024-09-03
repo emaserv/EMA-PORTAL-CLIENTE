@@ -2,16 +2,15 @@ import os
 import pandas as pd
 import json
 from flask import Blueprint, jsonify, request, current_app, json
-from services.lote import adapterClienteBtoCCSV, adapterLoteCSV, adapterTipoServicioCSV
+from services.emision import adapterEmisionCSV, factoryAdapterEmision
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
-from services.lote import factoryAdapterLote
+
 
 importador = Blueprint('importador', __name__)
 
 def get_column_names(model):
     return [column.name for column in model.__table__.columns]
-
 
 @importador.route('/api/upload', methods=['POST'])
 def uploadFileAndData():
@@ -34,10 +33,11 @@ def uploadFileAndData():
         data = XSLXtoJSONconverter(file)
 
         JSONsaver(file, data)
+
         with DatabaseSession().get_session() as session:
-            lote = adapterLoteCSV.leerLote(data_dict, file.filename)   
+            emision = adapterEmisionCSV.leerEmision(file.filename)   
             
-            adapterLeerExcel = factoryAdapterLote.getAdapterByClient(lote.idGrupoCliente)
+            adapterLeerExcel = factoryAdapterEmision.getAdapterByFormat(data_dict.get('idFormato'))
             print(adapterLeerExcel)
 
             print("pase x aca 1")
@@ -47,36 +47,15 @@ def uploadFileAndData():
                 print("pase x aca 2")   
                 print(entry)
 
-                clienteBtoCNew = adapterClienteBtoCCSV.leerClienteBtoC(entry, lote.idGrupoCliente)
+                itemEmision = adapterLeerExcel.leerItemEmision(entry, emision.id)
 
-                queryText = text('CALL ingresar_clientebtoc_si_corresponde(:nCuenta, :idGruCliente, :cPostal, :nTitular, :direc, :localidad, id_cliente_btoc:=NULL)')
-                
-                queryParams = {
-                    'nCuenta': clienteBtoCNew.numCuenta,
-                    'idGruCliente': clienteBtoCNew.idGrupoCliente,
-                    'cPostal': clienteBtoCNew.codigoPostal,
-                    'nTitular': clienteBtoCNew.nombreTitular,
-                    'direc': clienteBtoCNew.direccion,
-                    'localidad': clienteBtoCNew.localidad,
-                }
-
-                result = session.execute(queryText, queryParams)
-                
-                results = result.fetchone()
-
-                new_id_cliente_btoc = results[0]
-                
-                print(new_id_cliente_btoc)
-                print("pase x aca 3")
-                print(entry)
-
-                itemLote = adapterLeerExcel.leerItemLote(entry, lote.id, new_id_cliente_btoc)
-                print(itemLote)
+                print(itemEmision)
                 print("pase x aca 4")
-                lote.itemsLote.append(itemLote)
+
+                emision.itemsEmision.append(itemEmision)
                 print("pase x aca 5")
 
-            session.add(lote)
+            session.add(emision)
             session.commit()
 
         return {'message': 'File uploaded and converted to JSON successfully'}, 200

@@ -19,23 +19,53 @@ import SoftTypography from "components/SoftTypography";
 import DropFileInput from "components/DropFileInput";
 import DropdownList from "components/DropdownList";
 
+import axios from 'axios';
+
+//IMPORTO URL BACK
+import { API_BACK } from '../../config';
+
+
 const Home = () => {
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
   const [fileName, setFileName] = useState(null);
   const { handleSubmit, control } = useForm();
-  const form = useForm();
+
+    // Estado para la pantalla de cargas de los archivos
+    const [loading, setLoading] = useState(false);
 
   const opciones = [{id: 1, nombre: "PSM"}, {id: 2, nombre: "EMASERVICIOS"}]
 
   //CAMBIAR ESTA FUNCION
-  const onSubmitForm = async (_data) => {
+  const onSubmit = async (data) => {
+    cambiarEstadoPopUp1(false);
+    setLoading(true);
     try {
-    } catch (error) {}
-    //cambiarEstadoPopUp1(false); // Cerrar el pop-up "Nuevo"
-    //cambiarEstadoPopUp2(true); // Abrir el pop-up "Reprogramado"
+      const formData = new FormData();
+      formData.append('file', fileName);
+      formData.append('data', JSON.stringify({
+        idFormato: data.idFormato,
+        file: data.file,
+      }));
+  
+      // Imprimir el contenido del FormData
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
+  
+      const response = await axios.post(`${API_BACK}/api/upload`, formData);
+  
+      setLoading(false);
+      setFileName(null);
+    } catch (error) {
+      console.error('Error completo:', error);
+      setLoading(false);
+    }
   };
 
-  const [datosFormulario, setDatosFormulario] = useState({});
+  // Manejo de recarga de página
+  const handleReload = () => {
+    window.location.reload();
+  };
 
   return (
     <>
@@ -169,7 +199,7 @@ const Home = () => {
           "linear-gradient(45deg, #0D47A1, #1976D2, #2196F3, #64B5F6, #BBDEFB)"
         }
       >
-        <form onSubmit={form.handleSubmit(onSubmitForm)}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <Contenido>
             <SoftBox
               display="flex"
@@ -182,8 +212,8 @@ const Home = () => {
                 </SoftTypography>
                 <SoftBox display="flex" justifyContent="space-between" alignItems="center">
                   <Controller
-                    name="formato"
-                    control={form.control}
+                    name="idFormato"
+                    control={control}
                     defaultValue={null}
                     render={({ field }) => (
                       <DropdownList
@@ -229,25 +259,36 @@ const Home = () => {
                   "linear-gradient(45deg, #0D47A1, #1976D2, #2196F3, #64B5F6, #BBDEFB)",
               }}
             >
-              <button
-                onClick={() => handleSubmit(datosFormulario)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                  fontSize: "1.075rem",
-                  fontWeight: "700",
-                  color: "#FFFFFF",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                }}
-              >
-                Guardar
-              </button>
+              <input type='submit' value='Cargar Archivo' style={{
+                background: 'transparent', border: 'none',
+                fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+                fontSize: '0.875rem',
+                fontWeight: '700',
+                color: '#FFFFFF',
+                textTransform: 'uppercase'
+              }} />
             </SoftButton>
           </Contenido>
         </form>
       </PopUp>
+
+      <PopUp
+        estado={loading}
+        titulo="Nuevo"
+        mostrarHeader={true}
+        mostrarOverlay={true}
+        posicionModal={'center'}
+        padding={'0px'}
+        width={'30vw'}
+        height={'10vh'}
+      >
+        <Contenido>
+          <SoftTypography variant="button" fontWeight="medium" color="dark" alignItems="center" justifyContent="center" px={3} py={4}>
+            Aguarde, su archivo esta siendo cargado...
+          </SoftTypography>
+        </Contenido>
+      </PopUp>
+
     </>
   );
 };

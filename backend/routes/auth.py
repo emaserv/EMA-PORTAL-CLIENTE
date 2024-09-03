@@ -48,14 +48,11 @@ def login():
             })
 
         print(dataQueryJson)
-        '''
+
         if dataQueryJson[0]['found']:
-            access_token = create_access_token(identity=dataQueryJson[0]['userName'])
-            return jsonify(access_token=access_token)
+             return jsonify({"message": f"Consulta ejecutada correctamente"}), 200
         else:
             return jsonify({"message": "Bad username or password"}), 401
-        '''
-        return jsonify({"message": f"Consulta ejecutada correctamente"}), 200
     
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500

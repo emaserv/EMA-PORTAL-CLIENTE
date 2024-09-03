@@ -418,7 +418,7 @@ export default function EnhancedTable({ data, columns }) {
                       }}
                     >
                       <Link
-                        to={row.foto}
+                        to={row.foto }
                         style={{ textDecoration: "none", color: row.foto ? "#4682B4" : "#D3D3D3" }} // Elimina el subrayado del enlace
                       >
                         <PhotoIcon fontSize="medium" />
