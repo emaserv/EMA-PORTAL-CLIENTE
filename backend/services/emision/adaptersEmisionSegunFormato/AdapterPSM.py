@@ -26,7 +26,7 @@ class AdapterPSM:
             horaDistrib = entry['Hora'],
             geoCliente = None,
             geoVisita = None,
-            foto = entry['Foto'],
+            foto = chequeadorFoto(entry['Foto']),
             idGrupoCliente = obtenerIdGrupoCliente(entry['Cliente']), 
             lote = entry['Lote'],
             legajo = entry['Legajo'],
@@ -60,6 +60,9 @@ def obtenerPorPartes(cadena, letras):
     
 
 def obtenerIdGrupoCliente(nombreGrupoCliente):
+    if nombreGrupoCliente.find("EDESUR") != -1:
+        nombreGrupoCliente = "EDESUR"
+
     try:        
         query = text('SELECT id FROM "grupoCliente" WHERE nombre = :nombreGrupoCliente')
         queryParams = {'nombreGrupoCliente': nombreGrupoCliente}
@@ -83,12 +86,9 @@ def obtenerIdGrupoCliente(nombreGrupoCliente):
     
   
 def convertir_fecha(fecha_str):
-    """
-    Convierte una fecha del formato 'dd/mm/yyyy' al formato 'yyyy-mm-dd'.
+    if fecha_str == None:
+        return None
     
-    :param fecha_str: str, fecha en formato 'dd/mm/yyyy'
-    :return: str, fecha en formato 'yyyy-mm-dd'
-    """
     try:
         # Convertir la fecha del formato 'dd/mm/yyyy' a un objeto datetime
         fecha_obj = datetime.strptime(fecha_str, '%d/%m/%Y')
@@ -97,3 +97,9 @@ def convertir_fecha(fecha_str):
     except ValueError:
         # Manejo de errores si el formato de entrada es incorrecto
         raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy'.")
+    
+def chequeadorFoto(linkFoto):
+    if linkFoto == 'https://s3.amazonaws.com/ocrbsas-userfiles-mobilehub-94990329/':
+        return None
+    else:
+        return linkFoto

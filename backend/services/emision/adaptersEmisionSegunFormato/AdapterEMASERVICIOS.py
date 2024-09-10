@@ -7,36 +7,52 @@ from datetime import datetime
 
 class AdapterEMASERVICIOS:
     def leerItemEmision(entry, idEmision):
-        itemEmision = ItemEmision(
-            nroCliente = entry['N° Cliente'],
-            titular = entry['Titular'], 
-            calle = entry['Calle'],
-            idEmision = idEmision,
-            sucursal = entry['Sucursal'],
-            planTurno = entry['Plan-Turno'],
-            radio = entry['Radio'],
-            ruta = entry['Ruta'],
-            distribuidor = entry['Nombre'],
-            estadoPieza = entry['Estado'],
-            obsInterna = entry['Obs. Interna'],
-            obsVisita = entry['Obs. de Visita'],
-            fechaDistrib = convertir_fecha(entry['Fecha Distribucion']),
-            horaDistrib = entry['Hora Distribucion'],
-            geoCliente = entry['Geo de Cliente'],
-            geoVisita = entry['Geo de Visita'],
-            foto = entry['Foto'],
-            idGrupoCliente = obtenerIdGrupoCliente(entry['Cliente']), 
-            lote = entry['Lote'],
-            legajo = entry['Legajo'],
-            tipoDePieza = entry['Tipo de Pieza'],
-            localidad = entry['Localidad'],
-            firma = entry['Firma'],
-            altura = entry['Altura'],
-        )
+        print("WASAAAAAAAAAAAAAA", entry['Cliente'])
+
+        if entry['Cliente'] != '-':
+            itemEmision = ItemEmision(
+                nroCliente = str(entry['N° Cliente']),
+                titular = entry['Titular'], 
+                calle = str(entry['Calle']),
+                idEmision = idEmision,
+                sucursal = str(entry['Sucursal']),
+                planTurno = str(entry['Plan-Turno']),
+                radio = str(entry['Radio']),
+                ruta = str(entry['Ruta']),
+                distribuidor =  str(entry['Nombre']),
+                estadoPieza =  str(entry['Estado']),
+                obsInterna = str(entry['Obs. Interna']),
+                obsVisita = str(entry['Obs. de Visita']),
+                fechaDistrib = convertir_fecha(entry['Fecha Distribucion']),
+                horaDistrib = chequeadorHora(entry['Hora Distribucion']) ,
+                geoCliente = entry['Geo de Cliente'],
+                geoVisita = entry['Geo de Visita'],
+                foto = entry['Foto'],
+                idGrupoCliente = obtenerIdGrupoCliente(entry['Cliente']), 
+                lote = str(entry['Lote']),
+                legajo = str(entry['Legajo']),
+                tipoDePieza =  str(entry['Tipo de Pieza']),
+                localidad =  str(entry['Localidad']),
+                firma = entry['Firma'],
+                altura =  str(entry['Altura']),
+            )
+        else:
+            itemEmision = None
 
         return itemEmision
+    
+def chequeadorHora(hora):
+    if hora != '-':
+        return hora
+    else:
+        return None
 
 def obtenerIdGrupoCliente(nombreGrupoCliente):
+    if nombreGrupoCliente.find("EDESUR") != -1:
+        nombreGrupoCliente = "EDESUR"
+    elif nombreGrupoCliente.find("AYSA") != -1:
+        nombreGrupoCliente = "AYSA S.A."
+    
     try:        
         query = text('SELECT id FROM "grupoCliente" WHERE nombre = :nombreGrupoCliente')
         queryParams = {'nombreGrupoCliente': nombreGrupoCliente}
@@ -59,15 +75,16 @@ def obtenerIdGrupoCliente(nombreGrupoCliente):
         return None
     
 def convertir_fecha(fecha_str):
-    """
-    Convierte una fecha del formato 'dd/mm/yyyy' al formato 'yyyy-mm-dd'.
-    
-    :param fecha_str: str, fecha en formato 'dd/mm/yyyy'
-    :return: str, fecha en formato 'yyyy-mm-dd'
-    """
+    if fecha_str == '-':
+        return None
+
     try:
         # Convertir la fecha del formato 'dd/mm/yyyy' a un objeto datetime
+        print(fecha_str)
+
         fecha_obj = datetime.strptime(fecha_str, '%d/%m/%Y')
+
+        
         # Convertir el objeto datetime al formato 'yyyy-mm-dd'
         return fecha_obj.strftime('%Y-%m-%d')
     except ValueError:
