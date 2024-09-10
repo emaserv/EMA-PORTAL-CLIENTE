@@ -8,8 +8,11 @@ import DropdownList from "components/DropdownList";
 import { useForm, Controller } from "react-hook-form";
 import EnhancedTable from "./data/radioClienteTable";
 import { API_BACK } from "../../config";
+import { useAuth } from 'layouts/auth/AuthContext';
 
 const RadioCliente = () => {
+  const { user } = useAuth();
+
   const { handleSubmit, control } = useForm();  
   const [primerFetch, setPrimerFetchCompletado] = useState(false);
   const [segundoFetch, setSegundoFetchCompletado] = useState(false);
@@ -24,6 +27,7 @@ const RadioCliente = () => {
   const [dataTablaEDESUR, setDataTablaEDESUR] = useState([]);
   const [dataTablaMETROGAS, setDataTablaMETROGAS] = useState([]);
   const [columns, setColumns] = useState([]);
+  const [datosTabla, setDatosTabla] = useState([]);
 
   useEffect(() => {
     fetch(`${API_BACK}/api/fechaCliente`, { mode: "cors" })
@@ -36,6 +40,20 @@ const RadioCliente = () => {
 
           setDataTablaEDESUR(apiData.dataTabla.filter((registro) => registro.idGrupoCliente === "EDESUR"));
           setDataTablaMETROGAS(apiData.dataTabla.filter((registro) => registro.idGrupoCliente === "METROGAS S.A."));
+
+          if (user && user.idGrupoCliente === null){
+            setDatosTabla(dataTabla);
+          }
+          else if (user && user.idGrupoCliente === 1){
+            setDatosTabla(dataTablaEDESUR);
+          }
+          else if (user && user.idGrupoCliente === 4){
+            setDatosTabla(dataTablaMETROGAS);
+          }
+          else {
+            setDatosTabla([]);
+          }
+
         }
       })
       .catch((error) => {});

@@ -8,28 +8,49 @@ import DropdownList from "components/DropdownList";
 import { useForm, Controller } from "react-hook-form";
 import EnhancedTable from "./data/fechaClienteTable"
 import { API_BACK } from "../../config";
+import { useAuth } from 'layouts/auth/AuthContext';
 
 const FechaCliente = () => {
 
+    const { user } = useAuth();
     const [multiplesClientes, setMultiplesClientes] = useState([]);
     const [primerFetch, setPrimerFetchCompletado] = useState(false);
     const { handleSubmit, control } = useForm();
     const [dataDropDwn, setDataDropDwn] = useState([]);
     const [dataTabla, setDataTabla] = useState([]);
+    const [dataTablaEDESUR, setDataTablaEDESUR] = useState([]);
+    const [dataTablaMETROGAS, setDataTablaMETROGAS] = useState([]);
     const [columns, setColumns] = useState([]);
+    const [datosTabla, setDatosTabla] = useState([]);
 
-      useEffect(() => {
-          fetch(`${API_BACK}/api/fechaCliente`, { mode: 'cors' })
-            .then(response => response.json())
-            .then(apiData => {
-              if (apiData.dataTabla && apiData.columns) {
-                setDataTabla(apiData.dataTabla);
-                setColumns(apiData.columns);
-                setPrimerFetchCompletado(true);
+    useEffect(() => {
+        fetch(`${API_BACK}/api/fechaCliente`, { mode: "cors" })
+          .then((response) => response.json())
+          .then((apiData) => {
+            if (apiData.dataTabla && apiData.columns) {
+              setDataTabla(apiData.dataTabla);
+              setColumns(apiData.columns);
+              setPrimerFetchCompletado(true);
+    
+              setDataTablaEDESUR(apiData.dataTabla.filter((registro) => registro.idGrupoCliente === "EDESUR"));
+              setDataTablaMETROGAS(apiData.dataTabla.filter((registro) => registro.idGrupoCliente === "METROGAS S.A."));
+    
+              if (user && user.idGrupoCliente === null){
+                setDatosTabla(dataTabla);
               }
-            })
-            .catch(error => { });
-        
+              else if (user && user.idGrupoCliente === 1){
+                setDatosTabla(dataTablaEDESUR);
+              }
+              else if (user && user.idGrupoCliente === 4){
+                setDatosTabla(dataTablaMETROGAS);
+              }
+              else {
+                setDatosTabla([]);
+              }
+    
+            }
+          })
+          .catch((error) => {});
       }, []);
 
       useEffect(() => {

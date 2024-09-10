@@ -6,7 +6,6 @@ from services.emision import adapterEmisionCSV, factoryAdapterEmision
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
 
-
 importador = Blueprint('importador', __name__)
 
 def get_column_names(model):
@@ -52,9 +51,11 @@ def uploadFileAndData():
                 print(itemEmision)
                 print("pase x aca 4")
 
-                emision.itemsEmision.append(itemEmision)
-                print("pase x aca 5")
+                if itemEmision:
+                    emision.itemsEmision.append(itemEmision)
+                    print("pase x aca 5")
 
+            
             session.add(emision)
             session.commit()
 

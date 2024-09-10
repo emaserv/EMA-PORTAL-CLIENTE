@@ -42,7 +42,6 @@ def tablaFC():
 
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
     except Exception as e:
-        print()
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json

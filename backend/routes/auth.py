@@ -43,14 +43,16 @@ def login():
         for row in data_query:
             dataQueryJson.append({
                 'userName': row.userN,
-                'psswrd': row.contra,
+                'nombre': row.nombre,
+                'apellido': row.apellido,
+                'idGrupoCliente': row.idGrupoCliente,
                 'found': row.found
             })
 
         print(dataQueryJson)
 
         if dataQueryJson[0]['found']:
-             return jsonify({"message": f"Consulta ejecutada correctamente"}), 200
+             return jsonify({"data": dataQueryJson}), 200
         else:
             return jsonify({"message": "Bad username or password"}), 401
     

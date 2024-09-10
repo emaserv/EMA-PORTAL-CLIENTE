@@ -36,15 +36,16 @@ function CoverLayout({ color, header, title, description, image, top, children }
       
       <Grid
         container
-        justifyContent="center"
+        justifyContent="space-between"
         sx={{
-          minHeight: "75vh",
-          margin: 0,
+          minHeight: "20vh",
+          marginLeft: 20,
+          marginRigth: 10
         }}
       >
         <Grid item xs={11} sm={8} md={5} xl={3}>
           <SoftBox mt={top}>
-            <SoftBox pt={3} px={3}>
+            <SoftBox pt={1} px={-5}>
               {!header ? (
                 <>
                   <SoftBox mb={1}>
@@ -60,16 +61,17 @@ function CoverLayout({ color, header, title, description, image, top, children }
                 header
               )}
             </SoftBox>
-            <SoftBox p={3}>{children}</SoftBox>
+            <SoftBox pt={1} px={-30}>{children}</SoftBox>
           </SoftBox>
         </Grid>
         <Grid item xs={12} md={5}>
           <SoftBox
-            height="100%"
+            height="80%"
             display={{ xs: "none", md: "block" }}
             position="relative"
-            right={{ md: "-12rem", xl: "-16rem" }}
-            mr={-16}
+            top={{md: "5rem", xl: "5rem" }}
+            right={{ md: "20rem", xl: "20rem" }}
+            mr={-20}
             sx={{
               transform: "skewX(-10deg)",
               overflow: "hidden",
@@ -77,8 +79,8 @@ function CoverLayout({ color, header, title, description, image, top, children }
             }}
           >
             <SoftBox
-              ml={-8}
-              height="100%"
+              ml={-1}
+              height="90%"
               sx={{
                 backgroundImage: `url(${image})`,
                 backgroundSize: "cover",
@@ -99,7 +101,7 @@ CoverLayout.defaultProps = {
   title: "",
   description: "",
   color: "info",
-  top: 20,
+  top: 10,
 };
 
 // Typechecking props for the CoverLayout

@@ -10,9 +10,10 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import SoftBox from 'components/SoftBox';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import brand from "assets/images/Portal-Cliente-Images/Logo-ema.png";
 import SoftTypography from 'components/SoftTypography';
+import { useAuth } from 'layouts/auth/AuthContext';
 
 const pages = [];
 const settings = ['Mi Perfil', 'Cerrar Sesion'];
@@ -20,6 +21,10 @@ const settings = ['Mi Perfil', 'Cerrar Sesion'];
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  console.log("EASASA", user)
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
@@ -34,6 +39,11 @@ function ResponsiveAppBar() {
   
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
+  };
+
+  const handleLogout = () => {
+    logout(); // Llama a la función de logout
+    navigate('/authentication/login'); // Redirige a la página de login
   };
 
   return (
@@ -72,8 +82,8 @@ function ResponsiveAppBar() {
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, marginRight: '-7rem' }}>
-                <SoftTypography marginRight="1rem"> Lucas Boldrini </SoftTypography>
-                <Avatar alt="Lucas" src="/static/images/avatar/2.jpg" />
+                {user ? <SoftTypography marginRight='1rem'> {user.nombre} {user.apellido}</SoftTypography> : <Link to="/authentication/sign-in"> <SoftTypography marginRight='1rem'>No estás logueado</SoftTypography> </Link>}
+                <Avatar alt="" src="/static/images/avatar/2.jpg" />
               </IconButton>
             </Tooltip>
             <Menu
@@ -96,8 +106,13 @@ function ResponsiveAppBar() {
                 <MenuItem key={setting} onClick={handleCloseUserMenu}>
                   {setting === 'Cerrar Sesion' && (
                     <Link to="/authentication/login">
-                      <SoftTypography sx={{ textAlign: 'center' }}>{setting}</SoftTypography>
-                    </Link>
+                      <SoftTypography
+                sx={{ textAlign: 'center', cursor: 'pointer' }}
+                onClick={handleLogout}
+              >
+                {setting}
+              </SoftTypography>
+              </Link>
                   )}
                   {setting === 'Mi Perfil' && (
                     <SoftTypography sx={{ textAlign: 'center' }}>{setting}</SoftTypography>

@@ -29,10 +29,10 @@ import SoftTypography from "components/SoftTypography";
 
 function Footer() {
   return (
-    <SoftBox component="footer" py={6}>
+    <SoftBox component="footer" py={2}>
       <Grid container justifyContent="center">
         <Grid item xs={12} lg={8}>
-          <SoftBox display="flex" justifyContent="center" mt={1} mb={3}>
+          <SoftBox display="flex" justifyContent="center" mt={10} mb={2}>
             <SoftBox mr={3} color="secondary">
               <FacebookIcon fontSize="small" />
             </SoftBox>

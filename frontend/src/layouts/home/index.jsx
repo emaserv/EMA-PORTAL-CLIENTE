@@ -23,12 +23,13 @@ import axios from 'axios';
 
 //IMPORTO URL BACK
 import { API_BACK } from '../../config';
-
+import { useAuth } from 'layouts/auth/AuthContext';
 
 const Home = () => {
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
   const [fileName, setFileName] = useState(null);
   const { handleSubmit, control } = useForm();
+  const { user } = useAuth();
 
     // Estado para la pantalla de cargas de los archivos
     const [loading, setLoading] = useState(false);
@@ -79,7 +80,9 @@ const Home = () => {
           style={{ display: "flex", alignItems: "center" }}
         >
           <SoftBox marginTop="3rem">
+          {user ? 
             <Grid container spacing={3} marginLeft="7rem" marginRight="-15rem">
+              {user.idGrupoCliente === null ? 
               <Grid
                 sx={{ textAlign: "left" }} // Centering the text
                 item
@@ -93,11 +96,13 @@ const Home = () => {
                     sx={{ width: "30rem" }}
                     onClick={() => cambiarEstadoPopUp1(!estadoPopUp1)}
                   >
-                    {" "}
                     Importar Archivo
                   </SoftButton>
                 </div>
               </Grid>
+              :
+              <></>
+              }
               <Grid
                 sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                 item
@@ -134,7 +139,8 @@ const Home = () => {
                   </Link>
                 </div>
               </Grid>
-            </Grid>
+            </Grid> : <></>
+            }
           </SoftBox>
 
           <Grid
@@ -162,9 +168,9 @@ const Home = () => {
                 }}
               >
                 <SoftBox
-                  ml={-8}
+                  ml={-72}
                   height="100%"
-                  width="75vw"
+                  width="100vw"
                   sx={{
                     position: "relative",
                     backgroundImage: `url(${camionetas})`,

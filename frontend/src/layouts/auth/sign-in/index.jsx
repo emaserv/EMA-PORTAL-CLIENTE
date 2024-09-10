@@ -8,10 +8,12 @@ import { useForm, Controller } from 'react-hook-form';
 import CoverLayout from 'layouts/auth/components/CoverLayout';
 import logoEma from 'assets/images/Portal-Cliente-Images/Logo-ema.png';
 import SoftInputBase from 'components/SoftInputBase';
+import { useAuth } from 'layouts/auth/AuthContext'; // Importa el hook useAuth del contexto de autenticación
 
-const SignIn = ({ setToken }) => {
+const SignIn = () => {
   const { handleSubmit, control, formState: { errors } } = useForm();
   const [loginError, setLoginError] = useState('');
+  const { login } = useAuth(); // Obtén la función login del contexto de autenticación
 
   const onSubmit = async (data) => {
     if (!data.userName || !data.password) {
@@ -25,11 +27,15 @@ const SignIn = ({ setToken }) => {
     try {
       const response = await axios.post(`${API_BACK}/api/login`, formData);
       if (response.status === 200) {
-        document.location = '/home';
+        const userData = response.data; // Supongamos que response.data tiene la estructura { usuarios: [...] }
+        console.log("Datos completos:", userData.data, userData.data[0]);
+
+         // Suponiendo que la API devuelve los datos del usuario en response.data
+        login(userData.data[0]);  // Llama a la función de login del contexto con los datos del usuario
+        document.location = '/home'; // Redirige al usuario después del inicio de sesión
       }
     } catch (error) {
       if (error.response) {
-        // Manejo de errores basado en el código de estado HTTP
         if (error.response.status === 401) {
           setLoginError('Nombre de usuario o contraseña incorrectos.');
         } else if (error.response.status === 500) {
@@ -48,8 +54,9 @@ const SignIn = ({ setToken }) => {
       title="Bienvenido a Portal Clientes!"
       description="Ingrese sus credenciales para iniciar sesión"
       image={logoEma}
+      top="15rem"
     >
-      <SoftBox>
+      <SoftBox sx={{alignItems: 'center'}}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <SoftBox mb={2}>
             <SoftBox mb={1} ml={0.5}>
@@ -64,39 +71,12 @@ const SignIn = ({ setToken }) => {
             <Controller
               name="userName"
               control={control}
+              rules={{ required: true }}
               render={({ field }) => (
                 <SoftInputBase
                   type="text"
                   placeholder="Usuario"
                   field={field}
-                  sx={{
-                    fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
-                    letterSpacing: '0.00938em',
-                    boxSizing: 'border-box',
-                    position: 'relative',
-                    cursor: 'text',
-                    webkitBoxAlign: 'center',
-                    padding: '0.5rem 0.75rem',
-                    border: '0.0625rem solid rgb(210, 214, 218)',
-                    borderRadius: '0.5rem',
-                    pointerEvents: 'auto',
-                    display: 'grid !important',
-                    placeItems: 'center !important',
-                    width: '100% !important',
-                    height: 'auto !important',
-                    fontSize: '0.875rem !important',
-                    fontWeight: '400 !important',
-                    lineHeight: '1.4 !important',
-                    color: 'rgb(73, 80, 87) !important',
-                    backgroundColor: 'rgb(255, 255, 255) !important',
-                    backgroundClip: 'padding-box !important',
-                    appearance: 'none !important',
-                    transition: 'box-shadow 150ms ease 0s, border-color 150ms ease 0s, padding 150ms ease 0s !important',
-                    '& input': {
-                      paddingTop: '0px',
-                      paddingBottom: '0px',
-                    },
-                  }}
                 />
               )}
             />
@@ -116,39 +96,13 @@ const SignIn = ({ setToken }) => {
             <Controller
               name="password"
               control={control}
+              rules={{ required: true }}
               render={({ field }) => (
                 <SoftInputBase
                   type="password"
                   placeholder="Contraseña"
                   field={field}
-                  sx={{
-                    fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
-                    letterSpacing: '0.00938em',
-                    boxSizing: 'border-box',
-                    position: 'relative',
-                    cursor: 'text',
-                    webkitBoxAlign: 'center',
-                    padding: '0.5rem 0.75rem',
-                    border: '0.0625rem solid rgb(210, 214, 218)',
-                    borderRadius: '0.5rem',
-                    pointerEvents: 'auto',
-                    display: 'grid !important',
-                    placeItems: 'center !important',
-                    width: '100% !important',
-                    height: 'auto !important',
-                    fontSize: '0.875rem !important',
-                    fontWeight: '400 !important',
-                    lineHeight: '1.4 !important',
-                    color: 'rgb(73, 80, 87) !important',
-                    backgroundColor: 'rgb(255, 255, 255) !important',
-                    backgroundClip: 'padding-box !important',
-                    appearance: 'none !important',
-                    transition: 'box-shadow 150ms ease 0s, border-color 150ms ease 0s, padding 150ms ease 0s !important',
-                    '& input': {
-                      paddingTop: '0px',
-                      paddingBottom: '0px',
-                    },
-                  }}
+                  
                 />
               )}
             />
