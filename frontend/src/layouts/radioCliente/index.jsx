@@ -1,119 +1,105 @@
-import React, { useState, useEffect } from "react";
+import { React, useState } from "react";
 import SoftBox from "components/SoftBox";
 import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
 import { Card, Divider } from "@mui/material";
 import SoftTypography from "components/SoftTypography";
+import SoftButton from "components/SoftButton";
 import DatePickerValue from "components/DatePicker";
-import DropdownList from "components/DropdownList";
+import SoftInputBase from "components/SoftInputBase";
 import { useForm, Controller } from "react-hook-form";
 import EnhancedTable from "./data/radioClienteTable";
 import { API_BACK } from "../../config";
-import { useAuth } from 'layouts/auth/AuthContext';
+import { useAuth } from "layouts/auth/AuthContext";
+
+const DataConverter = (fechaDeSincronizacion) => {
+  const parsedDate = new Date(fechaDeSincronizacion);
+  const year = parsedDate.getFullYear();
+  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
+  const day = String(parsedDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const RadioCliente = () => {
   const { user } = useAuth();
-
-  const { handleSubmit, control } = useForm();  
-  const [primerFetch, setPrimerFetchCompletado] = useState(false);
-  const [segundoFetch, setSegundoFetchCompletado] = useState(false);
-  const [tercerFetch, setTercerFetchCompletado] = useState(false);
-  const [cuartoFetch, setCuartoFetchCompletado] = useState(false);
-  const [dataDropDwnSucursal, setDataDropDwnSucursal] = useState([]);
-  const [dataDropDwnPlan, setDataDropDwnPlan] = useState([]);
-  const [dataDropDwnRadio, setDataDropDwnRadio] = useState([]);
-  const [multiplesUsuario, setMultiplesUsuario] = useState([]);
-  const [columnsU, setColumnsU] = useState([]);
-  const [dataTabla, setDataTabla] = useState([]);
-  const [dataTablaEDESUR, setDataTablaEDESUR] = useState([]);
-  const [dataTablaMETROGAS, setDataTablaMETROGAS] = useState([]);
+  const {
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm();
+  const [allData, setAllData] = useState([]);
   const [columns, setColumns] = useState([]);
-  const [datosTabla, setDatosTabla] = useState([]);
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(null);
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(null);
+  const [filtroPlan, setFiltroPlan] = useState(null);
+  const [filtroSucursal, setFiltroSucursal] = useState(null);
+  const [filtroRadio, setFiltroRadio] = useState(null);
+  const [datosFiltrados, setDatosFiltrados] = useState([]);
 
-  useEffect(() => {
-    fetch(`${API_BACK}/api/fechaCliente`, { mode: "cors" })
+  const onSubmit = async (data) => {
+    try {
+      const fechaDesde = data.fechaDesde
+        ? DataConverter(data.fechaDesde)
+        : null;
+      const fechaHasta = data.fechaHasta
+        ? DataConverter(data.fechaHasta)
+        : null;
+
+      setFiltroPlan(data.plan || null);
+      setFiltroSucursal(data.sucursal || null);
+      setFiltroRadio(data.radio || null);
+      setFiltroFechaDesde(fechaDesde);
+      setFiltroFechaHasta(fechaHasta);
+
+      fetchData(data.plan || null, data.sucursal || null, data.radio || null, fechaDesde, fechaHasta);
+    } catch (error) {
+      console.log("Error en el submit:", error);
+    }
+  };
+
+  const fetchData = (plan, sucursal, radio, fechaDesde, fechaHasta) => {
+    if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta) {
+      setAllData([]);
+      setDatosFiltrados([]);
+      return;
+    }
+
+    fetch(
+      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${
+        user.idGrupoCliente
+      }&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
+    )
       .then((response) => response.json())
       .then((apiData) => {
-        if (apiData.dataTabla && apiData.columns) {
-          setDataTabla(apiData.dataTabla);
+        if (apiData.dataTabla) {
+          setAllData(apiData.dataTabla);
           setColumns(apiData.columns);
-          setPrimerFetchCompletado(true);
-
-          setDataTablaEDESUR(apiData.dataTabla.filter((registro) => registro.idGrupoCliente === "EDESUR"));
-          setDataTablaMETROGAS(apiData.dataTabla.filter((registro) => registro.idGrupoCliente === "METROGAS S.A."));
-
-          if (user && user.idGrupoCliente === null){
-            setDatosTabla(dataTabla);
-          }
-          else if (user && user.idGrupoCliente === 1){
-            setDatosTabla(dataTablaEDESUR);
-          }
-          else if (user && user.idGrupoCliente === 4){
-            setDatosTabla(dataTablaMETROGAS);
-          }
-          else {
-            setDatosTabla([]);
-          }
-
+          filtrarDatos(apiData.dataTabla, plan, sucursal, radio, fechaDesde, fechaHasta);
+        } else {
+          console.error("No se recibieron datos de la API");
+          setAllData([]);
         }
       })
-      .catch((error) => {});
-  }, []);
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        setAllData([]);
+      });
+  };
 
-  useEffect(() => {
-    if(primerFetch){
-    fetch(`${API_BACK}/api/plan`, { mode: "cors" })
-      .then((response) => response.json())
-      .then((apiData) => {
-        if (apiData.dataDropDwnPlan) {
-          setDataDropDwnPlan(apiData.dataDropDwnPlan);
-          setSegundoFetchCompletado(true);
-        }
-      })
-      .catch((error) => {});
-    }
-  }, [primerFetch]);
+  const filtrarDatos = (data, plan, sucursal, radio, fechaDesde, fechaHasta) => {
+    const datosFiltrados = data.filter((item) => {
+      const itemFecha = new Date(item.fecha).toISOString().split("T")[0]; // Formato YYYY-MM-DD
 
-  useEffect(() => {
-    if(segundoFetch){
-    fetch(`${API_BACK}/api/radio`, { mode: "cors" })
-      .then((response) => response.json())
-      .then((apiData) => {
-        if (apiData.dataDropDwnRadio) {
-          setDataDropDwnRadio(apiData.dataDropDwnRadio);
-          setTercerFetchCompletado(true);
-        }
-      })
-      .catch((error) => {});
-    }
-  }, [segundoFetch]);
+      const cumplePlan = plan ? item.plan === plan : true;
+      const cumpleSucursal = sucursal ? item.sucursal === sucursal : true;
+      const cumpleRadio = radio ? item.radio === radio : true;
+      const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
+      const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
 
-  useEffect(() => {
-    if(tercerFetch){
-    fetch(`${API_BACK}/api/sucursal`, { mode: "cors" })
-      .then((response) => response.json())
-      .then((apiData) => {
-        if (apiData.dataDropDwnSucursal) {
-          setDataDropDwnSucursal(apiData.dataDropDwnSucursal);
-          setCuartoFetchCompletado(true);
-        }
-      })
-      .catch((error) => {});
-    }
-  }, [tercerFetch]);
+      return cumplePlan && cumpleSucursal && cumpleRadio && cumpleFechaDesde && cumpleFechaHasta;
+    });
 
-  useEffect(() => {
-    if(cuartoFetch){
-      fetch(`${API_BACK}/rest/usuario`, { mode: "cors" })
-      .then((response) => response.json())
-      .then((apiData) => {
-        if (apiData.multiplesUsuario && apiData.columns) {
-          setMultiplesUsuario(apiData.multiplesUsuario);
-          setColumnsU(apiData.columns);
-        }
-      })
-      .catch((error) => {});
-    }
-  }, [cuartoFetch]);
+    setDatosFiltrados(datosFiltrados);
+  };
 
   return (
     <SoftBox display="flex" flexDirection="column" alignItems="center">
@@ -123,90 +109,128 @@ const RadioCliente = () => {
 
       <Card style={{ marginTop: "7rem", width: "80%" }}>
         <SoftBox p={3}>
-          <SoftTypography variant="h3">Filtros</SoftTypography>
+          <SoftTypography variant="h4">Filtros</SoftTypography>
           <Divider />
 
-          <SoftBox
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <SoftBox mt={2}>
-              <SoftTypography>Plan</SoftTypography>
-              <Controller
-                name="plan"
-                control={control}
-                render={({ field }) => (
-                  <DropdownList
-                    width="10vw !important"
-                    list={dataDropDwnPlan}
-                    placeholder="Seleccione plan"
-                    campoAMostrar="planTurno"
-                    campoID="planTurno"
-                    inputRef={field.ref}
-                    value={field.value}
-                    onChange={(selectedValue) => field.onChange(selectedValue)}
-                  />
-                )}
-              />
-            </SoftBox>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <SoftBox
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <SoftBox>
+                <SoftTypography marginTop={-2}>Plan</SoftTypography>
+                <Controller
+                  name="plan"
+                  control={control}
+                  rules={{ required: "Campo obligatorio" }}
+                  render={({ field }) => (
+                    <>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de plan"
+                        error={!!errors.plan} // Muestra borde rojo si hay error
+                      />
+                      {errors.plan && (
+                        <SoftTypography color="error" fontSize="1rem"marginTop={1}>
+                          {errors.plan.message}
+                        </SoftTypography>
+                      )}
+                    </>
+                  )}
+                />
+              </SoftBox>
 
-            <SoftBox mt={2}>
-              <SoftTypography>Radio</SoftTypography>
-              <Controller
-                name="radio"
-                control={control}
-                render={({ field }) => (
-                  <DropdownList
-                    width="10vw !important"
-                    list={dataDropDwnRadio}
-                    placeholder="Seleccione radio"
-                    campoAMostrar="radio"
-                    campoID="radio"
-                    inputRef={field.ref}
-                    value={field.value}
-                    onChange={(selectedValue) => field.onChange(selectedValue)}
-                  />
-                )}
-              />
-            </SoftBox>
+              <SoftBox>
+                <SoftTypography marginTop={-2}>Sucursal</SoftTypography>
+                <Controller
+                  name="sucursal"
+                  control={control}
+                  rules={{ required: "Campo obligatorio" }}
+                  render={({ field }) => (
+                    <>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de sucursal"
+                        error={!!errors.sucursal} // Muestra borde rojo si hay error
+                      />
+                      {errors.sucursal && (
+                        <SoftTypography color="error" fontSize="1rem"marginTop={1}>
+                          {errors.sucursal.message}
+                        </SoftTypography>
+                      )}
+                    </>
+                  )}
+                />
+              </SoftBox>
 
-            <SoftBox mt={2}>
-              <SoftTypography>Sucursal</SoftTypography>
-              <Controller
-                name="sucursal"
-                control={control}
-                render={({ field }) => (
-                  <DropdownList
-                    width="10vw !important"
-                    list={dataDropDwnSucursal}
-                    placeholder="Seleccione sucursal"
-                    campoAMostrar="sucursal"
-                    campoID="sucursal"
-                    inputRef={field.ref}
-                    value={field.value}
-                    onChange={(selectedValue) => field.onChange(selectedValue)}
-                  />
-                )}
-              />
-            </SoftBox>
 
-            <SoftBox mt={2} display="flex" flexDirection="column">
-              <SoftTypography>Fecha</SoftTypography>
+              <SoftBox>
+                <SoftTypography marginTop={-2}>Radio</SoftTypography>
+                <Controller
+                  name="radio"
+                  control={control}
+                  rules={{ required: "Campo obligatorio" }}
+                  render={({ field }) => (
+                    <>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de radio"
+                        error={!!errors.radio} // Muestra borde rojo si hay error
+                      />
+                      {errors.radio && (
+                        <SoftTypography color="error" fontSize="1rem"marginTop={1}>
+                          {errors.radio.message}
+                        </SoftTypography>
+                      )}
+                    </>
+                  )}
+                />
+              </SoftBox>
 
-              <SoftBox display="flex" alignItems="center">
+              
+              <SoftBox display="flex" flexDirection="column" marginTop={-2}>
+                <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
                 <SoftBox display="flex" alignItems="center">
-                  <SoftTypography>Desde:</SoftTypography>
-                  <DatePickerValue />
-                </SoftBox>
-
-                <SoftBox marginLeft="1.5rem" display="flex" alignItems="center">
-                  <SoftTypography>Hasta:</SoftTypography>
-                  <DatePickerValue />
+                  <Controller
+                    name="fechaDesde"
+                    control={control}
+                    render={({ field }) => <DatePickerValue field={field} />}
+                  />
+                  <SoftTypography> - </SoftTypography>
+                  <Controller
+                    name="fechaHasta"
+                    control={control}
+                    render={({ field }) => <DatePickerValue field={field} />}
+                  />
                 </SoftBox>
               </SoftBox>
+
+              <SoftBox
+                display="flex"
+                justifyContent="flex-end"
+                alignItems="center"
+                pt={3}
+                px={3}
+              >
+                <SoftButton variant="gradient" color="info">
+                  <input
+                    type="submit"
+                    value="Filtrar"
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+                      fontSize: "0.875rem",
+                      fontWeight: "700",
+                      color: "#FFFFFF",
+                      textTransform: "uppercase",
+                    }}
+                  />
+                </SoftButton>
+              </SoftBox>
             </SoftBox>
-          </SoftBox>
+          </form>
         </SoftBox>
       </Card>
 
@@ -214,7 +238,7 @@ const RadioCliente = () => {
         <SoftBox justifyContent="center">
           <Card>
             <SoftBox p={3}>
-              <EnhancedTable data={dataTabla} columns={columns} />
+              <EnhancedTable data={datosFiltrados} columns={columns} />
             </SoftBox>
           </Card>
         </SoftBox>

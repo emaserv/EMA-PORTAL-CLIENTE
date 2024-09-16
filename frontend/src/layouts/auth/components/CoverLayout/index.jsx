@@ -39,7 +39,7 @@ function CoverLayout({ color, header, title, description, image, top, children }
         justifyContent="space-between"
         sx={{
           minHeight: "20vh",
-          marginLeft: 20,
+          marginLeft: 15,
           marginRigth: 10
         }}
       >
@@ -79,7 +79,8 @@ function CoverLayout({ color, header, title, description, image, top, children }
             }}
           >
             <SoftBox
-              ml={-1}
+              mt={4}
+              ml={-1.5}
               height="90%"
               sx={{
                 backgroundImage: `url(${image})`,

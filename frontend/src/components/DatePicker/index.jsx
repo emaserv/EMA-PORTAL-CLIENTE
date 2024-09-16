@@ -10,20 +10,18 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Box } from '@mui/material';
 
-// Esto es para poner los meses en español
-dayjs.locale('ES');
+dayjs.locale('es');
 
 const theme = createTheme({
   components: {
     MuiCalendarPicker: {
       styleOverrides: {
         root: {
-          // Customize the root of the calendar picker
           '& .MuiDayPicker-day': {
-            color: '#000', // Color of the day numbers
+            color: '#000',
             '&.Mui-selected': {
-              backgroundColor: '#1976d2', // Background color of the selected day
-              color: '#fff', // Text color of the selected day
+              backgroundColor: '#1976d2',
+              color: '#fff',
             },
           },
         },
@@ -32,15 +30,13 @@ const theme = createTheme({
     MuiDayPickerHeader: {
       styleOverrides: {
         root: {
-          // Customize the header of the day picker
-          color: '#000', // Color of the header text (month and year)
+          color: '#000',
         },
       },
     },
     MuiPickersDay: {
       styleOverrides: {
         day: {
-          // Customize the day cells
           color: '#000',
           '&.Mui-selected': {
             backgroundColor: '#1976d2',
@@ -52,16 +48,9 @@ const theme = createTheme({
   },
 });
 
-export default function DatePickerValue({ field, defaultValue, disabled }) {
-  // Inicializa el estado con la fecha actual si no hay defaultValue
-  const [selectedDate, setSelectedDate] = useState(defaultValue ? dayjs(defaultValue) : dayjs());
-
-  useEffect(() => {
-    // Actualiza el estado si cambia defaultValue
-    if (defaultValue) {
-      setSelectedDate(dayjs(defaultValue));
-    }
-  }, [defaultValue]);
+export default function DatePickerValue({ field, disabled }) {
+  // Inicializa el estado con defaultValue o la fecha actual si no está definido
+  const [selectedDate, setSelectedDate] = useState();
 
   const handleDateChange = (date) => {
     setSelectedDate(date);
@@ -69,49 +58,50 @@ export default function DatePickerValue({ field, defaultValue, disabled }) {
     field.onChange(fechaEmisionValue);
   };
 
+
+
   return (
     <ThemeProvider theme={theme}>
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'es'}>
-      <Box sx={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
-        <DemoContainer components={['DatePicker', 'DatePicker']}>
-          <DatePicker
-            value={selectedDate}
-            onChange={handleDateChange}
-            format="DD-MM-YYYY"
-            readOnly={disabled}
-            sx={{
-              width: '100%',
-              '& div': {
-                borderRadius: '8px',
-              },
-              '& input': {
-                fontSize: '0.875rem',
-                fontWeight: '400',
-                padding: '0.75rem',
-              },
-              '& input::placeholder': {
-                color: '#8392ab',
-              },
-              '@media (max-width:600px)': {
-                '& input': {
-                  fontSize: '0.75rem', // Reduce el tamaño del texto en pantallas pequeñas
+      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+        <Box sx={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
+          <DemoContainer components={['DatePicker', 'DatePicker']}>
+            <DatePicker
+              value={selectedDate}
+              onChange={handleDateChange}
+              format="DD-MM-YYYY"
+              readOnly={disabled}
+              sx={{
+                width: '100%',
+                '& div': {
+                  borderRadius: '8px',
                 },
-              },
-            }}
-          />
-        </DemoContainer>
-      </Box>
-    </LocalizationProvider>
+                '& input': {
+                  fontSize: '0.875rem',
+                  fontWeight: '400',
+                  padding: '0.75rem',
+                },
+                '& input::placeholder': {
+                  color: '#8392ab',
+                },
+                '@media (max-width:600px)': {
+                  '& input': {
+                    fontSize: '0.75rem',
+                  },
+                },
+              }}
+            />
+          </DemoContainer>
+        </Box>
+      </LocalizationProvider>
     </ThemeProvider>
   );
 }
 
 DatePickerValue.propTypes = {
   field: PropTypes.object.isRequired,
-  defaultValue: PropTypes.string,
-  disabled: PropTypes.bool, // Añadido para la nueva propiedad
+  disabled: PropTypes.bool,
 };
 
 DatePickerValue.defaultProps = {
-  disabled: false, // Valor predeterminado de la nueva propiedad
+  disabled: false,
 };

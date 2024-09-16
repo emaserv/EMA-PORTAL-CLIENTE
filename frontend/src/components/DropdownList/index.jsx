@@ -51,6 +51,7 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
               },
               'input': {
                 padding: '0 !important',
+                width: width,
               },
             }}
             inputRef={inputRef}

@@ -375,6 +375,7 @@ export default function EnhancedTable({ data, columns }) {
                         //NO BORRAR LA COLUMNA ID PORQUE SI NO SE ROMPE LA TABLA
                         column !== "id" &&
                         column !== "geoVisita" &&
+                        column !== "fecha" &&
                         column !== "foto" && (
                           <TableCell
                             key={`${row.id}-${column}`}

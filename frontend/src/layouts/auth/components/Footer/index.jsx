@@ -29,10 +29,10 @@ import SoftTypography from "components/SoftTypography";
 
 function Footer() {
   return (
-    <SoftBox component="footer" py={2}>
+    <SoftBox component="footer">
       <Grid container justifyContent="center">
         <Grid item xs={12} lg={8}>
-          <SoftBox display="flex" justifyContent="center" mt={10} mb={2}>
+          <SoftBox display="flex" justifyContent="center" mt={7} mb={0.5}>
             <SoftBox mr={3} color="secondary">
               <FacebookIcon fontSize="small" />
             </SoftBox>
@@ -51,7 +51,7 @@ function Footer() {
           </SoftBox>
         </Grid>
         <Grid item xs={12} lg={8} sx={{ textAlign: "center" }}>
-          <SoftTypography variant="body2" color="secondary">
+          <SoftTypography variant="body2" color="secondary" fontSize={'0.8rem'}>
             Copyright &copy; {new Date().getFullYear()} by EMA SERVICIOS S.A. - R.N.P.S.P. N° 95
           </SoftTypography>
         </Grid>

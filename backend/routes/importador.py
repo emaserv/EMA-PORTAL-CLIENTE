@@ -29,7 +29,7 @@ def uploadFileAndData():
 
     try:
         data_dict = json.loads(json_data)
-        data = XSLXtoJSONconverter(file)
+        data = XSLXtoJSONconverter(file, data_dict.get('idFormato'))
 
         JSONsaver(file, data)
 
@@ -66,9 +66,15 @@ def uploadFileAndData():
         return {'error': str(e)}, 500
 
 
-def XSLXtoJSONconverter(file):
+def XSLXtoJSONconverter(file, idFormato):
     # Convierte el archivo Excel directamente a un objeto JSON
-    excel_data = pd.read_excel(file)
+
+    #si es de emaservicios, lo que hago es skippear la primer linea
+    if idFormato == 2:
+        excel_data = pd.read_excel(file, skiprows=1)
+    else:
+        excel_data = pd.read_excel(file)
+
     data_json = excel_data.to_json(orient="records", date_format='iso')
     data = json.loads(data_json)
 

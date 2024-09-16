@@ -5,7 +5,7 @@ import SoftButton from 'components/SoftButton';
 import { API_BACK } from 'config';
 import axios from 'axios';
 import { useForm, Controller } from 'react-hook-form';
-import CoverLayout from 'layouts/auth/components/CoverLayout';
+import CoverLayout  from 'layouts/auth/components/CoverLayout';
 import logoEma from 'assets/images/Portal-Cliente-Images/Logo-ema.png';
 import SoftInputBase from 'components/SoftInputBase';
 import { useAuth } from 'layouts/auth/AuthContext'; // Importa el hook useAuth del contexto de autenticación
@@ -51,10 +51,10 @@ const SignIn = () => {
 
   return (
     <CoverLayout
-      title="Bienvenido a Portal Clientes!"
+      title={"Bienvenido a" + "              " + "Portal Clientes"}
       description="Ingrese sus credenciales para iniciar sesión"
       image={logoEma}
-      top="15rem"
+      top="5rem"
     >
       <SoftBox sx={{alignItems: 'center'}}>
         <form onSubmit={handleSubmit(onSubmit)}>

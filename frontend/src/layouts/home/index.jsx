@@ -101,12 +101,12 @@ const Home = () => {
                 </div>
               </Grid>
               :
-              <></>
+              null
               }
               <Grid
                 sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                 item
-                xs={10}
+                xs={15}
               >
                 <div className="content" display="flex">
                   <Link to="/fecha-cliente">
@@ -124,7 +124,7 @@ const Home = () => {
               <Grid
                 sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                 item
-                xs={10}
+                xs={1}
               >
                 <div className="content" display="flex">
                   <Link to="/radio-cliente">
@@ -139,7 +139,7 @@ const Home = () => {
                   </Link>
                 </div>
               </Grid>
-            </Grid> : <></>
+            </Grid> : null
             }
           </SoftBox>
 
@@ -157,8 +157,8 @@ const Home = () => {
               <SoftBox
                 height="100%" // Asegúrate de que el SoftBox ocupe el 100% de la altura del contenedor
                 display={{ xs: "none", md: "block" }}
-                position="relative"
-                right={{ md: "-1rem", xl: "-1rem" }}
+                position="absolute"
+                right={{ md: "-2rem", xl: "-5rem" }}
                 mr={-16}
                 sx={{
                   transform: "skewX(-10deg)",
