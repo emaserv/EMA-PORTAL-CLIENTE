@@ -4,11 +4,42 @@ import json
 from flask import Blueprint, jsonify, request, current_app, json
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
+from datetime import datetime
 
 fechaCliente = Blueprint('fechaCliente', __name__)
 
 def get_column_names(model):
     return [column.name for column in model.__table__.columns]
+
+def format_time(time_str):
+    try:
+        # Intenta parsear con formato de horas:minutos:segundos
+        dt = datetime.strptime(time_str, '%H:%M:%S')
+    except ValueError:
+        try:
+            # Intenta parsear con formato de horas:minutos:segundos:milisegundos
+            dt = datetime.strptime(time_str, '%H:%M:%S.%f')
+        except ValueError:
+            # Si el formato no es válido, lanza un error
+            return None
+
+    # Devuelve solo horas y minutos en formato HH:MM
+    return dt.strftime('%H:%M')
+
+def format_date(date_str):
+    print('AAAAAAAA', date_str)
+    try:
+        anio = date_str[2:4]
+        mes = date_str[5:7]
+        dia = date_str[8:10]
+        print("anioo", anio, mes, dia)
+
+        nuevaFecha = dia + "/" + mes + "/" + anio
+
+    except ValueError:
+        return None
+    
+    return nuevaFecha
 
 @fechaCliente.route('/api/fecha-cliente', methods=['GET'])
 def tablaFC():
@@ -31,45 +62,57 @@ def tablaFC():
             where_clauses.append('fc."nroCliente" = :numeroCliente')
             qParams['numeroCliente'] = numeroCliente
 
-        # Verifica si se proporcionan ambos parámetros de fecha para usar BETWEEN
         if fechaDesde != '' and fechaHasta != '':
             where_clauses.append('fc."fecha" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
         elif fechaDesde != '':
-            # Si solo se proporciona fechaDesde, busca desde esa fecha en adelante
             where_clauses.append('fc."fecha" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
         elif fechaHasta != '':
-            # Si solo se proporciona fechaHasta, busca hasta esa fecha
             where_clauses.append('fc."fecha" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
+        # Combine WHERE clause if conditions are present
         if where_clauses:
             where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = text(queryBase + where_clause)
+            query = queryBase + where_clause
         else:
-            query = text(queryBase)
+            query = queryBase
+
+        # Add the ORDER BY clause before converting to a TextClause
+        query += ' ORDER BY fc."nroCliente", fc."fecha" DESC'  # You can modify the column and order (ASC/DESC) as needed
+
+        # Convert to TextClause after full query is ready
+        query = text(query)
 
         with DatabaseSession().get_session() as session:
             data_query = session.execute(query, qParams)
-                
+
         datosPiezasPostales = []
 
         for row in data_query:
-            # Solo traigo estas columnas porque las demás no las necesito
             datosPiezasPostales.append({
+                'id': row.id,                
+                'fechaEmision': format_date(row.fechaEmision),
                 'grupoCliente': row.grupoCliente,
                 'nroCliente': row.nroCliente,
                 'titular': row.titular,
                 'plan': row.planTurno,
                 'sucursal': row.sucursal,
                 'radio': row.radio,
+                'direccion': row.direccion,
+                'localidad': row.localidad,
+                'fecha': format_date(row.fecha),
+                'hora': format_time(row.hora),  # Usa la función de formateo aquí
                 'estadoPieza': row.estadoPieza,
+                'obsVisita': row.obsVisita,
                 'geoVisita': row.geoVisita,
                 'foto': row.foto,
-                'fecha': row.fecha
+                'firma': row.firma
             })
+
+        print("AAAAA", datosPiezasPostales)
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 404

@@ -28,3 +28,4 @@ class ItemEmision(db.Model):
     localidad = db.Column(db.Text)
     firma = db.Column(db.Text)
     altura = db.Column(db.Text)
+    fechaEmision = db.Column(db.Text)

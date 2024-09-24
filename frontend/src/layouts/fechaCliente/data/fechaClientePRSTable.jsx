@@ -20,6 +20,8 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import PhotoIcon from "@mui/icons-material/Photo";
 import MapIcon from "@mui/icons-material/Map";
+import Edit from "@mui/icons-material/Edit";
+import { Tooltip } from "@mui/material";
 
 dayjs.locale("ES");
 
@@ -27,7 +29,7 @@ const toDate = (dayjsObject) =>
   new Date(dayjsObject.year(), dayjsObject.month(), dayjsObject.date());
 const todayGMT3 = dayjs().subtract(3, "hour");
 
-export default function EnhancedTable({ data, columns }) {
+export default function PRSTable({ data, columns }) {
   const [order, setOrder] = React.useState("asc");
   const [orderBy, setOrderBy] = React.useState("cantidadDePiezas");
   const [selected, setSelected] = React.useState([]);
@@ -141,12 +143,6 @@ export default function EnhancedTable({ data, columns }) {
 
   const headCells = [
     {
-      id: "grupoCliente",
-      numeric: false,
-      disablePadding: false,
-      label: "Cliente",
-    },
-    {
       id: "nroCliente",
       numeric: false,
       disablePadding: false,
@@ -177,10 +173,35 @@ export default function EnhancedTable({ data, columns }) {
       label: "Radio",
     },
     {
+      id: "localidad",
+      numeric: false,
+      disablePadding: false,
+      label: "Localidad",
+    },
+    {
+      id: "fecha",
+      numeric: false,
+      disablePadding: false,
+      label: "Fecha",
+    },
+    {
+      id: "hora",
+      numeric: false,
+      disablePadding: false,
+      label: "Hora",
+    },
+    {
       id: "estadoPieza",
       numeric: false,
       disablePadding: false,
       label: "Estado",
+      
+    },
+    {
+      id: "obsVisita",
+      numeric: false,
+      disablePadding: false,
+      label: "Obs. Visita",
     },
     {
       id: "geoVisita",
@@ -188,11 +209,18 @@ export default function EnhancedTable({ data, columns }) {
       disablePadding: false,
       label: "Geo. Visita",
     },
+    
     {
       id: "foto",
       numeric: false,
       disablePadding: false,
       label: "Foto",
+    },
+    {
+      id: "firma",
+      numeric: false,
+      disablePadding: false,
+      label: "Firma",
     },
   ];
 
@@ -317,6 +345,18 @@ export default function EnhancedTable({ data, columns }) {
     endDate: PropTypes.instanceOf(Date),
   };
 
+  const truncarTexto = (texto, limite) => {
+    console.log("WASAAAAAA", texto);
+    if (!texto || typeof texto !== 'string') {
+      return ''; // O devuelve otro valor predeterminado si lo prefieres
+    }
+  
+    if (texto.length > limite) {
+      return texto.substring(0, limite) + '...';
+    }
+    return texto;
+  };
+
   const visibleRows = React.useMemo(
     () =>
       data
@@ -374,8 +414,11 @@ export default function EnhancedTable({ data, columns }) {
                         //Con esto oculto la columna que tiene el id
                         //NO BORRAR LA COLUMNA ID PORQUE SI NO SE ROMPE LA TABLA
                         column !== "id" &&
+                        column !== "fechaEmision" &&
+                        column !== "grupoCliente" &&
                         column !== "geoVisita" &&
-                        column !== "fecha" &&
+                        column !== "firma" &&
+                        column !== "direccion" &&
                         column !== "foto" && (
                           <TableCell
                             key={`${row.id}-${column}`}
@@ -387,7 +430,9 @@ export default function EnhancedTable({ data, columns }) {
                             }}
                           >
                             {column !== "porcentaje" ? (
-                              row[column]
+                              <Tooltip title={row[column] ? row[column] : 'Sin información'}>
+                              <span>{truncarTexto(row[column], 12)}</span>
+                            </Tooltip>
                             ) : (
                               <Completion value={row[column]} color="info" />
                             )}
@@ -395,36 +440,75 @@ export default function EnhancedTable({ data, columns }) {
                         )
                     )}
 
-                    <TableCell
-                      id={`${row.id}`}
-                      sx={{
-                        paddingTop: "2px",
-                        paddingBottom: "0px",
-                        paddingLeft: "2.5rem"
-                      }}
-                    >
-                      <Link
-                        to={row.geoVisita}
-                        style={{ textDecoration: "none", color: row.geoVisita ? "#4682B4" : "#D3D3D3" }} // Elimina el subrayado del enlace
-                      >
-                        <MapIcon fontSize="medium" />
-                      </Link>
-                    </TableCell>
+                      
+{row.estadoPieza !== "NR" ? (
+                        <TableCell
+                          id={`${row.id}-geoVisita-1`}
+                          sx={{
+                            paddingTop: "2px",
+                            paddingBottom: "0px",
+                            paddingLeft: "2.5rem",
+                          }}
+                        >
+                          <a
+                            href={row.geoVisita ? row.geoVisita : "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              textDecoration: "none",
+                              color: row.geoVisita ? "#4682B4" : "#D3D3D3",
+                            }}
+                          >
+                            <MapIcon fontSize="medium" />
+                          </a>
+                        </TableCell>
+                        ) : null}
 
-                    <TableCell
-                      id={`${row.id}`}
-                      sx={{
-                        paddingTop: "2px",
-                        paddingBottom: "0px",
-                      }}
-                    >
-                      <Link
-                        to={row.foto}
-                        style={{ textDecoration: "none", color: row.foto ? "#4682B4" : "#D3D3D3" }} // Elimina el subrayado del enlace
-                      >
-                        <PhotoIcon fontSize="medium" />
-                      </Link>
-                    </TableCell>
+                        {row.estadoPieza !== "NR" ? (
+                          <TableCell
+                            id={`${row.id}-foto-1`}
+                            sx={{
+                              paddingTop: "2px",
+                              paddingBottom: "0px",
+                            }}
+                          >
+                            <a
+                              href={row.foto ? row.foto : "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                textDecoration: "none",
+                                color: row.foto ? "#4682B4" : "#D3D3D3",
+                              }}
+                            >
+                              <PhotoIcon fontSize="medium" />
+                            </a>
+                          </TableCell>
+                        ) : null}
+
+                        {row.estadoPieza !== "NR" ? (
+                          <TableCell
+                            id={`${row.id}-firma-1`}
+                            sx={{
+                              paddingTop: "2px",
+                              paddingBottom: "0px",
+                            }}
+                          >
+                            <a
+                              href={row.firma !== '-' ? row.firma : "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                textDecoration: "none",
+                                color: row.firma !== '-' ? "#4682B4" : "#D3D3D3",
+                                pointerEvents: row.firma !== '-' ? "auto" : "none", // Deshabilita el click si es '-'
+                                cursor: row.firma !== '-' ? "pointer" : "not-allowed",
+                              }}
+                            >
+                              <Edit fontSize="medium" />
+                            </a>
+                          </TableCell>
+                        ) : null}
                   </TableRow>
                 );
               })}
@@ -466,7 +550,7 @@ export default function EnhancedTable({ data, columns }) {
   );
 }
 
-EnhancedTable.propTypes = {
+PRSTable.propTypes = {
   data: PropTypes.array.isRequired,
   columns: PropTypes.array.isRequired,
   control: PropTypes.object.isRequired,

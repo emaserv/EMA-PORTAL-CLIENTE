@@ -57,7 +57,7 @@ def login():
             return jsonify({"message": "Bad username or password"}), 401
     
     except Exception as e:
-        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 401
     
 @auth.route('/protected', methods=['GET'])
 @jwt_required()

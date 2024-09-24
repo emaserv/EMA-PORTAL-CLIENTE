@@ -50,6 +50,7 @@ app.register_blueprint(GrupoClienteBluePrint)
 from models.cliente import GrupoCliente
 from models.emision import Emision, ItemEmision
 from models.usuario import Credencial, Usuario
+from models.dai import Dai
 
 if __name__ == "__main__":
     with app.app_context():

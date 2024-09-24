@@ -2,7 +2,8 @@ import os
 import pandas as pd
 import json
 from flask import Blueprint, jsonify, request, current_app, json
-from services.emision import adapterEmisionCSV, factoryAdapterEmision
+from services.emision import factoryAdapterArchivo
+from services.emision import adapterEmisionCSV
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
 
@@ -34,30 +35,50 @@ def uploadFileAndData():
         JSONsaver(file, data)
 
         with DatabaseSession().get_session() as session:
-            emision = adapterEmisionCSV.leerEmision(file.filename)   
+            if data_dict.get('idFormato') == 1 or data_dict.get('idFormato') == 2:
+                emision = adapterEmisionCSV.leerEmision(file.filename)   
+                
+                adapterLeerExcel = factoryAdapterArchivo.getAdapterByFormat(data_dict.get('idFormato'))
+                print(adapterLeerExcel)
+
+                print("pase x aca 1")
+                print(data)
+
+                for entry in data:
+                    print("pase x aca 2")   
+                    print(entry)
+
+                    itemEmision = adapterLeerExcel.leerItemEmision(entry, emision.id)
+
+                    print(itemEmision)
+                    print("pase x aca 4")
+
+                    if itemEmision:
+                        emision.itemsEmision.append(itemEmision)
+                        print("pase x aca 5")
+
+                session.add(emision)
+                session.commit()
             
-            adapterLeerExcel = factoryAdapterEmision.getAdapterByFormat(data_dict.get('idFormato'))
-            print(adapterLeerExcel)
+            elif data_dict.get('idFormato') == 3:                
+                adapterLeerExcel = factoryAdapterArchivo.getAdapterByFormat(data_dict.get('idFormato'))
+                print(adapterLeerExcel)
 
-            print("pase x aca 1")
-            print(data)
+                print("pase x aca 1")
+                print(data)
 
-            for entry in data:
-                print("pase x aca 2")   
-                print(entry)
+                for entry in data:
+                    print("pase x aca 2")   
+                    print(entry)
 
-                itemEmision = adapterLeerExcel.leerItemEmision(entry, emision.id)
+                    dai = adapterLeerExcel.leerDAI(entry)
 
-                print(itemEmision)
-                print("pase x aca 4")
+                    print(dai)
+                    print("pase x aca 4")
 
-                if itemEmision:
-                    emision.itemsEmision.append(itemEmision)
-                    print("pase x aca 5")
-
+                    session.add(dai)    
+                    session.commit()
             
-            session.add(emision)
-            session.commit()
 
         return {'message': 'File uploaded and converted to JSON successfully'}, 200
     except Exception as e:

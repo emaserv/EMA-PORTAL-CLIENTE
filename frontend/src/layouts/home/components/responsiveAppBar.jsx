@@ -24,8 +24,6 @@ function ResponsiveAppBar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  console.log("EASASA", user)
-
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
   };

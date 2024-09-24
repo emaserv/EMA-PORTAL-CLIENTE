@@ -19,11 +19,11 @@ import SoftTypography from "components/SoftTypography";
 import DropFileInput from "components/DropFileInput";
 import DropdownList from "components/DropdownList";
 
-import axios from 'axios';
+import axios from "axios";
 
 //IMPORTO URL BACK
-import { API_BACK } from '../../config';
-import { useAuth } from 'layouts/auth/AuthContext';
+import { API_BACK } from "../../config";
+import { useAuth } from "layouts/auth/AuthContext";
 
 const Home = () => {
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
@@ -31,10 +31,14 @@ const Home = () => {
   const { handleSubmit, control } = useForm();
   const { user } = useAuth();
 
-    // Estado para la pantalla de cargas de los archivos
-    const [loading, setLoading] = useState(false);
+  // Estado para la pantalla de cargas de los archivos
+  const [loading, setLoading] = useState(false);
 
-  const opciones = [{id: 1, nombre: "PSM"}, {id: 2, nombre: "EMASERVICIOS"}]
+  const opciones = [
+    { id: 1, nombre: "PSM" },
+    { id: 2, nombre: "EMASERVICIOS" },
+    { id: 3, nombre: "DAI"},
+  ];
 
   //CAMBIAR ESTA FUNCION
   const onSubmit = async (data) => {
@@ -42,23 +46,26 @@ const Home = () => {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', fileName);
-      formData.append('data', JSON.stringify({
-        idFormato: data.idFormato,
-        file: data.file,
-      }));
-  
+      formData.append("file", fileName);
+      formData.append(
+        "data",
+        JSON.stringify({
+          idFormato: data.idFormato,
+          file: data.file,
+        })
+      );
+
       // Imprimir el contenido del FormData
       for (const [key, value] of formData.entries()) {
         console.log(`${key}:`, value);
       }
-  
+
       const response = await axios.post(`${API_BACK}/api/upload`, formData);
-  
+      console.log(response)
       setLoading(false);
       setFileName(null);
     } catch (error) {
-      console.error('Error completo:', error);
+      console.error("Error completo:", error);
       setLoading(false);
     }
   };
@@ -80,67 +87,74 @@ const Home = () => {
           style={{ display: "flex", alignItems: "center" }}
         >
           <SoftBox marginTop="3rem">
-          {user ? 
-            <Grid container spacing={3} marginLeft="7rem" marginRight="-15rem">
-              {user.idGrupoCliente === null ? 
+            {user ? (
               <Grid
-                sx={{ textAlign: "left" }} // Centering the text
-                item
-                xs={10}
+                container
+                spacing={3}
+                marginLeft="7rem"
+                marginRight="-15rem"
               >
-                <div className="content" display="flex">
-                  <SoftButton
-                    variant="gradient"
-                    color="info"
-                    size="large"
-                    sx={{ width: "30rem" }}
-                    onClick={() => cambiarEstadoPopUp1(!estadoPopUp1)}
+                {user.idGrupoCliente === null ? (
+                  <Grid
+                    sx={{ textAlign: "left" }} // Centering the text
+                    item
+                    xs={10}
                   >
-                    Importar Archivo
-                  </SoftButton>
-                </div>
+                    <div className="content" display="flex">
+                      <SoftButton
+                        variant="gradient"
+                        color="info"
+                        size="large"
+                        sx={{ width: "30rem" }}
+                        onClick={() => cambiarEstadoPopUp1(!estadoPopUp1)}
+                      >
+                        Importar Archivo
+                      </SoftButton>
+                    </div>
+                  </Grid>
+                ) : null}
+
+                <Grid
+                  sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
+                  item
+                  xs={15}
+                >
+                  <div className="content" display="flex">
+                    <Link to="/fecha-cliente">
+                      <SoftButton
+                        variant="gradient"
+                        color="info"
+                        size="large"
+                        sx={{ width: "30rem" }}
+                      >
+                        Consulta por Cliente
+                      </SoftButton>
+                    </Link>
+                  </div>
+                </Grid>
+
+                {user.idGrupoCliente !== 4 ? (
+                  <Grid
+                    sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
+                    item
+                    xs={1}
+                  >
+                    <div className="content" display="flex">
+                      <Link to="/radio-cliente">
+                        <SoftButton
+                          variant="gradient"
+                          color="info"
+                          size="large"
+                          sx={{ width: "30rem" }}
+                        >
+                          Consulta por Radio
+                        </SoftButton>
+                      </Link>
+                    </div>
+                  </Grid>
+                ) : null}
               </Grid>
-              :
-              null
-              }
-              <Grid
-                sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
-                item
-                xs={15}
-              >
-                <div className="content" display="flex">
-                  <Link to="/fecha-cliente">
-                    <SoftButton
-                      variant="gradient"
-                      color="info"
-                      size="large"
-                      sx={{ width: "30rem" }}
-                    >
-                      Consulta por Cliente
-                    </SoftButton>
-                  </Link>
-                </div>
-              </Grid>
-              <Grid
-                sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
-                item
-                xs={1}
-              >
-                <div className="content" display="flex">
-                  <Link to="/radio-cliente">
-                    <SoftButton
-                      variant="gradient"
-                      color="info"
-                      size="large"
-                      sx={{ width: "30rem" }}
-                    >
-                      Consulta por Radio
-                    </SoftButton>
-                  </Link>
-                </div>
-              </Grid>
-            </Grid> : null
-            }
+            ) : null}
           </SoftBox>
 
           <Grid
@@ -213,27 +227,37 @@ const Home = () => {
               alignItems="center"
               pt={1}
             >
-              <SoftTypography variant="button" fontWeight="medium" color="dark" px={1}>
-                  Formato
-                </SoftTypography>
-                <SoftBox display="flex" justifyContent="space-between" alignItems="center">
-                  <Controller
-                    name="idFormato"
-                    control={control}
-                    defaultValue={null}
-                    render={({ field }) => (
-                      <DropdownList
-                        onChange={(selectedValue) => field.onChange(selectedValue)}
-                        width="30vw"
-                        list={opciones}
-                        placeholder="Tipo de Formato"
-                        campoAMostrar="nombre"
-                        campoID="id"
-                      />
-                    )}
-                  />
-                </SoftBox>
-            
+              <SoftTypography
+                variant="button"
+                fontWeight="medium"
+                color="dark"
+                px={1}
+              >
+                Formato
+              </SoftTypography>
+              <SoftBox
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Controller
+                  name="idFormato"
+                  control={control}
+                  defaultValue={null}
+                  render={({ field }) => (
+                    <DropdownList
+                      onChange={(selectedValue) =>
+                        field.onChange(selectedValue)
+                      }
+                      width="30vw"
+                      list={opciones}
+                      placeholder="Tipo de Formato"
+                      campoAMostrar="nombre"
+                      campoID="id"
+                    />
+                  )}
+                />
+              </SoftBox>
             </SoftBox>
 
             <SoftBox
@@ -265,14 +289,19 @@ const Home = () => {
                   "linear-gradient(45deg, #0D47A1, #1976D2, #2196F3, #64B5F6, #BBDEFB)",
               }}
             >
-              <input type='submit' value='Cargar Archivo' style={{
-                background: 'transparent', border: 'none',
-                fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                fontSize: '0.875rem',
-                fontWeight: '700',
-                color: '#FFFFFF',
-                textTransform: 'uppercase'
-              }} />
+              <input
+                type="submit"
+                value="Cargar Archivo"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+                  fontSize: "0.875rem",
+                  fontWeight: "700",
+                  color: "#FFFFFF",
+                  textTransform: "uppercase",
+                }}
+              />
             </SoftButton>
           </Contenido>
         </form>
@@ -280,21 +309,28 @@ const Home = () => {
 
       <PopUp
         estado={loading}
-        titulo="Nuevo"
+        titulo=""
         mostrarHeader={true}
         mostrarOverlay={true}
-        posicionModal={'center'}
-        padding={'0px'}
-        width={'30vw'}
-        height={'10vh'}
+        posicionModal={"center"}
+        padding={"0px"}
+        width={"30vw"}
+        height={"10vh"}
       >
         <Contenido>
-          <SoftTypography variant="button" fontWeight="medium" color="dark" alignItems="center" justifyContent="center" px={3} py={4}>
+          <SoftTypography
+            variant="button"
+            fontWeight="medium"
+            color="dark"
+            alignItems="center"
+            justifyContent="center"
+            px={3}
+            py={4}
+          >
             Aguarde, su archivo esta siendo cargado...
           </SoftTypography>
         </Contenido>
       </PopUp>
-
     </>
   );
 };

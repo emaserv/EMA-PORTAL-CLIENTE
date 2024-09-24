@@ -10,6 +10,7 @@ import { useForm, Controller } from "react-hook-form";
 import EnhancedTable from "./data/radioClienteTable";
 import { API_BACK } from "../../config";
 import { useAuth } from "layouts/auth/AuthContext";
+import MyMap from "./components/mapa";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -26,7 +27,11 @@ const RadioCliente = () => {
     control,
     formState: { errors },
   } = useForm();
+
   const [allData, setAllData] = useState([]);
+  const [puntosMapa, setPuntosMapa] = useState([]);
+  const [puntosMapaFiltrados, setPuntosMapaFiltrados] = useState([]);
+  const [caminoMapa, setCaminoMapa] = useState([]);
   const [columns, setColumns] = useState([]);
   const [filtroFechaDesde, setFiltroFechaDesde] = useState(null);
   const [filtroFechaHasta, setFiltroFechaHasta] = useState(null);
@@ -35,57 +40,125 @@ const RadioCliente = () => {
   const [filtroRadio, setFiltroRadio] = useState(null);
   const [datosFiltrados, setDatosFiltrados] = useState([]);
 
-  const onSubmit = async (data) => {
-    try {
-      const fechaDesde = data.fechaDesde
-        ? DataConverter(data.fechaDesde)
-        : null;
-      const fechaHasta = data.fechaHasta
-        ? DataConverter(data.fechaHasta)
-        : null;
+  const onSubmit = (data) => {
+    console.log(data);
+    const fechaDesde = data.fechaDesde ? DataConverter(data.fechaDesde) : null;
+    const fechaHasta = data.fechaHasta ? DataConverter(data.fechaHasta) : null;
 
-      setFiltroPlan(data.plan || null);
-      setFiltroSucursal(data.sucursal || null);
-      setFiltroRadio(data.radio || null);
-      setFiltroFechaDesde(fechaDesde);
-      setFiltroFechaHasta(fechaHasta);
+    setFiltroPlan(data.plan || null);
+    setFiltroSucursal(data.sucursal || null);
+    setFiltroRadio(data.radio || null);
+    setFiltroFechaDesde(fechaDesde);
+    setFiltroFechaHasta(fechaHasta);
 
-      fetchData(data.plan || null, data.sucursal || null, data.radio || null, fechaDesde, fechaHasta);
-    } catch (error) {
-      console.log("Error en el submit:", error);
-    }
+    fetchData(
+      data.plan || null,
+      data.sucursal || null,
+      data.radio || null,
+      fechaDesde,
+      fechaHasta
+    );
   };
 
-  const fetchData = (plan, sucursal, radio, fechaDesde, fechaHasta) => {
+  const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
     if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta) {
       setAllData([]);
+      setPuntosMapa([]);
+      setCaminoMapa([]);
       setDatosFiltrados([]);
       return;
     }
 
-    fetch(
-      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${
-        user.idGrupoCliente
-      }&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
-    )
-      .then((response) => response.json())
-      .then((apiData) => {
-        if (apiData.dataTabla) {
-          setAllData(apiData.dataTabla);
-          setColumns(apiData.columns);
-          filtrarDatos(apiData.dataTabla, plan, sucursal, radio, fechaDesde, fechaHasta);
-        } else {
-          console.error("No se recibieron datos de la API");
-          setAllData([]);
+    // Primera solicitud: geoMapaItems
+    try {
+      const url = new URL(`${API_BACK}/api/geoMapaItems`);
+      const params = {
+        plan: plan || "",
+        sucursal: sucursal || "",
+        radio: radio || "",
+        grupoCliente: user.idGrupoCliente || "",
+        fechaDesde: fechaDesde || "",
+        fechaHasta: fechaHasta || "",
+      };
+
+      // Agregamos los parámetros a la URL sólo si tienen un valor
+      Object.keys(params).forEach((key) => {
+        if (params[key]) {
+          url.searchParams.append(key, params[key]);
         }
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-        setAllData([]);
       });
+
+      // Hacemos la petición con fetch
+      const response = await fetch(url);
+
+      console.log("API:", response); // Verifica la respuesta completa
+      const apiData1 = await response.json();
+      console.log("Datos de la API:", apiData1);
+      if (apiData1.dataTabla) {
+        console.log("PuntosMapa data:", apiData1.dataTabla);
+        setPuntosMapa(apiData1.dataTabla);
+        setColumns(apiData1.columns);
+        filtrarPuntosMapa(
+          apiData1.dataTabla,
+          plan,
+          sucursal,
+          radio,
+          fechaDesde,
+          fechaHasta
+        );
+      } else {
+        console.error("No se recibieron datos de geoMapaItems API");
+        setPuntosMapa([]);
+      }
+    } catch (error) {
+      console.log("error", error)
+    }
+
+    try {
+    // Segunda solicitud: radio-cliente
+    const response2 = await fetch(
+      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
+        sucursal || ""
+      }&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${
+        fechaDesde || ""
+      }&fechaHasta=${fechaHasta || ""}`
+    );
+
+    if (!response2.ok) {
+      throw new Error("Error en la respuesta de radio-cliente");
+    }
+
+    const apiData2 = await response2.json();
+    console.log("Response from radio-cliente API:", apiData2); // Verifica la respuesta completa
+
+    if (apiData2.dataTabla) {
+      setAllData(apiData2.dataTabla);
+      setColumns(apiData2.columns);
+      filtrarDatos(
+        apiData2.dataTabla,
+        plan,
+        sucursal,
+        radio,
+        fechaDesde,
+        fechaHasta
+      );
+    } else {
+      console.error("No se recibieron datos de radio-cliente API");
+      setAllData([]);
+    }
+  } catch (error) {
+    console.log("error", error)
+  }
   };
 
-  const filtrarDatos = (data, plan, sucursal, radio, fechaDesde, fechaHasta) => {
+  const filtrarDatos = (
+    data,
+    plan,
+    sucursal,
+    radio,
+    fechaDesde,
+    fechaHasta
+  ) => {
     const datosFiltrados = data.filter((item) => {
       const itemFecha = new Date(item.fecha).toISOString().split("T")[0]; // Formato YYYY-MM-DD
 
@@ -95,10 +168,59 @@ const RadioCliente = () => {
       const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
       const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
 
-      return cumplePlan && cumpleSucursal && cumpleRadio && cumpleFechaDesde && cumpleFechaHasta;
+      return (
+        cumplePlan &&
+        cumpleSucursal &&
+        cumpleRadio &&
+        cumpleFechaDesde &&
+        cumpleFechaHasta
+      );
     });
 
+    console.log("dataaa", datosFiltrados);
+
     setDatosFiltrados(datosFiltrados);
+  };
+
+  const filtrarPuntosMapa = (
+    data,
+    plan,
+    sucursal,
+    radio,
+    fechaDesde,
+    fechaHasta
+  ) => {
+    const puntosFiltrados = data.filter((item) => {
+      const itemFecha = ""; // new Date(item.fechaDistrib).toISOString().split("T")[0]; // Formato YYYY-MM-DD
+
+      const cumplePlan = plan ? item.plan === plan : true;
+      const cumpleSucursal = sucursal ? item.sucursal === sucursal : true;
+      const cumpleRadio = radio ? item.radio === radio : true;
+      //const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
+      //const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
+
+      return cumplePlan && cumpleSucursal && cumpleRadio; // && cumpleFechaDesde && cumpleFechaHasta;
+    });
+
+    console.log("puntosFiltrados", puntosFiltrados);
+
+    setPuntosMapaFiltrados(puntosFiltrados);
+    console.log("puntosFiltrados", puntosMapaFiltrados);
+  };
+
+  const armarArrayCoordenadas = (data) => {
+    console.log("aaa", data);
+    let arrayCoordenadas = [];
+
+    for (let i = 0; i < data.length; i++) {
+      // Genera valores aleatorios de longitud y latitud
+      const latitud = parseFloat(data[i].latitud); // Latitud entre -90 y 90
+      const longitud = parseFloat(data[i].longitud); // Longitud entre -180 y 180
+      arrayCoordenadas.push([latitud, longitud]);
+    }
+
+    console.log("PRINT ARRAY COORD", arrayCoordenadas);
+    return arrayCoordenadas;
   };
 
   return (
@@ -132,7 +254,11 @@ const RadioCliente = () => {
                         error={!!errors.plan} // Muestra borde rojo si hay error
                       />
                       {errors.plan && (
-                        <SoftTypography color="error" fontSize="1rem"marginTop={1}>
+                        <SoftTypography
+                          color="error"
+                          fontSize="1rem"
+                          marginTop={1}
+                        >
                           {errors.plan.message}
                         </SoftTypography>
                       )}
@@ -155,7 +281,11 @@ const RadioCliente = () => {
                         error={!!errors.sucursal} // Muestra borde rojo si hay error
                       />
                       {errors.sucursal && (
-                        <SoftTypography color="error" fontSize="1rem"marginTop={1}>
+                        <SoftTypography
+                          color="error"
+                          fontSize="1rem"
+                          marginTop={1}
+                        >
                           {errors.sucursal.message}
                         </SoftTypography>
                       )}
@@ -163,7 +293,6 @@ const RadioCliente = () => {
                   )}
                 />
               </SoftBox>
-
 
               <SoftBox>
                 <SoftTypography marginTop={-2}>Radio</SoftTypography>
@@ -179,7 +308,11 @@ const RadioCliente = () => {
                         error={!!errors.radio} // Muestra borde rojo si hay error
                       />
                       {errors.radio && (
-                        <SoftTypography color="error" fontSize="1rem"marginTop={1}>
+                        <SoftTypography
+                          color="error"
+                          fontSize="1rem"
+                          marginTop={1}
+                        >
                           {errors.radio.message}
                         </SoftTypography>
                       )}
@@ -188,7 +321,6 @@ const RadioCliente = () => {
                 />
               </SoftBox>
 
-              
               <SoftBox display="flex" flexDirection="column" marginTop={-2}>
                 <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
                 <SoftBox display="flex" alignItems="center">
@@ -235,6 +367,16 @@ const RadioCliente = () => {
       </Card>
 
       <SoftBox py={3} style={{ width: "80%" }} justifyContent="center">
+        <SoftBox justifyContent="center">
+          <Card>
+            <SoftBox p={3}>
+              <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />
+            </SoftBox>
+          </Card>
+        </SoftBox>
+      </SoftBox>
+
+      <SoftBox style={{ width: "80%" }} justifyContent="center">
         <SoftBox justifyContent="center">
           <Card>
             <SoftBox p={3}>

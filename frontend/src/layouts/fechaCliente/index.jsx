@@ -1,4 +1,4 @@
-import { React, useState } from "react";
+import { React, useState, useEffect } from "react";
 import SoftBox from "components/SoftBox";
 import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
 import { Card, Divider } from "@mui/material";
@@ -7,9 +7,10 @@ import SoftButton from "components/SoftButton";
 import DatePickerValue from "components/DatePicker";
 import SoftInputBase from "components/SoftInputBase";
 import { useForm, Controller } from "react-hook-form";
-import EnhancedTable from "./data/fechaClienteTable";
+import PRSTable from "./data/fechaClientePRSTable";
 import { API_BACK } from "../../config";
 import { useAuth } from "layouts/auth/AuthContext";
+import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -81,13 +82,37 @@ const FechaCliente = () => {
       });
   };
 
+  const convertirFecha = (fechaStr) => {
+    const partes = fechaStr.split("/");
+    if (partes.length === 3) {
+      // Ajusta el año para el formato de 2 dígitos
+      const año = partes[2].length === 2 ? `20${partes[2]}` : partes[2];
+      return new Date(`${año}-${partes[1]}-${partes[0]}`);
+    }
+    return new Date(); // Retorna una fecha inválida si el formato no es el esperado
+  };
+
   const filtrarDatos = (data, cliente, fechaDesde, fechaHasta) => {
+    // Convierte fechaDesde y fechaHasta a objetos Date si son cadenas
+    const fechaDesdeDate = fechaDesde ? convertirFecha(fechaDesde) : null;
+    const fechaHastaDate = fechaHasta ? convertirFecha(fechaHasta) : null;
+
     const datosFiltrados = data.filter((item) => {
-      const itemFecha = new Date(item.fecha).toISOString().split("T")[0]; // Formato YYYY-MM-DD
+      const itemFecha = convertirFecha(item.fecha);
+
+      // Verifica si item.fecha es una fecha válida
+      if (isNaN(itemFecha.getTime())) {
+        console.error("Fecha inválida en item:", item.fecha);
+        return false;
+      }
 
       const cumpleCliente = cliente ? item.nroCliente === cliente : true;
-      const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
-      const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
+      const cumpleFechaDesde = fechaDesdeDate
+        ? itemFecha >= fechaDesdeDate
+        : true;
+      const cumpleFechaHasta = fechaHastaDate
+        ? itemFecha <= fechaHastaDate
+        : true;
 
       return cumpleCliente && cumpleFechaDesde && cumpleFechaHasta;
     });
@@ -101,7 +126,7 @@ const FechaCliente = () => {
         <ResponsiveAppBar />
       </SoftBox>
 
-      <Card style={{ marginTop: "7rem", width: "80%" }}>
+      <Card style={{ marginTop: "7rem", width: "90%" }}>
         <SoftBox p={3}>
           <SoftTypography variant="h4">Filtros</SoftTypography>
           <Divider />
@@ -126,7 +151,11 @@ const FechaCliente = () => {
                         error={!!errors.numCliente} // Muestra borde rojo si hay error
                       />
                       {errors.numCliente && (
-                        <SoftTypography color="error" fontSize="1rem"marginTop={1}>
+                        <SoftTypography
+                          color="error"
+                          fontSize="1rem"
+                          marginTop={1}
+                        >
                           {errors.numCliente.message}
                         </SoftTypography>
                       )}
@@ -180,12 +209,18 @@ const FechaCliente = () => {
         </SoftBox>
       </Card>
 
-      <SoftBox py={3} style={{ width: "80%" }} justifyContent="center">
+      <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
         <SoftBox justifyContent="center">
           <Card>
-            <SoftBox p={3}>
-              <EnhancedTable data={datosFiltrados} columns={columns} />
-            </SoftBox>
+            {user ? (
+              <SoftBox p={3}>
+                {user.idGrupoCliente !== 4 ? (
+                  <PRSTable data={datosFiltrados} columns={columns} />
+                ) : (
+                  <CalleAlturaTable data={datosFiltrados} columns={columns} />
+                )}
+              </SoftBox>
+            ) : null}
           </Card>
         </SoftBox>
       </SoftBox>

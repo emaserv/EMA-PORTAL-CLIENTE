@@ -8,34 +8,46 @@ from datetime import datetime
 
 class AdapterPSM:
     def leerItemEmision(entry, idEmision):
+
+        print("WASAAAAAAAAAAAAAA", entry['Cliente'])
+
         itemEmision = ItemEmision(
-            nroCliente = entry['Número de Cuenta'],
-            titular = entry['Nombre del Titular'], 
+            idEmision = idEmision,
+            idGrupoCliente = obtenerIdGrupoCliente(entry['Cliente']), 
+            nroCliente = entry['Número de Cuenta'] if entry['Número de Cuenta'] else None,
+            titular = entry['Nombre del Titular'] if entry['Nombre del Titular'] else None, 
             calle = obtenerPorPartes(entry['Dirección'], True),
             altura = obtenerPorPartes(entry['Dirección'], False),
-            idEmision = idEmision,
-            sucursal = entry['sucursal'],
-            planTurno = entry['plan'],
-            radio = entry['radio'],
-            ruta = entry['Ruta'],
-            distribuidor = entry['Nombre'],
-            estadoPieza = entry['Estado'],
+            sucursal = entry['sucursal'] if entry['sucursal'] else None,
+            planTurno = entry['plan'] if entry['plan'] else None,
+            radio = entry['radio'] if entry['radio'] else None,
+            ruta = entry['Ruta'] if entry['Ruta'] else None,
+            distribuidor = entry['Nombre'] if entry['Nombre'] else None,
+            estadoPieza = entry['Estado'] if entry['Estado'] else None,
             obsInterna = None,
-            obsVisita = entry['Observación'],
+            obsVisita = entry['Observación'] if entry['Observación'] else None,
             fechaDistrib = convertir_fecha(entry['Fecha']),
-            horaDistrib = entry['Hora'],
+            horaDistrib = chequeadorHora(entry['Hora']),
             geoCliente = None,
-            geoVisita = None,
+            geoVisita = entry['Ubicación en Mapa'] if entry['Ubicación en Mapa'] else None,
             foto = chequeadorFoto(entry['Foto']),
-            idGrupoCliente = obtenerIdGrupoCliente(entry['Cliente']), 
-            lote = entry['Lote'],
-            legajo = entry['Legajo'],
+            lote = entry['Lote'] if entry['Lote'] else None,
+            legajo = entry['Legajo'] if entry['Legajo'] else None,
             tipoDePieza = None, 
-            localidad = entry['Localidad'],
-            firma = entry['Firma'],
+            localidad = entry['Localidad'] if entry['Localidad'] != 'None' else None,
+            firma = entry['Firma'] if entry['Firma'] else None,
         )
+        print('pase el primero')
 
         return itemEmision
+    
+
+def chequeadorHora(hora):
+    print('HORAAAA', hora)
+    if hora != '-':
+        return hora
+    else:
+        return None
     
 def separar_por_dos_numeros(cadena):
     # Busca el primer lugar donde aparecen dos dígitos consecutivos
@@ -70,7 +82,6 @@ def obtenerIdGrupoCliente(nombreGrupoCliente):
         with DatabaseSession().get_session() as session:
             data_query = session.execute(query, queryParams)
                 
-        
         # Obtener el primer resultado si existe
         row = data_query.fetchone()
 
@@ -78,6 +89,7 @@ def obtenerIdGrupoCliente(nombreGrupoCliente):
             return None  # No se encontró el grupo de cliente
 
         # Retornar el ID encontrado
+        print("ENCONTRADO", row.id)
         return row.id
 
     except Exception as e:
@@ -86,19 +98,27 @@ def obtenerIdGrupoCliente(nombreGrupoCliente):
     
   
 def convertir_fecha(fecha_str):
-    if fecha_str == None:
+    print(fecha_str)
+
+    if fecha_str is None:
         return None
     
     try:
-        # Convertir la fecha del formato 'dd/mm/yyyy' a un objeto datetime
-        fecha_obj = datetime.strptime(fecha_str, '%d/%m/%Y')
-        # Convertir el objeto datetime al formato 'yyyy-mm-dd'
-        return fecha_obj.strftime('%Y-%m-%d')
+        # Intentar convertir la fecha con el formato ISO 'yyyy-mm-ddTHH:MM:SS.sss'
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M:%S.%f')
     except ValueError:
-        # Manejo de errores si el formato de entrada es incorrecto
-        raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy'.")
+        try:
+            # Intentar convertir la fecha con el formato 'dd/mm/yyyy'
+            fecha_obj = datetime.strptime(fecha_str, '%d/%m/%Y')
+        except ValueError:
+            # Manejo de errores si el formato de entrada es incorrecto
+            raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy' o 'yyyy-mm-ddTHH:MM:SS.sss'.")
+
+    # Convertir el objeto datetime al formato 'yyyy-mm-dd'
+    return fecha_obj.strftime('%Y-%m-%d')
     
 def chequeadorFoto(linkFoto):
+    print(linkFoto)
     if linkFoto == 'https://s3.amazonaws.com/ocrbsas-userfiles-mobilehub-94990329/':
         return None
     else:
