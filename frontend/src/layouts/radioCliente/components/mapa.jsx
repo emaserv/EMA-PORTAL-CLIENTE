@@ -31,13 +31,18 @@ function FitBoundsExample({ positions }) {
   return null;
 }
 
-function MyMap({ arrayPuntos }) { // Cambia arrayPuntos a positions
+function MyMap({ arrayPuntos, arrayPuntosLinea }) { // Cambia arrayPuntos a positions
   // Array de coordenadas para el Polyline
   const [puntos, setPuntos] = useState([]);
+  const [puntosLinea, setPuntosLinea] = useState([]);
 
   useEffect(() => {
     setPuntos(arrayPuntos);
   }, [arrayPuntos]);
+
+  useEffect(() => {
+    setPuntosLinea(arrayPuntosLinea);
+  }, [arrayPuntosLinea]);
 
   const polylineOptions = {
     color: 'blue', // Color de la línea
@@ -65,8 +70,12 @@ function MyMap({ arrayPuntos }) { // Cambia arrayPuntos a positions
         );
       })}
 
-      {puntos.length > 0 ? 
-      <FitBoundsExample positions={puntos} />
+      {puntos.length > 0 && puntosLinea.length > 0 ? 
+        <> 
+          <Polyline positions={puntosLinea.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} {...polylineOptions} />
+          <FitBoundsExample positions={puntos} />
+        </>
+      
       :
       <FitBoundsExample positions={[[-34.61093894313541, -58.386118685562906]]} /> 
       }

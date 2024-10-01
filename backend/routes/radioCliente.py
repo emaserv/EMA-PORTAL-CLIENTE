@@ -180,7 +180,7 @@ def mapaCamino():
     grupoCliente = request.args.get('grupoCliente')
 
     try:        
-        queryBase = 'SELECT * FROM "geoItemEmision" gie'
+        queryBase = 'SELECT DISTINCT(d.*) FROM "geoItemEmision" gie JOIN dai d ON d."fecha" = gie."fechaDistrib" AND d."legajoDist" = gie.legajo'
 
         where_clauses = []
         qParams = {}
@@ -215,11 +215,13 @@ def mapaCamino():
             where_clauses.append('gie."fecha" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
+        order_clause = 'ORDER BY 3, 5'
+
         if where_clauses:
             where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = text(queryBase + where_clause)
+            query = text(queryBase + where_clause + order_clause)
         else:
-            query = text(queryBase)
+            query = text(queryBase + order_clause)
 
         with DatabaseSession().get_session() as session:
             data_query = session.execute(query, qParams)
@@ -228,13 +230,13 @@ def mapaCamino():
 
         for row in data_query:
             datosPiezasPostales.append({
-                'legajo': row.legajo,
-                'planTurno': row.planTurno,
-                'radio': row.radio,
-                'sucursal': row.sucursal,
+                'id': row.lidegajo,
+                'idGrupoCliente': row.planTurno,
+                'legajoDist': row.legajoDist,
+                'fecha': row.fecha,
+                'hora': row.hora,
                 'latitud': row.latitud,
-                'longitud': row.longitud,
-                'fecha': row.fechaDistrib
+                'longitud': row.longitud
             })
           
 
