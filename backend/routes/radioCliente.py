@@ -179,76 +179,88 @@ def mapaCamino():
     fechaHasta = request.args.get('fechaHasta')
     grupoCliente = request.args.get('grupoCliente')
 
-    try:        
-        queryBase = 'SELECT DISTINCT(d.*) FROM "geoItemEmision" gie JOIN dai d ON d."fecha" = gie."fechaDistrib" AND d."legajoDist" = gie.legajo'
+    try:
+        # Query base
+        queryBase = '''
+        SELECT DISTINCT(d.*) 
+        FROM "geoItemEmision" gie 
+        JOIN dai d ON d."fecha" = gie."fechaDistrib" 
+        AND d."legajoDist" = gie.legajo
+        '''
 
         where_clauses = []
         qParams = {}
 
-        if grupoCliente != 'null':
+        # Filtra por grupoCliente si es válido
+        if grupoCliente != 'null' and grupoCliente:
             where_clauses.append('gie."idGrupoCliente" = :grupoCliente')
             qParams['grupoCliente'] = grupoCliente
 
-        if plan != '':
+        # Filtra por plan
+        if plan:
             where_clauses.append('gie."planTurno" = :plan')
-            qParams['plan'] = plan
-        
-        if sucursal != '':
-            where_clauses.append('gie."sucursal" = :sucursal')
-            qParams['sucursal'] = sucursal
+            qParams['plan'] = str(plan)
 
-        if radio != '':
-            where_clauses.append('gie."radio" = :radio')
-            qParams['radio'] = radio
+        # Filtra por sucursal
+        if sucursal:
+            where_clauses.append('gie.sucursal = :sucursal')
+            qParams['sucursal'] = str(sucursal)
 
-        # Verifica si se proporcionan ambos parámetros de fecha para usar BETWEEN
-        if fechaDesde != '' and fechaHasta != '':
-            where_clauses.append('gie."fecha" BETWEEN :fechaDesde AND :fechaHasta')
+        # Filtra por radio
+        if radio:
+            where_clauses.append('gie.radio = :radio')
+            qParams['radio'] = str(radio)
+
+        # Manejo de las fechas
+        if fechaDesde and fechaHasta:
+            where_clauses.append('gie."fechaDistrib" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
-        elif fechaDesde != '':
-            # Si solo se proporciona fechaDesde, busca desde esa fecha en adelante
-            where_clauses.append('gie."fecha" >= :fechaDesde')
+        elif fechaDesde:
+            where_clauses.append('gie."fechaDistrib" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
-        elif fechaHasta != '':
-            # Si solo se proporciona fechaHasta, busca hasta esa fecha
-            where_clauses.append('gie."fecha" <= :fechaHasta')
+        elif fechaHasta:
+            where_clauses.append('gie."fechaDistrib" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
-        order_clause = 'ORDER BY 3, 5'
+        # Cláusula ORDER BY
+        order_clause = ' ORDER BY 3, 5'
 
+        # Construir la consulta final
         if where_clauses:
             where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = text(queryBase + where_clause + order_clause)
+            query = queryBase + where_clause + order_clause
         else:
-            query = text(queryBase + order_clause)
+            query = queryBase + order_clause
+
+        # Ejecutar la consulta
+        query = text(query)
 
         with DatabaseSession().get_session() as session:
             data_query = session.execute(query, qParams)
-                
-        datosPiezasPostales = []
+
+        dataGeoCamino = []
 
         for row in data_query:
-            datosPiezasPostales.append({
-                'id': row.lidegajo,
-                'idGrupoCliente': row.planTurno,
+            dataGeoCamino.append({
+                'id': row.id,
+                'idGrupoCliente': row.idGrupoCliente,
                 'legajoDist': row.legajoDist,
                 'fecha': row.fecha,
                 'hora': row.hora,
                 'latitud': row.latitud,
                 'longitud': row.longitud
             })
-          
 
-        if not datosPiezasPostales:
-            return '{"message": "Recursos no encontrados"}', 204
-        
-        keys = list(datosPiezasPostales[0].keys())
+        if not dataGeoCamino:
+            return jsonify({"message": "Recursos no encontrados"}), 204
 
-        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataDropDwnPlan": datosPiezasPostales}), 200
+        keys = list(dataGeoCamino[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataGeoCamino": dataGeoCamino}), 200
     except Exception as e:
-        print()
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route('/api/plan', methods=['GET'])

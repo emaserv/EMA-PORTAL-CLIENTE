@@ -32,6 +32,7 @@ const RadioCliente = () => {
   const [puntosMapa, setPuntosMapa] = useState([]);
   const [puntosMapaFiltrados, setPuntosMapaFiltrados] = useState([]);
   const [caminoMapa, setCaminoMapa] = useState([]);
+  const [caminoMapaFiltrado, setCaminoMapaFiltrado] = useState([]);
   const [columns, setColumns] = useState([]);
   const [columnsCamino, setColumnsCamino] = useState([]);
   const [filtroFechaDesde, setFiltroFechaDesde] = useState(null);
@@ -93,11 +94,8 @@ const RadioCliente = () => {
       const response = await fetch(url);
 
       console.log("API:", response); // Verifica la respuesta completa
-
       const apiData1 = await response.json();
-
       console.log("Datos de la API:", apiData1);
-      
       if (apiData1.dataTabla) {
         console.log("PuntosMapa data:", apiData1.dataTabla);
         setPuntosMapa(apiData1.dataTabla);
@@ -115,46 +113,46 @@ const RadioCliente = () => {
         setPuntosMapa([]);
       }
     } catch (error) {
-      console.log("error", error);
+      console.log("error", error)
     }
-    
+
     try {
-      // Segunda solicitud: radio-cliente
-      const response2 = await fetch(
-        `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
-          sucursal || ""
-        }&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${
-          fechaDesde || ""
-        }&fechaHasta=${fechaHasta || ""}`
-      );
+    // Segunda solicitud: radio-cliente
+    const response2 = await fetch(
+      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
+        sucursal || ""
+      }&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${
+        fechaDesde || ""
+      }&fechaHasta=${fechaHasta || ""}`
+    );
 
-      if (!response2.ok) {
-        throw new Error("Error en la respuesta de radio-cliente");
-      }
-
-      const apiData2 = await response2.json();
-      console.log("Response from radio-cliente API:", apiData2); // Verifica la respuesta completa
-
-      if (apiData2.dataTabla) {
-        setAllData(apiData2.dataTabla);
-        setColumnsCamino(apiData2.columns);
-        filtrarDatos(
-          apiData2.dataTabla,
-          plan,
-          sucursal,
-          radio,
-          fechaDesde,
-          fechaHasta
-        );
-      } else {
-        console.error("No se recibieron datos de radio-cliente API");
-        setAllData([]);
-      }
-    } catch (error) {
-      console.log("error", error);
+    if (!response2.ok) {
+      throw new Error("Error en la respuesta de radio-cliente");
     }
 
-    
+    const apiData2 = await response2.json();
+    console.log("Response from radio-cliente API:", apiData2); // Verifica la respuesta completa
+
+    if (apiData2.dataTabla) {
+      setAllData(apiData2.dataTabla);
+      setColumns(apiData2.columns);
+      filtrarDatos(
+        apiData2.dataTabla,
+        plan,
+        sucursal,
+        radio,
+        fechaDesde,
+        fechaHasta
+      );
+    } else {
+      console.error("No se recibieron datos de radio-cliente API");
+      setAllData([]);
+    }
+  } catch (error) {
+    console.log("error", error)
+  }
+
+  
     // Tercera solicitud: geoMapaCamino
     try {
       const url = new URL(`${API_BACK}/api/geoMapaCamino`);
@@ -175,20 +173,17 @@ const RadioCliente = () => {
       });
 
       // Hacemos la petición con fetch
-      const response = await fetch(url);
+      const response3 = await fetch(url);
 
-      console.log("API:", response); // Verifica la respuesta completa
-
-      const apiData2 = await response.json();
-
-      console.log("Datos de la API:", apiData2);
-      
-      if (apiData2.dataTabla) {
-        console.log("PuntosMapa data:", apiData2.dataTabla);
-        setCaminoMapa(apiData2.dataTabla);
-        setColumnsCamino(apiData2.columns);
-        filtrarPuntosMapa(
-          apiData2.dataTabla,
+      console.log("API:", response3); // Verifica la respuesta completa
+      const apiData3 = await response3.json();
+      console.log("Datos de la API:", apiData3);
+      if (apiData3.dataGeoCamino) {
+        console.log("PuntosMapa data:", apiData3.dataGeoCamino);
+        setCaminoMapa(apiData3.dataGeoCamino);
+        setColumnsCamino(apiData3.columns);
+        filtrarCaminoMapa(
+          apiData3.dataGeoCamino,
           plan,
           sucursal,
           radio,
@@ -200,9 +195,41 @@ const RadioCliente = () => {
         setCaminoMapa([]);
       }
     } catch (error) {
-      console.log("error", error);
+      console.log("error", error)
     }
 
+  };
+
+  
+  const filtrarCaminoMapa = (
+    data,
+    plan,
+    sucursal,
+    radio,
+    fechaDesde,
+    fechaHasta
+  ) => {
+    const caminoMapaFiltrado = data.filter((item) => {
+      const itemFecha = new Date(item.fecha).toISOString().split("T")[0]; // Formato YYYY-MM-DD
+
+      const cumplePlan = plan ? item.plan === plan : true;
+      const cumpleSucursal = sucursal ? item.sucursal === sucursal : true;
+      const cumpleRadio = radio ? item.radio === radio : true;
+      const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
+      const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
+
+      return (
+        cumplePlan &&
+        cumpleSucursal &&
+        cumpleRadio &&
+        cumpleFechaDesde &&
+        cumpleFechaHasta
+      );
+    });
+
+    console.log("dataaa", caminoMapaFiltrado);
+
+    setCaminoMapaFiltrado(caminoMapaFiltrado);
   };
 
   const filtrarDatos = (
@@ -424,7 +451,7 @@ const RadioCliente = () => {
         <SoftBox justifyContent="center">
           <Card>
             <SoftBox p={3}>
-              <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} arrayPuntosLinea={armarArrayCoordenadas(caminoMapa)} />
+              <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} arrayCamino={armarArrayCoordenadas(caminoMapa)} />
             </SoftBox>
           </Card>
         </SoftBox>

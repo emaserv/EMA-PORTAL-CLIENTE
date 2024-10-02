@@ -27,7 +27,9 @@ def format_time(time_str):
     return dt.strftime('%H:%M')
 
 def format_date(date_str):
-    print('AAAAAAAA', date_str)
+    if date_str is None:
+        return None
+    
     try:
         anio = date_str[2:4]
         mes = date_str[5:7]
@@ -88,6 +90,7 @@ def tablaFC():
 
         with DatabaseSession().get_session() as session:
             data_query = session.execute(query, qParams)
+            session.commit()
 
         datosPiezasPostales = []
 
