@@ -8,6 +8,8 @@ from datetime import datetime
 class AdapterEMASERVICIOS:
     def leerItemEmision(entry, idEmision):
         print("WASAAAAAAAAAAAAAA", entry['Cliente'])
+        print("WASAAAAAAAAAAAAAA1", entry['Fecha Distribucion'])
+        print("WASAAAAAAAAAAAAAA2", entry['Emision'])
 
         if entry['Cliente'] != '-':
             itemEmision = ItemEmision(
@@ -78,7 +80,7 @@ def obtenerIdGrupoCliente(nombreGrupoCliente):
 def convertir_fecha(fecha_str):
     if fecha_str == '-':
         return None
-
+    
     try:
         # Convertir la fecha del formato 'dd/mm/yyyy' a un objeto datetime
         print(fecha_str)
@@ -96,5 +98,12 @@ def convertir_fecha(fecha_str):
 
             return fecha_obj.strftime('%Y-%m-%d')
         except ValueError:
-            # Manejo de errores si el formato de entrada es incorrecto
-            raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy' o 'yymmdd'.")
+            try:
+                # Convertir la fecha del formato 'yyyy-mm-ddTh:m:s' a un objeto datetime
+                fecha_obj = datetime.strptime(str(fecha_str), "%Y-%m-%dT%H:%M:%S.%f")
+
+                # Formatear la fecha al formato deseado yyyy-mm-dd
+                return fecha_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                # Manejo de errores si el formato de entrada es incorrecto
+                raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy' o 'yymmdd'.")

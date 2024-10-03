@@ -31,10 +31,8 @@ function FitBoundsExample({ positions }) {
   return null;
 }
 
-function MyMap({ arrayPuntos, arrayCamino }) {
+function MyMap({ arrayPuntos }) {
   const [puntos, setPuntos] = useState([]);
-  const [camino, setCamino] = useState([]);
-
 
   // Efecto para cargar los puntos desde arrayPuntos
   useEffect(() => {
@@ -43,11 +41,6 @@ function MyMap({ arrayPuntos, arrayCamino }) {
     }
   }, [arrayPuntos]);
 
-  useEffect(() => {
-    if (arrayCamino.length > 0) {
-      setCamino(arrayCamino);
-    }
-  }, [arrayCamino]);
 
   const polylineOptions = {
     color: 'blue', // Color de la línea
@@ -73,10 +66,9 @@ function MyMap({ arrayPuntos, arrayCamino }) {
         </Marker>
       ))}
 
-      {camino.length > 0 && puntos.length > 0 ? (
+      {puntos.length > 0 ? (
         <>
-          <Polyline positions={camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} {...polylineOptions} />
-          <FitBoundsExample positions={camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
+          <FitBoundsExample positions={puntos.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
         </>
       ) : <FitBoundsExample positions={[[-34.61093894313541, -58.386118685562906]]} /> }
     </MapContainer>
@@ -87,5 +79,4 @@ export default MyMap;
 
 MyMap.propTypes = {
   arrayPuntos: PropTypes.array.isRequired, // Puntos iniciales
-  arrayCamino: PropTypes.array.isRequired, // Camino (rutas) para la polilínea
 };

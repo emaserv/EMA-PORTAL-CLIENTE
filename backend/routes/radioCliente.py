@@ -4,11 +4,47 @@ import json
 from flask import Blueprint, jsonify, request, current_app, json
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
+from datetime import datetime
 
 radioCliente = Blueprint('radioCliente', __name__)
 
 def get_column_names(model):
     return [column.name for column in model.__table__.columns]
+
+def format_time(time_str):
+    if time_str is None:
+        return None
+
+    try:
+        # Intenta parsear con formato de horas:minutos:segundos
+        dt = datetime.strptime(time_str, '%H:%M:%S')
+    except ValueError:
+        try:
+            # Intenta parsear con formato de horas:minutos:segundos:milisegundos
+            dt = datetime.strptime(time_str, '%H:%M:%S.%f')
+        except ValueError:
+            # Si el formato no es válido, lanza un error
+            return None
+
+    # Devuelve solo horas y minutos en formato HH:MM
+    return dt.strftime('%H:%M')
+
+def format_date(date_str):
+    if date_str is None:
+        return '-'
+    
+    try:
+        anio = date_str[2:4]
+        mes = date_str[5:7]
+        dia = date_str[8:10]
+
+        nuevaFecha = dia + "/" + mes + "/" + anio
+        
+        print(nuevaFecha)
+    except ValueError:
+        return None
+    
+    return nuevaFecha
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route('/api/radio-cliente', methods=['GET'])
@@ -70,16 +106,23 @@ def tablaRC():
         for row in data_query:
             # Solo traigo estas columnas porque las demás no las necesito
             datosPiezasPostales.append({
+                'id': row.id,                
+                'fechaEmision': format_date(row.fechaEmision),
                 'grupoCliente': row.grupoCliente,
                 'nroCliente': row.nroCliente,
                 'titular': row.titular,
                 'plan': row.planTurno,
                 'sucursal': row.sucursal,
                 'radio': row.radio,
+                'direccion': row.direccion,
+                'localidad': row.localidad,
+                'fecha': format_date(row.fecha),
+                'hora': format_time(row.hora),  # Usa la función de formateo aquí
                 'estadoPieza': row.estadoPieza,
+                'obsVisita': row.obsVisita,
                 'geoVisita': row.geoVisita,
                 'foto': row.foto,
-                'fecha': row.fecha
+                'firma': row.firma
             })
 
         if not datosPiezasPostales:
@@ -91,7 +134,7 @@ def tablaRC():
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
-@radioCliente.route('/api/geoMapaItems', methods=['GET'])
+@radioCliente.route('/apiRadio/geoMapaItems', methods=['GET'])
 def mapaItems():
     plan = request.args.get('plan')
     sucursal = request.args.get('sucursal')
@@ -158,8 +201,6 @@ def mapaItems():
                 'fecha': row.fechaDistrib
             })
 
-        print(datosPiezasPostales)
-
         if not datosPiezasPostales:
             return '{"message": "Recursos no encontrados"}', 204
         
@@ -167,7 +208,6 @@ def mapaItems():
 
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
     except Exception as e:
-        print()
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
 @radioCliente.route('/api/geoMapaCamino', methods=['GET'])

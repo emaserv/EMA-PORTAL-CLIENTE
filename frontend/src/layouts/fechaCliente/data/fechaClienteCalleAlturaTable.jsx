@@ -20,6 +20,8 @@ import dayjs from "dayjs";
 import PhotoIcon from "@mui/icons-material/Photo";
 import MapIcon from "@mui/icons-material/Map";
 import Edit from "@mui/icons-material/Edit";
+import ArticleIcon from "@mui/icons-material/Article";
+
 
 dayjs.locale("ES");
 
@@ -542,7 +544,7 @@ export default function CalleAlturaTable({ data, columns }) {
                                 cursor: "not-allowed",
                               }}
                             >
-                              <PhotoIcon fontSize="medium" />
+                              <ArticleIcon fontSize="medium" />
                             </a>
                           </TableCell>
                         ) : null}

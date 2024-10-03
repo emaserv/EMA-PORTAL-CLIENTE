@@ -11,6 +11,7 @@ import PRSTable from "./data/fechaClientePRSTable";
 import { API_BACK } from "../../config";
 import { useAuth } from "layouts/auth/AuthContext";
 import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
+import MyMap from "./components/mapa";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -29,6 +30,8 @@ const FechaCliente = () => {
   } = useForm();
   const [allData, setAllData] = useState([]);
   const [columns, setColumns] = useState([]);
+  const [columnsMapa, setColumnsMapa] = useState([]);
+  const [puntosMapa, setPuntosMapa] = useState([]);
   const [filtroFechaDesde, setFiltroFechaDesde] = useState(null);
   const [filtroFechaHasta, setFiltroFechaHasta] = useState(null);
   const [filtroCliente, setFiltroCliente] = useState(null);
@@ -53,35 +56,78 @@ const FechaCliente = () => {
     }
   };
 
-  const fetchData = (cliente, fechaDesde, fechaHasta) => {
+  const fetchData = async (cliente, fechaDesde, fechaHasta) => {
     if (!cliente && !fechaDesde && !fechaHasta) {
       setAllData([]);
+      setPuntosMapa([]);
       setDatosFiltrados([]);
       return;
     }
-
-    fetch(
-      `${API_BACK}/api/fecha-cliente?cliente=${cliente || ""}&grupoCliente=${
-        user.idGrupoCliente
-      }&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
-    )
-      .then((response) => response.json())
-      .then((apiData) => {
-        if (apiData.dataTabla) {
-          setAllData(apiData.dataTabla);
-          setColumns(apiData.columns);
-          filtrarDatos(apiData.dataTabla, cliente, fechaDesde, fechaHasta);
-        } else {
-          console.error("No se recibieron datos de la API");
-          setAllData([]);
+  
+    try {
+      // Primera solicitud: fecha-cliente
+      const url1 = new URL(`${API_BACK}/api/fecha-cliente`);
+      const params1 = {
+        cliente: cliente || '',
+        grupoCliente: user.idGrupoCliente || '',
+        fechaDesde: fechaDesde || '',
+        fechaHasta: fechaHasta || '',
+      };
+  
+      Object.keys(params1).forEach((key) => {
+        if (params1[key]) {
+          url1.searchParams.append(key, params1[key]);
         }
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-        setAllData([]);
       });
+  
+      const response1 = await fetch(url1);
+      const apiData1 = await response1.json();
+  
+      if (apiData1.dataTabla) {
+        setAllData(apiData1.dataTabla);
+        setColumns(apiData1.columns);
+        filtrarDatos(apiData1.dataTabla, cliente, fechaDesde, fechaHasta);
+      } else {
+        console.error("No se recibieron datos de fecha-cliente API");
+        setAllData([]);
+      }
+    } catch (error) {
+      console.error("Error en la solicitud fecha-cliente:", error);
+      setAllData([]);
+    }
+  
+    try {
+      // Segunda solicitud: geoMapaItems
+      const url2 = new URL(`${API_BACK}/apiFecha/geoMapaItems`);
+      const params2 = {
+        cliente: cliente,
+        grupoCliente: user.idGrupoCliente,
+        fechaDesde: fechaDesde,
+        fechaHasta: fechaHasta,
+      };
+  
+      Object.keys(params2).forEach((key) => {
+        if (params2[key]) {
+          url2.searchParams.append(key, params2[key]);
+        }
+      });
+  
+      const response2 = await fetch(url2);
+      const apiData2 = await response2.json();
+  
+      if (apiData2.dataTabla) {
+        setPuntosMapa(apiData2.dataTabla);
+        setColumnsMapa(apiData2.columns);
+      } else {
+        console.error("No se recibieron datos de geoMapaItems API");
+        setPuntosMapa([]);
+      }
+    } catch (error) {
+      console.error("Error en la solicitud geoMapaItems:", error);
+      setPuntosMapa([]);
+    }
   };
-
+  
   const convertirFecha = (fechaStr) => {
     const partes = fechaStr.split("/");
     if (partes.length === 3) {
@@ -92,32 +138,59 @@ const FechaCliente = () => {
     return new Date(); // Retorna una fecha inválida si el formato no es el esperado
   };
 
-  const filtrarDatos = (data, cliente, fechaDesde, fechaHasta) => {
-    // Convierte fechaDesde y fechaHasta a objetos Date si son cadenas
-    const fechaDesdeDate = fechaDesde ? convertirFecha(fechaDesde) : null;
-    const fechaHastaDate = fechaHasta ? convertirFecha(fechaHasta) : null;
-
+  const filtrarDatos = (
+    data,
+    cliente,
+    fechaDesde,
+    fechaHasta
+  ) => {
+    console.log("DAAA", data)
     const datosFiltrados = data.filter((item) => {
-      const itemFecha = convertirFecha(item.fecha);
+      console.log("WASA1", fechaDesde);
+      console.log("WASA2", fechaHasta);
+      console.log("WASA3", item.fecha);
 
-      // Verifica si item.fecha es una fecha válida
-      if (isNaN(itemFecha.getTime())) {
-        console.error("Fecha inválida en item:", item.fecha);
-        return false;
-      }
+      const fechaParts = item.fecha.split("/"); // Divide la fecha en día, mes y año
+      const dia = fechaParts[0];
+      const mes = fechaParts[1];
+      const año = `20${fechaParts[2]}`; // Asume que 'yy' está en el rango 2000-2099
+      const itemFecha = `${año}-${mes}-${dia}`; // Reorganiza a 'yyyy-mm-dd'// Formato YYYY-MM-DD
+      console.log("WASA33", itemFecha);
 
+      console.log("item", item)
       const cumpleCliente = cliente ? item.nroCliente === cliente : true;
-      const cumpleFechaDesde = fechaDesdeDate
-        ? itemFecha >= fechaDesdeDate
-        : true;
-      const cumpleFechaHasta = fechaHastaDate
-        ? itemFecha <= fechaHastaDate
-        : true;
+      const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
+      const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
 
-      return cumpleCliente && cumpleFechaDesde && cumpleFechaHasta;
+      console.log("WASA1", fechaDesde);
+      console.log("WASA2", fechaHasta);
+      console.log("WASA3", itemFecha);
+
+      return (
+        cumpleCliente &&
+        cumpleFechaDesde &&
+        cumpleFechaHasta
+      );
     });
 
+    console.log("dataaa", datosFiltrados);
+
     setDatosFiltrados(datosFiltrados);
+  };
+
+  const armarArrayCoordenadas = (data) => {
+    console.log("aaa", data);
+    let arrayCoordenadas = [];
+
+    for (let i = 0; i < data.length; i++) {
+      // Genera valores aleatorios de longitud y latitud
+      const latitud = parseFloat(data[i].latitud);
+      const longitud = parseFloat(data[i].longitud);
+      arrayCoordenadas.push([latitud, longitud]);
+    }
+
+    console.log("PRINT ARRAY COORD", arrayCoordenadas);
+    return arrayCoordenadas;
   };
 
   return (
@@ -208,6 +281,20 @@ const FechaCliente = () => {
           </form>
         </SoftBox>
       </Card>
+
+      <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
+        <SoftBox justifyContent="center">
+          <Card>
+            {user ? (
+              <SoftBox p={3}>
+                {user.idGrupoCliente === 2 || user.idGrupoCliente === null ? (
+                  <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />
+                ) : null}
+              </SoftBox>
+            ) : null}
+          </Card>
+        </SoftBox>
+      </SoftBox>
 
       <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
         <SoftBox justifyContent="center">

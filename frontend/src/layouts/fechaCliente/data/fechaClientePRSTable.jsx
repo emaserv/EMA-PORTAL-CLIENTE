@@ -21,6 +21,7 @@ import "dayjs/locale/es";
 import PhotoIcon from "@mui/icons-material/Photo";
 import MapIcon from "@mui/icons-material/Map";
 import Edit from "@mui/icons-material/Edit";
+import ArticleIcon from "@mui/icons-material/Article";
 import { Tooltip } from "@mui/material";
 
 dayjs.locale("ES");
@@ -143,84 +144,109 @@ export default function PRSTable({ data, columns }) {
 
   const headCells = [
     {
+      id: "fechaEmision",
+      numeric: false,
+      disablePadding: false,
+      label: "Emision",
+      labelComplete: "Fecha de Emision",
+    },
+    {
       id: "nroCliente",
       numeric: false,
       disablePadding: false,
-      label: "Nro. Cliente",
+      label: "Cliente",
+      labelComplete: "Numero de Cliente",
     },
     {
       id: "titular",
       numeric: false,
       disablePadding: false,
       label: "Titular",
+      labelComplete: "Titular",
     },
     {
-      id: "plan",
+      id: "planTurno",
       numeric: false,
       disablePadding: false,
       label: "Plan",
+      labelComplete: "Plan",
     },
     {
       id: "sucursal",
       numeric: false,
       disablePadding: false,
       label: "Sucursal",
+      labelComplete: "Sucursal",
     },
     {
       id: "radio",
       numeric: false,
       disablePadding: false,
       label: "Radio",
+      labelComplete: "Radio",
     },
     {
       id: "localidad",
       numeric: false,
       disablePadding: false,
       label: "Localidad",
+      labelComplete: "Localidad",
     },
     {
       id: "fecha",
       numeric: false,
       disablePadding: false,
-      label: "Fecha",
+      label: "F. Dist.",
+      labelComplete: "Fecha de Distribucion",
     },
     {
       id: "hora",
       numeric: false,
       disablePadding: false,
       label: "Hora",
+      labelComplete: "Hora",
     },
     {
       id: "estadoPieza",
       numeric: false,
       disablePadding: false,
       label: "Estado",
-      
+      labelComplete: "Estado",
     },
     {
       id: "obsVisita",
       numeric: false,
       disablePadding: false,
       label: "Obs. Visita",
+      labelComplete: "Observacion de Visita",
     },
     {
       id: "geoVisita",
       numeric: false,
       disablePadding: false,
-      label: "Geo. Visita",
+      label: "Visita",
+      labelComplete: "Geoposicion de Visita",
     },
-    
     {
       id: "foto",
       numeric: false,
       disablePadding: false,
       label: "Foto",
+      labelComplete: "Foto",
     },
     {
       id: "firma",
       numeric: false,
       disablePadding: false,
       label: "Firma",
+      labelComplete: "Firma",
+    },
+    {
+      id: "imagenAD",
+      numeric: false,
+      disablePadding: false,
+      label: "Im. AD",
+      labelComplete: "Imagen Aviso Deuda",
     },
   ];
 
@@ -309,7 +335,15 @@ export default function PRSTable({ data, columns }) {
               selected={numSelected > 0 && orderBy === headCell.id}
               onClick={createSortHandler(headCell.id)}
             >
-              {headCell.label}
+              <Tooltip
+                title={
+                  headCell.labelComplete
+                    ? headCell.labelComplete
+                    : "Sin información"
+                }
+              >
+                <span>{truncarTexto(headCell.label, 12)}</span>
+              </Tooltip>
               {orderBy === headCell.id &&
                 (order == "asc" ? ascendingIcon : descendingIcon)}
             </TableCell>
@@ -347,12 +381,12 @@ export default function PRSTable({ data, columns }) {
 
   const truncarTexto = (texto, limite) => {
     console.log("WASAAAAAA", texto);
-    if (!texto || typeof texto !== 'string') {
-      return ''; // O devuelve otro valor predeterminado si lo prefieres
+    if (!texto || typeof texto !== "string") {
+      return ""; // O devuelve otro valor predeterminado si lo prefieres
     }
-  
+
     if (texto.length > limite) {
-      return texto.substring(0, limite) + '...';
+      return texto.substring(0, limite) + "...";
     }
     return texto;
   };
@@ -414,7 +448,6 @@ export default function PRSTable({ data, columns }) {
                         //Con esto oculto la columna que tiene el id
                         //NO BORRAR LA COLUMNA ID PORQUE SI NO SE ROMPE LA TABLA
                         column !== "id" &&
-                        column !== "fechaEmision" &&
                         column !== "grupoCliente" &&
                         column !== "geoVisita" &&
                         column !== "firma" &&
@@ -430,9 +463,13 @@ export default function PRSTable({ data, columns }) {
                             }}
                           >
                             {column !== "porcentaje" ? (
-                              <Tooltip title={row[column] ? row[column] : 'Sin información'}>
-                              <span>{truncarTexto(row[column], 12)}</span>
-                            </Tooltip>
+                              <Tooltip
+                                title={
+                                  row[column] ? row[column] : "Sin información"
+                                }
+                              >
+                                <span>{truncarTexto(row[column], 12)}</span>
+                              </Tooltip>
                             ) : (
                               <Completion value={row[column]} color="info" />
                             )}
@@ -440,75 +477,99 @@ export default function PRSTable({ data, columns }) {
                         )
                     )}
 
-                      
-{row.estadoPieza !== "NR" ? (
-                        <TableCell
-                          id={`${row.id}-geoVisita-1`}
-                          sx={{
-                            paddingTop: "2px",
-                            paddingBottom: "0px",
-                            paddingLeft: "2.5rem",
+                    {row.estadoPieza !== "NR" ? (
+                      <TableCell
+                        id={`${row.id}-geoVisita-1`}
+                        sx={{
+                          paddingTop: "2px",
+                          paddingBottom: "0px",
+                          paddingLeft: "2.5rem",
+                        }}
+                      >
+                        <a
+                          href={row.geoVisita ? row.geoVisita : "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            textDecoration: "none",
+                            color: row.geoVisita ? "#4682B4" : "#D3D3D3",
                           }}
                         >
-                          <a
-                            href={row.geoVisita ? row.geoVisita : "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              textDecoration: "none",
-                              color: row.geoVisita ? "#4682B4" : "#D3D3D3",
-                            }}
-                          >
-                            <MapIcon fontSize="medium" />
-                          </a>
-                        </TableCell>
-                        ) : null}
+                          <MapIcon fontSize="medium" />
+                        </a>
+                      </TableCell>
+                    ) : null}
 
-                        {row.estadoPieza !== "NR" ? (
-                          <TableCell
-                            id={`${row.id}-foto-1`}
-                            sx={{
-                              paddingTop: "2px",
-                              paddingBottom: "0px",
-                            }}
-                          >
-                            <a
-                              href={row.foto ? row.foto : "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                textDecoration: "none",
-                                color: row.foto ? "#4682B4" : "#D3D3D3",
-                              }}
-                            >
-                              <PhotoIcon fontSize="medium" />
-                            </a>
-                          </TableCell>
-                        ) : null}
+                    {row.estadoPieza !== "NR" ? (
+                      <TableCell
+                        id={`${row.id}-foto-1`}
+                        sx={{
+                          paddingTop: "2px",
+                          paddingBottom: "0px",
+                        }}
+                      >
+                        <a
+                          href={row.foto ? row.foto : "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            textDecoration: "none",
+                            color: row.foto ? "#4682B4" : "#D3D3D3",
+                          }}
+                        >
+                          <PhotoIcon fontSize="medium" />
+                        </a>
+                      </TableCell>
+                    ) : null}
 
-                        {row.estadoPieza !== "NR" ? (
-                          <TableCell
-                            id={`${row.id}-firma-1`}
-                            sx={{
-                              paddingTop: "2px",
-                              paddingBottom: "0px",
-                            }}
-                          >
-                            <a
-                              href={row.firma !== '-' ? row.firma : "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                textDecoration: "none",
-                                color: row.firma !== '-' ? "#4682B4" : "#D3D3D3",
-                                pointerEvents: row.firma !== '-' ? "auto" : "none", // Deshabilita el click si es '-'
-                                cursor: row.firma !== '-' ? "pointer" : "not-allowed",
-                              }}
-                            >
-                              <Edit fontSize="medium" />
-                            </a>
-                          </TableCell>
-                        ) : null}
+                    {row.estadoPieza !== "NR" ? (
+                      <TableCell
+                        id={`${row.id}-firma-1`}
+                        sx={{
+                          paddingTop: "2px",
+                          paddingBottom: "0px",
+                        }}
+                      >
+                        <a
+                          href={row.firma !== "-" ? row.firma : "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            textDecoration: "none",
+                            color: row.firma !== "-" ? "#4682B4" : "#D3D3D3",
+                            pointerEvents: row.firma !== "-" ? "auto" : "none", // Deshabilita el click si es '-'
+                            cursor:
+                              row.firma !== "-" ? "pointer" : "not-allowed",
+                          }}
+                        >
+                          <Edit fontSize="medium" />
+                        </a>
+                      </TableCell>
+                    ) : null}
+
+                    {row.estadoPieza !== "NR" ? (
+                      <TableCell
+                        id={`${row.id}-firma-1`}
+                        sx={{
+                          paddingTop: "2px",
+                          paddingBottom: "0px",
+                        }}
+                      >
+                        <a
+                          href={row.firma !== "-" ? row.firma : "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            textDecoration: "none",
+                            color: "#D3D3D3",
+                            pointerEvents: "none", // Deshabilita el click si es '-'
+                            cursor: "not-allowed",
+                          }}
+                        >
+                          <ArticleIcon fontSize="medium" />
+                        </a>
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 );
               })}

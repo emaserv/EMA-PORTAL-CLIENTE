@@ -12,6 +12,9 @@ def get_column_names(model):
     return [column.name for column in model.__table__.columns]
 
 def format_time(time_str):
+    if time_str is None:
+        return None
+
     try:
         # Intenta parsear con formato de horas:minutos:segundos
         dt = datetime.strptime(time_str, '%H:%M:%S')
@@ -42,52 +45,53 @@ def format_date(date_str):
         return None
     
     return nuevaFecha
-
 @fechaCliente.route('/api/fecha-cliente', methods=['GET'])
 def tablaFC():
     numeroCliente = request.args.get('cliente')
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
     grupoCliente = request.args.get('grupoCliente')
-    
-    try:        
-        queryBase = 'SELECT * FROM "fechaCliente" fc'
 
+    try:
+        queryBase = 'SELECT * FROM "fechaCliente" fc'
+        
         where_clauses = []
         qParams = {}
 
-        if grupoCliente != 'null':
+        # Verificar y agregar los parámetros condicionalmente
+        if grupoCliente and grupoCliente != 'null':
             where_clauses.append('fc."idGrupoCliente" = :grupoCliente')
             qParams['grupoCliente'] = grupoCliente
 
-        if numeroCliente != '':
+        if numeroCliente:
             where_clauses.append('fc."nroCliente" = :numeroCliente')
             qParams['numeroCliente'] = numeroCliente
 
-        if fechaDesde != '' and fechaHasta != '':
+        if fechaDesde and fechaHasta:
             where_clauses.append('fc."fecha" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
-        elif fechaDesde != '':
+        elif fechaDesde:
             where_clauses.append('fc."fecha" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
-        elif fechaHasta != '':
+        elif fechaHasta:
             where_clauses.append('fc."fecha" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
-        # Combine WHERE clause if conditions are present
+        # Combinar cláusulas WHERE si existen
         if where_clauses:
             where_clause = ' WHERE ' + ' AND '.join(where_clauses)
             query = queryBase + where_clause
         else:
             query = queryBase
 
-        # Add the ORDER BY clause before converting to a TextClause
-        query += ' ORDER BY fc."nroCliente", fc."fecha" DESC'  # You can modify the column and order (ASC/DESC) as needed
+        # Agregar cláusula ORDER BY
+        query += ' ORDER BY fc."nroCliente", fc."fecha" DESC'
 
-        # Convert to TextClause after full query is ready
+        # Convertir a TextClause después de armar la consulta completa
         query = text(query)
 
+        # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
             data_query = session.execute(query, qParams)
             session.commit()
@@ -96,7 +100,7 @@ def tablaFC():
 
         for row in data_query:
             datosPiezasPostales.append({
-                'id': row.id,                
+                'id': row.id,
                 'fechaEmision': format_date(row.fechaEmision),
                 'grupoCliente': row.grupoCliente,
                 'nroCliente': row.nroCliente,
@@ -119,13 +123,81 @@ def tablaFC():
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 404
+
+        keys = list(datosPiezasPostales[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
+
+    except Exception as e:
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+
+
+@fechaCliente.route('/apiFecha/geoMapaItems', methods=['GET'])
+def mapaItems():
+    numeroCliente = request.args.get('cliente')
+    fechaDesde = request.args.get('fechaDesde')
+    fechaHasta = request.args.get('fechaHasta')
+    grupoCliente = request.args.get('grupoCliente')
+
+    try:        
+        queryBase = 'SELECT * FROM "geoItemEmision" gie'
+
+        where_clauses = []
+        qParams = {}
+
+        if grupoCliente:
+            where_clauses.append('gie."idGrupoCliente" = :grupoCliente')
+            qParams['grupoCliente'] = grupoCliente
+
+        if numeroCliente != '':
+            where_clauses.append('gie."nroCliente" = :numeroCliente')
+            qParams['numeroCliente'] = numeroCliente
+
+        # Verifica si se proporcionan ambos parámetros de fecha para usar BETWEEN
+        if fechaDesde and fechaHasta :
+            where_clauses.append('gie."fechaDistrib" BETWEEN :fechaDesde AND :fechaHasta')
+            qParams['fechaDesde'] = fechaDesde
+            qParams['fechaHasta'] = fechaHasta
+        elif fechaDesde:
+            # Si solo se proporciona fechaDesde, busca desde esa fecha en adelante
+            where_clauses.append('gie."fechaDistrib" >= :fechaDesde')
+            qParams['fechaDesde'] = fechaDesde
+        elif fechaHasta:
+            # Si solo se proporciona fechaHasta, busca hasta esa fecha
+            where_clauses.append('gie."fechaDistrib" <= :fechaHasta')
+            qParams['fechaHasta'] = fechaHasta
+
+        if where_clauses:
+            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
+            query = text(queryBase + where_clause)
+        else:
+            query = text(queryBase)
+
+        with DatabaseSession().get_session() as session:
+            data_query = session.execute(query, qParams)
+                
+        datosPiezasPostales = []
+
+        for row in data_query:
+            datosPiezasPostales.append({
+                'legajo': row.legajo,
+                'nroCliente': row.nroCliente,
+                'planTurno': row.planTurno,
+                'radio': row.radio,
+                'sucursal': row.sucursal,
+                'latitud': row.latitud,
+                'longitud': row.longitud,
+                'fecha': row.fechaDistrib
+            })
+
+        if not datosPiezasPostales:
+            return '{"message": "Recursos no encontrados"}', 204
         
         keys = list(datosPiezasPostales[0].keys())
 
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
-
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @fechaCliente.route('/api/nroCliente', methods=['GET'])
