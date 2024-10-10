@@ -91,10 +91,10 @@ def XSLXtoJSONconverter(file, idFormato):
     # Convierte el archivo Excel directamente a un objeto JSON
 
     #si es de emaservicios, lo que hago es skippear la primer linea
-    if idFormato == 2:
-        excel_data = pd.read_excel(file, skiprows=1)
-    else:
-        excel_data = pd.read_excel(file)
+   # if idFormato == 2:
+   #     excel_data = pd.read_excel(file, skiprows=1)
+   # else:
+    excel_data = pd.read_excel(file)
 
     data_json = excel_data.to_json(orient="records", date_format='iso')
     data = json.loads(data_json)

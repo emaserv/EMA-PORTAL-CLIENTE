@@ -184,14 +184,17 @@ const FechaCliente = () => {
   };
 
   const armarArrayCoordenadas = (data) => {
-    console.log("aaa", data);
+    console.log("dataaaaaa", data);
+
     let arrayCoordenadas = [];
 
     for (let i = 0; i < data.length; i++) {
-      // Genera valores aleatorios de longitud y latitud
-      const latitud = parseFloat(data[i].latitud);
-      const longitud = parseFloat(data[i].longitud);
-      arrayCoordenadas.push([latitud, longitud]);
+      if (data[i].latitud && data[i].longitud){
+        // Genera valores aleatorios de longitud y latitud
+        const latitud = parseFloat(data[i].latitud);
+        const longitud = parseFloat(data[i].longitud);
+        arrayCoordenadas.push([latitud, longitud]);
+      }
     }
 
     console.log("PRINT ARRAY COORD", arrayCoordenadas);
@@ -293,7 +296,7 @@ const FechaCliente = () => {
           <Card>
             {user ? (
               <SoftBox p={3}>
-                {user.idGrupoCliente === 2 || user.idGrupoCliente === null ? (
+                {(user.idGrupoCliente === 2 || user.idGrupoCliente === null) && puntosMapa ? (
                   <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />
                 ) : null}
               </SoftBox>
