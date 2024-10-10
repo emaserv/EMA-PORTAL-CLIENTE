@@ -11,6 +11,8 @@ import PRSTable from "./data/radioClienteTable";
 import { API_BACK } from "../../config";
 import { useAuth } from "layouts/auth/AuthContext";
 import MyMap from "./components/mapa";
+import PopUp from "./components/PopUp";
+import styled from "styled-components";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -41,6 +43,7 @@ const RadioCliente = () => {
   const [filtroSucursal, setFiltroSucursal] = useState(null);
   const [filtroRadio, setFiltroRadio] = useState(null);
   const [datosFiltrados, setDatosFiltrados] = useState([]);
+  const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
 
   const onSubmit = (data) => {
     console.log(data);
@@ -126,10 +129,6 @@ const RadioCliente = () => {
         }&fechaHasta=${fechaHasta || ""}`
       );
 
-      if (!response2.ok) {
-        throw new Error("Error en la respuesta de radio-cliente");
-      }
-
       const apiData2 = await response2.json();
       console.log("Response from radio-cliente API:", apiData2); // Verifica la respuesta completa
 
@@ -145,8 +144,9 @@ const RadioCliente = () => {
           fechaDesde,
           fechaHasta
         );
-      } else {
+      } else if (response2.status === 404) {
         console.error("No se recibieron datos de radio-cliente API");
+        cambiarEstadoPopUp1(true)
         setAllData([]);
       }
     } catch (error) {
@@ -207,7 +207,7 @@ const RadioCliente = () => {
     fechaDesde,
     fechaHasta
   ) => {
-    console.log("DAAA", data)
+    console.log("DAAA", data);
     const datosFiltrados = data.filter((item) => {
       console.log("WASA1", fechaDesde);
       console.log("WASA2", fechaHasta);
@@ -308,7 +308,7 @@ const RadioCliente = () => {
 
     for (let i = 0; i < data.length; i++) {
       // Genera valores aleatorios de longitud y latitud
-      const latitud = parseFloat(data[i].latitud); 
+      const latitud = parseFloat(data[i].latitud);
       const longitud = parseFloat(data[i].longitud);
       arrayCoordenadas.push([latitud, longitud]);
     }
@@ -318,172 +318,234 @@ const RadioCliente = () => {
   };
 
   return (
-    <SoftBox display="flex" flexDirection="column" alignItems="center">
-      <SoftBox width="100%">
-        <ResponsiveAppBar />
-      </SoftBox>
+    <>
+      <SoftBox display="flex" flexDirection="column" alignItems="center">
+        <SoftBox width="100%">
+          <ResponsiveAppBar />
+        </SoftBox>
 
-      <Card style={{ marginTop: "7rem", width: "90%" }}>
-        <SoftBox p={3}>
-          <SoftTypography variant="h4">Filtros</SoftTypography>
-          <Divider />
+        <Card style={{ marginTop: "7rem", width: "90%" }}>
+          <SoftBox p={3}>
+            <SoftTypography variant="h4">Filtros</SoftTypography>
+            <Divider />
 
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <SoftBox
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <SoftBox>
-                <SoftTypography marginTop={-2}>Plan</SoftTypography>
-                <Controller
-                  name="plan"
-                  control={control}
-                  rules={{ required: "Campo obligatorio" }}
-                  render={({ field }) => (
-                    <>
-                      <SoftInputBase
-                        field={field}
-                        placeholder="Inserte nro de plan"
-                        error={!!errors.plan} // Muestra borde rojo si hay error
-                      />
-                      {errors.plan && (
-                        <SoftTypography
-                          color="error"
-                          fontSize="1rem"
-                          marginTop={1}
-                        >
-                          {errors.plan.message}
-                        </SoftTypography>
-                      )}
-                    </>
-                  )}
-                />
-              </SoftBox>
-
-              <SoftBox>
-                <SoftTypography marginTop={-2}>Sucursal</SoftTypography>
-                <Controller
-                  name="sucursal"
-                  control={control}
-                  rules={{ required: "Campo obligatorio" }}
-                  render={({ field }) => (
-                    <>
-                      <SoftInputBase
-                        field={field}
-                        placeholder="Inserte nro de sucursal"
-                        error={!!errors.sucursal} // Muestra borde rojo si hay error
-                      />
-                      {errors.sucursal && (
-                        <SoftTypography
-                          color="error"
-                          fontSize="1rem"
-                          marginTop={1}
-                        >
-                          {errors.sucursal.message}
-                        </SoftTypography>
-                      )}
-                    </>
-                  )}
-                />
-              </SoftBox>
-
-              <SoftBox>
-                <SoftTypography marginTop={-2}>Radio</SoftTypography>
-                <Controller
-                  name="radio"
-                  control={control}
-                  rules={{ required: "Campo obligatorio" }}
-                  render={({ field }) => (
-                    <>
-                      <SoftInputBase
-                        field={field}
-                        placeholder="Inserte nro de radio"
-                        error={!!errors.radio} // Muestra borde rojo si hay error
-                      />
-                      {errors.radio && (
-                        <SoftTypography
-                          color="error"
-                          fontSize="1rem"
-                          marginTop={1}
-                        >
-                          {errors.radio.message}
-                        </SoftTypography>
-                      )}
-                    </>
-                  )}
-                />
-              </SoftBox>
-
-              <SoftBox display="flex" flexDirection="column" marginTop={-2}>
-                <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
-                <SoftBox display="flex" alignItems="center">
-                  <Controller
-                    name="fechaDesde"
-                    control={control}
-                    render={({ field }) => <DatePickerValue field={field} />}
-                  />
-                  <SoftTypography> - </SoftTypography>
-                  <Controller
-                    name="fechaHasta"
-                    control={control}
-                    render={({ field }) => <DatePickerValue field={field} />}
-                  />
-                </SoftBox>
-              </SoftBox>
-
+            <form onSubmit={handleSubmit(onSubmit)}>
               <SoftBox
                 display="flex"
-                justifyContent="flex-end"
+                justifyContent="space-between"
                 alignItems="center"
-                pt={2}
-                px={3}
               >
-                <SoftButton variant="gradient" color="info">
-                  <input
-                    type="submit"
-                    value="Filtrar"
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                      fontSize: "0.875rem",
-                      fontWeight: "700",
-                      color: "#FFFFFF",
-                      textTransform: "uppercase",
-                    }}
+                <SoftBox>
+                  <SoftTypography marginTop={-2}>Plan</SoftTypography>
+                  <Controller
+                    name="plan"
+                    control={control}
+                    rules={{ required: "Campo obligatorio" }}
+                    render={({ field }) => (
+                      <>
+                        <SoftInputBase
+                          field={field}
+                          placeholder="Inserte nro de plan"
+                          error={!!errors.plan} // Muestra borde rojo si hay error
+                        />
+                        {errors.plan && (
+                          <SoftTypography
+                            color="error"
+                            fontSize="1rem"
+                            marginTop={1}
+                          >
+                            {errors.plan.message}
+                          </SoftTypography>
+                        )}
+                      </>
+                    )}
                   />
-                </SoftButton>
+                </SoftBox>
+
+                <SoftBox>
+                  <SoftTypography marginTop={-2}>Sucursal</SoftTypography>
+                  <Controller
+                    name="sucursal"
+                    control={control}
+                    rules={{ required: "Campo obligatorio" }}
+                    render={({ field }) => (
+                      <>
+                        <SoftInputBase
+                          field={field}
+                          placeholder="Inserte nro de sucursal"
+                          error={!!errors.sucursal} // Muestra borde rojo si hay error
+                        />
+                        {errors.sucursal && (
+                          <SoftTypography
+                            color="error"
+                            fontSize="1rem"
+                            marginTop={1}
+                          >
+                            {errors.sucursal.message}
+                          </SoftTypography>
+                        )}
+                      </>
+                    )}
+                  />
+                </SoftBox>
+
+                <SoftBox>
+                  <SoftTypography marginTop={-2}>Radio</SoftTypography>
+                  <Controller
+                    name="radio"
+                    control={control}
+                    rules={{ required: "Campo obligatorio" }}
+                    render={({ field }) => (
+                      <>
+                        <SoftInputBase
+                          field={field}
+                          placeholder="Inserte nro de radio"
+                          error={!!errors.radio} // Muestra borde rojo si hay error
+                        />
+                        {errors.radio && (
+                          <SoftTypography
+                            color="error"
+                            fontSize="1rem"
+                            marginTop={1}
+                          >
+                            {errors.radio.message}
+                          </SoftTypography>
+                        )}
+                      </>
+                    )}
+                  />
+                </SoftBox>
+
+                <SoftBox display="flex" flexDirection="column" marginTop={-2}>
+                  <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
+                  <SoftBox display="flex" alignItems="center">
+                    <Controller
+                      name="fechaDesde"
+                      control={control}
+                      render={({ field }) => <DatePickerValue field={field} />}
+                    />
+                    <SoftTypography> - </SoftTypography>
+                    <Controller
+                      name="fechaHasta"
+                      control={control}
+                      render={({ field }) => <DatePickerValue field={field} />}
+                    />
+                  </SoftBox>
+                </SoftBox>
+
+                <SoftBox
+                  display="flex"
+                  justifyContent="flex-end"
+                  alignItems="center"
+                  pt={2}
+                  px={3}
+                >
+                  <SoftButton variant="gradient" color="info">
+                    <input
+                      type="submit"
+                      value="Filtrar"
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+                        fontSize: "0.875rem",
+                        fontWeight: "700",
+                        color: "#FFFFFF",
+                        textTransform: "uppercase",
+                      }}
+                    />
+                  </SoftButton>
+                </SoftBox>
               </SoftBox>
-            </SoftBox>
-          </form>
-        </SoftBox>
-      </Card>
+            </form>
+          </SoftBox>
+        </Card>
 
-      <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
-        <SoftBox justifyContent="center">
-          <Card>
-            <SoftBox p={3}>
-              <MyMap
-                arrayPuntos={armarArrayCoordenadas(puntosMapa)}
-                arrayCamino={armarArrayCoordenadas(caminoMapa)}
-              />
-            </SoftBox>
-          </Card>
+        <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
+          <SoftBox justifyContent="center">
+            <Card>
+              <SoftBox p={3}>
+                <MyMap
+                  arrayPuntos={armarArrayCoordenadas(puntosMapa)}
+                  arrayCamino={armarArrayCoordenadas(caminoMapa)}
+                />
+              </SoftBox>
+            </Card>
+          </SoftBox>
+        </SoftBox>
+
+        <SoftBox
+          paddingBottom={3}
+          style={{ width: "90%" }}
+          justifyContent="center"
+        >
+          <SoftBox justifyContent="center">
+            <Card>
+              <SoftBox p={3}>
+                <PRSTable data={datosFiltrados} columns={columns} />
+              </SoftBox>
+            </Card>
+          </SoftBox>
         </SoftBox>
       </SoftBox>
 
-      <SoftBox style={{ width: "90%" }} justifyContent="center">
-        <SoftBox justifyContent="center">
-          <Card>
-            <SoftBox p={3}>
-              <PRSTable data={datosFiltrados} columns={columns} />
-            </SoftBox>
-          </Card>
-        </SoftBox>
-      </SoftBox>
-    </SoftBox>
+      <PopUp
+        estado={estadoPopUp1}
+        cambiarEstado={cambiarEstadoPopUp1}
+        titulo=""
+        mostrarHeader={true}
+        mostrarOverlay={true}
+        posicionModal={"center"}
+        padding={"0px"}
+        width={"30vw"}
+        height={"15vh"}
+        background={"#085397"}
+      >
+        <Contenido>
+          {/* Contenido del PopUp */}
+          <SoftBox display="flex" justifyContent="center" align-items="center">
+            <SoftTypography
+              varint="button"
+              fontWeight="medium"
+              color="dark"
+              px={3}
+              style={{
+                fontSize: "1rem",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              No encotramos informacion para este cliente.
+            </SoftTypography>
+          </SoftBox>
+        </Contenido>
+      </PopUp>
+    </>
   );
 };
 
 export default RadioCliente;
+
+const Contenido = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  h1 {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  p {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  img {
+    width: 100%;
+    vertical-align: top;
+    border-radius: 3px;
+  }
+`;

@@ -12,6 +12,8 @@ import { API_BACK } from "../../config";
 import { useAuth } from "layouts/auth/AuthContext";
 import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
 import MyMap from "./components/mapa";
+import PopUp from "./components/PopUp";
+import styled from "styled-components";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -36,6 +38,7 @@ const FechaCliente = () => {
   const [filtroFechaHasta, setFiltroFechaHasta] = useState(null);
   const [filtroCliente, setFiltroCliente] = useState(null);
   const [datosFiltrados, setDatosFiltrados] = useState([]);
+  const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
 
   const onSubmit = async (data) => {
     try {
@@ -81,13 +84,15 @@ const FechaCliente = () => {
       });
   
       const response1 = await fetch(url1);
+      console.log("Response",response1.status)
       const apiData1 = await response1.json();
   
       if (apiData1.dataTabla) {
         setAllData(apiData1.dataTabla);
         setColumns(apiData1.columns);
         filtrarDatos(apiData1.dataTabla, cliente, fechaDesde, fechaHasta);
-      } else {
+      } else if (response1.status === 404) {
+        cambiarEstadoPopUp1(true)
         console.error("No se recibieron datos de fecha-cliente API");
         setAllData([]);
       }
@@ -194,6 +199,7 @@ const FechaCliente = () => {
   };
 
   return (
+    <>
     <SoftBox display="flex" flexDirection="column" alignItems="center">
       <SoftBox width="100%">
         <ResponsiveAppBar />
@@ -296,7 +302,7 @@ const FechaCliente = () => {
         </SoftBox>
       </SoftBox>
 
-      <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
+      <SoftBox paddingBottom={3} style={{ width: "90%" }} justifyContent="center">
         <SoftBox justifyContent="center">
           <Card>
             {user ? (
@@ -312,7 +318,56 @@ const FechaCliente = () => {
         </SoftBox>
       </SoftBox>
     </SoftBox>
+
+    <PopUp
+      estado={estadoPopUp1}
+      cambiarEstado={cambiarEstadoPopUp1}
+      titulo=""
+      mostrarHeader={true}
+      mostrarOverlay={true}
+      posicionModal={"center"}
+      padding={"0px"}
+      width={"30vw"}
+      height={"15vh"}
+      background={"#085397"}
+    >
+      <Contenido>
+        
+        {/* Contenido del PopUp */}
+        <SoftBox display="flex" justifyContent="center" align-items="center">
+          <SoftTypography varint="button" fontWeight="medium" color="dark" px={3} style={{fontSize: '1rem', display:'flex', justifyContent:'center', alignItems:'center'}}>
+            No encotramos informacion para este cliente.
+          </SoftTypography>
+        </SoftBox>
+  
+      </Contenido>
+    </PopUp>
+
+  </>
   );
 };
 
 export default FechaCliente;
+
+const Contenido = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  h1 {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  p {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  img {
+    width: 100%;
+    vertical-align: top;
+    border-radius: 3px;
+  }
+`;
