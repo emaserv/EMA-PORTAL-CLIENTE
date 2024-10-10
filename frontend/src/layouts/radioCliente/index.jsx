@@ -500,6 +500,7 @@ const RadioCliente = () => {
         width={"40vw"}
         height={"15vh"}
         background={"#085397"}
+        paddingTopEncabezado={'20px'}
       >
         <Contenido>
           {/* Contenido del PopUp */}

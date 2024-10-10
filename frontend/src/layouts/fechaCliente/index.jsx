@@ -330,6 +330,7 @@ const FechaCliente = () => {
       width={"30vw"}
       height={"15vh"}
       background={"#085397"}
+      paddingTopEncabezado={'20px'}
     >
       <Contenido>
         
