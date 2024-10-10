@@ -12,7 +12,7 @@ import { API_BACK } from "../../config";
 import { useAuth } from "layouts/auth/AuthContext";
 import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
 import MyMap from "./components/mapa";
-import PopUp from "./components/PopUp";
+import PopUp from "components/PopUp";
 import styled from "styled-components";
 
 const DataConverter = (fechaDeSincronizacion) => {
@@ -335,7 +335,8 @@ const FechaCliente = () => {
         
         {/* Contenido del PopUp */}
         <SoftBox display="flex" justifyContent="center" align-items="center">
-          <SoftTypography varint="button" fontWeight="medium" color="dark" px={3} style={{fontSize: '1rem', display:'flex', justifyContent:'center', alignItems:'center'}}>
+          <SoftTypography varint="button" fontWeight="medium" color="dark" px={3}
+              py={2} style={{fontSize: '1rem', display:'flex', justifyContent:'center', alignItems:'center'}}>
             No encotramos informacion para este cliente.
           </SoftTypography>
         </SoftBox>

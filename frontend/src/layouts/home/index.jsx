@@ -27,6 +27,8 @@ import { useAuth } from "layouts/auth/AuthContext";
 
 const Home = () => {
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
+  const [fallo, cambiarEstadoPopUpFallo] = useState(false);
+  const [correct, cambiarEstadoPopUpCorrect] = useState(false);
   const [fileName, setFileName] = useState(null);
   const { handleSubmit, control } = useForm();
   const { user } = useAuth();
@@ -61,12 +63,17 @@ const Home = () => {
       }
 
       const response = await axios.post(`${API_BACK}/api/upload`, formData);
-      console.log(response)
-      setLoading(false);
+      console.log("response", response)
+
+      if(response.status === 200){
+        setLoading(false);
+        cambiarEstadoPopUpCorrect(true);
+      }
       setFileName(null);
     } catch (error) {
       console.error("Error completo:", error);
       setLoading(false);
+      cambiarEstadoPopUpFallo(true);
     }
   };
 
@@ -309,8 +316,7 @@ const Home = () => {
 
       <PopUp
         estado={loading}
-        titulo=""
-        mostrarHeader={true}
+        mostrarHeader={false}
         mostrarOverlay={true}
         posicionModal={"center"}
         padding={"0px"}
@@ -325,9 +331,65 @@ const Home = () => {
             alignItems="center"
             justifyContent="center"
             px={3}
-            py={4}
+            py={2.5}
           >
             Aguarde, su archivo esta siendo cargado...
+          </SoftTypography>
+        </Contenido>
+      </PopUp>
+
+      <PopUp
+        estado={fallo}
+        cambiarEstado={cambiarEstadoPopUpFallo}
+        titulo=""
+        mostrarHeader={true}
+        mostrarOverlay={true}
+        posicionModal={"center"}
+        padding={"0px"}
+        width={"30vw"}
+        height={"15vh"}
+        background={"#FF0000"}
+        paddingTopEncabezado={'20px'}
+      >
+        <Contenido>
+          <SoftTypography
+            variant="button"
+            fontWeight="medium"
+            color="dark"
+            alignItems="center"
+            justifyContent="center"
+            px={3}
+            py={2}
+          >
+            Lo sentimos, ocurrio un error al intentar cargar su archivo.
+          </SoftTypography>
+        </Contenido>
+      </PopUp>
+
+      <PopUp
+        estado={correct}
+        cambiarEstado={cambiarEstadoPopUpCorrect}
+        titulo=""
+        mostrarHeader={true}
+        mostrarOverlay={true}
+        posicionModal={"center"}
+        padding={"0px"}
+        width={"30vw"}
+        height={"10vh"}
+        background={"#00FF00"}
+        paddingTopEncabezado={'20px'}
+      >
+        <Contenido>
+          <SoftTypography
+            variant="button"
+            fontWeight="medium"
+            color="dark"
+            alignItems="center"
+            justifyContent="center"
+            px={3}
+            py={4}
+          >
+            Archivo cargado correctamente.
           </SoftTypography>
         </Contenido>
       </PopUp>

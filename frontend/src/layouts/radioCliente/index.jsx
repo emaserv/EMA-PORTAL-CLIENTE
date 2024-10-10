@@ -11,7 +11,7 @@ import PRSTable from "./data/radioClienteTable";
 import { API_BACK } from "../../config";
 import { useAuth } from "layouts/auth/AuthContext";
 import MyMap from "./components/mapa";
-import PopUp from "./components/PopUp";
+import PopUp from "components/PopUp";
 import styled from "styled-components";
 
 const DataConverter = (fechaDeSincronizacion) => {
@@ -497,7 +497,7 @@ const RadioCliente = () => {
         mostrarOverlay={true}
         posicionModal={"center"}
         padding={"0px"}
-        width={"30vw"}
+        width={"40vw"}
         height={"15vh"}
         background={"#085397"}
       >
@@ -507,8 +507,9 @@ const RadioCliente = () => {
             <SoftTypography
               varint="button"
               fontWeight="medium"
-              color="dark"
+              color="dark" 
               px={3}
+              py={2}
               style={{
                 fontSize: "1rem",
                 display: "flex",
@@ -516,7 +517,7 @@ const RadioCliente = () => {
                 alignItems: "center",
               }}
             >
-              No encotramos informacion para este cliente.
+              No encotramos informacion para esta combinacion de plan, sucursal y radio.
             </SoftTypography>
           </SoftBox>
         </Contenido>

@@ -14,6 +14,7 @@ const PopUp = ({
 	background,
 	height,
 	width,
+	paddingTopEncabezado
 }) => {
 	return (
 		<>
@@ -21,7 +22,7 @@ const PopUp = ({
 				<Overlay mostrarOverlay={mostrarOverlay} posicionModal={posicionModal}>
 					<ContenedorModal padding={padding} width={width} height={height}>
 						{mostrarHeader && 
-							<EncabezadoModal background={background}>
+							<EncabezadoModal paddingTopEncabezado={paddingTopEncabezado} background={background}>
 								<h3>{titulo}</h3>
 							</EncabezadoModal>
 						}
@@ -62,9 +63,8 @@ const ContenedorModal = styled.div`
 	position: relative;
 	border-radius: 15px;
 	box-shadow: rgba(100,100,111, 0.2) 0px 7px 29px 0px;
-	width: ${props => props.width ? props.width : '50vw'};
-	height: ${props => props.height ? props.height : '40vh'};
-	min-height: 300px;
+	width: ${props => props.width};
+	height: ${props => props.height};
 	padding: ${props => props.padding ? props.padding : '5%'};
 `;
 
@@ -84,7 +84,7 @@ const EncabezadoModal = styled.div`
 		font-size: 16px;
 		color: ${props => props.background ? '#FFFFFF' : '#000000'};
 		padding-left: 10px;
-		padding-top: 5px;
+		padding-top: ${props => props.paddingTopEncabezado ? props.paddingTopEncabezado : '5px'};
 	}
 `;
 
@@ -124,10 +124,9 @@ PopUp.propTypes = {
 	background: PropTypes.string.isRequired,
 	width: PropTypes.string,
 	height: PropTypes.string,
-	datapop: PropTypes.object
+	datapop: PropTypes.object,
+	paddingTopEncabezado: PropTypes.string,
 }
-
-
 
 
 
