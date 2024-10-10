@@ -387,7 +387,7 @@ const Home = () => {
             alignItems="center"
             justifyContent="center"
             px={3}
-            py={4}
+            py={2}
           >
             Archivo cargado correctamente.
           </SoftTypography>
