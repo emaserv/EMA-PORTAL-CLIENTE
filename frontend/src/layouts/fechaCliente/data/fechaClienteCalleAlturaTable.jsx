@@ -21,7 +21,7 @@ import PhotoIcon from "@mui/icons-material/Photo";
 import MapIcon from "@mui/icons-material/Map";
 import Edit from "@mui/icons-material/Edit";
 import ArticleIcon from "@mui/icons-material/Article";
-
+import MobileFriendlyTooltip from "components/TooltipMobile";
 
 dayjs.locale("ES");
 
@@ -443,9 +443,9 @@ export default function CalleAlturaTable({ data, columns }) {
                                 }}
                               >
                                 {column !== "porcentaje" ? (
-                                  <Tooltip title={row[column] ? row[column] : 'Sin información'}>
+                                  <MobileFriendlyTooltip title={row[column] ? row[column] : 'Sin información'}>
                                     <span>{truncarTexto(row[column], 12)}</span>
-                                  </Tooltip>
+                                  </MobileFriendlyTooltip>
                                 ) : (
                                   <Completion
                                     value={row[column]}

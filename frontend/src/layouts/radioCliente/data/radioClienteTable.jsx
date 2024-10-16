@@ -23,6 +23,7 @@ import MapIcon from "@mui/icons-material/Map";
 import Edit from "@mui/icons-material/Edit";
 import ArticleIcon from "@mui/icons-material/Article";
 import { Tooltip } from "@mui/material";
+import MobileFriendlyTooltip from "components/TooltipMobile";
 
 dayjs.locale("ES");
 
@@ -455,13 +456,13 @@ export default function PRSTable({ data, columns }) {
                             }}
                           >
                             {column !== "porcentaje" ? (
-                              <Tooltip
+                              <MobileFriendlyTooltip
                                 title={
                                   row[column] ? row[column] : "Sin información"
                                 }
                               >
                                 <span>{truncarTexto(row[column], 12)}</span>
-                              </Tooltip>
+                              </MobileFriendlyTooltip>
                             ) : (
                               <Completion value={row[column]} color="info" />
                             )}

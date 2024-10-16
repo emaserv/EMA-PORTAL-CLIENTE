@@ -23,6 +23,7 @@ import MapIcon from "@mui/icons-material/Map";
 import Edit from "@mui/icons-material/Edit";
 import ArticleIcon from "@mui/icons-material/Article";
 import { Tooltip } from "@mui/material";
+import MobileFriendlyTooltip from "components/TooltipMobile";
 
 dayjs.locale("ES");
 
@@ -297,7 +298,7 @@ export default function PRSTable({ data, columns }) {
         <TableRow
           style={{
             background: "linear-gradient(to top, #2152ff, #21d4fd)",
-            borderRadius: "10  px", // Bordes redondeados
+            borderRadius: "10px", // Bordes redondeados
             minWidth: "auto",
             fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
             fontSize: "0.85rem",
@@ -345,7 +346,7 @@ export default function PRSTable({ data, columns }) {
                 <span>{truncarTexto(headCell.label, 12)}</span>
               </Tooltip>
               {orderBy === headCell.id &&
-                (order == "asc" ? ascendingIcon : descendingIcon)}
+                (order === "asc" ? ascendingIcon : descendingIcon)}
             </TableCell>
           ))}
         </TableRow>
@@ -463,13 +464,13 @@ export default function PRSTable({ data, columns }) {
                             }}
                           >
                             {column !== "porcentaje" ? (
-                              <Tooltip
+                              <MobileFriendlyTooltip
                                 title={
                                   row[column] ? row[column] : "Sin información"
                                 }
                               >
                                 <span>{truncarTexto(row[column], 12)}</span>
-                              </Tooltip>
+                              </MobileFriendlyTooltip>
                             ) : (
                               <Completion value={row[column]} color="info" />
                             )}

@@ -336,7 +336,6 @@ const FechaCliente = () => {
       paddingTopEncabezado={'20px'}
     >
       <Contenido>
-        
         {/* Contenido del PopUp */}
         <SoftBox display="flex" justifyContent="center" align-items="center">
           <SoftTypography varint="button" fontWeight="medium" color="dark" px={3}
@@ -344,7 +343,6 @@ const FechaCliente = () => {
             No encotramos informacion para este cliente.
           </SoftTypography>
         </SoftBox>
-  
       </Contenido>
     </PopUp>
 
