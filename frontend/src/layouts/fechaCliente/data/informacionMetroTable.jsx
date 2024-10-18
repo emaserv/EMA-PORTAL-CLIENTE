@@ -239,7 +239,7 @@ export default function InformacionMetroTable({ data, columns }) {
       <TableHead style={{ height: "40px" }}>
         <TableRow
           style={{
-            background: "linear-gradient(to top, #2152ff, #21d4fd)",
+            background: "linear-gradient(to top, #ff5e62, #ff9966)",
             borderRadius: "10 px", // Bordes redondeados
             minWidth: "auto",
             fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
@@ -257,11 +257,11 @@ export default function InformacionMetroTable({ data, columns }) {
           {headCells.map((headCell) => (
             <TableCell
               key={headCell.id}
-              align={headCell.numeric ? "right" : "left"}
+              align={headCell.numeric ? "right" : "center"}
               padding={headCell.disablePadding ? "none" : "normal"}
               sortDirection={orderBy === headCell.id ? order : false}
               sx={{
-                background: "linear-gradient(to top, #2152ff, #21d4fd)",
+                background: "linear-gradient(to top, #ff5e62, #ff9966)",
                 borderRadius: "1px", // Bordes redondeados
                 minWidth: "auto",
                 fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
