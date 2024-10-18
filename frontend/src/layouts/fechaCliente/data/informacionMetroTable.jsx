@@ -399,7 +399,7 @@ export default function InformacionMetroTable({ data, columns }) {
                             column !== "foto" && (
                               <TableCell
                                 key={`${row.id}-${column}-${index}`}
-                                align="left"
+                                align="center"
                                 sx={{
                                   fontSize: "0.875rem",
                                   paddingTop: "2px",
