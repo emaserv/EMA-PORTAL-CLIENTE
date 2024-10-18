@@ -278,7 +278,13 @@ export default function InformacionMetroTable({ data, columns }) {
               selected={numSelected > 0 && orderBy === headCell.id}
               onClick={createSortHandler(headCell.id)}
             >
-              <Tooltip title={headCell.labelComplete ? headCell.labelComplete : 'Sin información'}>
+              <Tooltip
+                title={
+                  headCell.labelComplete
+                    ? headCell.labelComplete
+                    : "Sin información"
+                }
+              >
                 <span>{headCell.label}</span>
               </Tooltip>
               {orderBy === headCell.id &&
@@ -319,16 +325,16 @@ export default function InformacionMetroTable({ data, columns }) {
   // Función para truncar texto
   const truncarTexto = (texto, limite) => {
     console.log("WASAAAAAA", texto);
-    if (!texto || typeof texto !== 'string') {
-      return ''; // O devuelve otro valor predeterminado si lo prefieres
+    if (!texto || typeof texto !== "string") {
+      return ""; // O devuelve otro valor predeterminado si lo prefieres
     }
-  
+
     if (texto.length > limite) {
-      return texto.substring(0, limite) + '...';
+      return texto.substring(0, limite) + "...";
     }
     return texto;
   };
-    
+
   const visibleRows = React.useMemo(
     () =>
       data
@@ -401,7 +407,13 @@ export default function InformacionMetroTable({ data, columns }) {
                                 }}
                               >
                                 {column !== "porcentaje" ? (
-                                  <MobileFriendlyTooltip title={row[column] ? row[column] : 'Sin información'}>
+                                  <MobileFriendlyTooltip
+                                    title={
+                                      row[column]
+                                        ? row[column]
+                                        : "Sin información"
+                                    }
+                                  >
                                     <span>{truncarTexto(row[column], 12)}</span>
                                   </MobileFriendlyTooltip>
                                 ) : (
@@ -437,6 +449,7 @@ export default function InformacionMetroTable({ data, columns }) {
             marginRight: "10vh",
           }}
         >
+          {/* 
           <TablePagination
             rowsPerPageOptions={[5, 15, 25, 50, 75, 100]}
             component="div"
@@ -450,6 +463,7 @@ export default function InformacionMetroTable({ data, columns }) {
               `${from}-${to} de ${count}`
             }
           />
+          */}
         </div>
       </Paper>
     </Box>

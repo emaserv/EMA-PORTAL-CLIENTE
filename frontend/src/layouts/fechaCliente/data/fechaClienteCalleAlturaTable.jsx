@@ -571,6 +571,7 @@ export default function CalleAlturaTable({ data, columns }) {
             marginRight: "10vh",
           }}
         >
+          {/* 
           <TablePagination
             rowsPerPageOptions={[5, 15, 25, 50, 75, 100]}
             component="div"
@@ -584,6 +585,7 @@ export default function CalleAlturaTable({ data, columns }) {
               `${from}-${to} de ${count}`
             }
           />
+          */}
         </div>
       </Paper>
     </Box>
