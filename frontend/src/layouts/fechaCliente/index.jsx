@@ -149,23 +149,6 @@ const FechaCliente = () => {
       console.error("Error en la solicitud geoMapaItems:", error);
       setPuntosMapa([]);
     }
-
-    try {
-      // tercera solicitud: tabla info
-      const url3 = new URL(`${API_BACK}/api/tablaInformacion`);
-
-      const response3 = await fetch(url3);
-      const apiData3 = await response3.json();
-
-      if (apiData3.dataTabla) {
-        setDataInfo(apiData3.dataTabla);
-        setColumnsInfo(apiData3.columns);
-      } else {
-        console.error("No se recibieron datos de info API");
-      }
-    } catch (error) {
-      console.error("Error en la solicitud de info:", error);
-    }
   };
 
   const convertirFecha = (fechaStr) => {
