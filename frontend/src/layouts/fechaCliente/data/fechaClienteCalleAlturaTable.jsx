@@ -468,7 +468,7 @@ export default function CalleAlturaTable({ data, columns }) {
                           sx={{
                             paddingTop: "2px",
                             paddingBottom: "0px",
-                            paddingLeft: "2.5rem",
+                            paddingLeft: "0",
                           }}
                         >
                           <a

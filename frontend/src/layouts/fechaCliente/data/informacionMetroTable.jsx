@@ -146,8 +146,8 @@ export default function InformacionMetroTable({ data, columns }) {
       id: "Empresa",
       numeric: false,
       disablePadding: false,
-      label: "Empresa",
-      labelComplete: "Empresa",
+      label: "Referencias de Entrega",
+      labelComplete: "Referencias de Entrega",
     },
     {
       id: "ZP",
