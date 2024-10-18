@@ -113,6 +113,7 @@ def tablaFC():
                 'fecha': format_date(row.fecha),
                 'hora': format_time(row.hora),  # Usa la función de formateo aquí
                 'estadoPieza': row.estadoPieza,
+                'estadoMetro': row.estadoMetro,
                 'obsVisita': row.obsVisita,
                 'geoVisita': row.geoVisita,
                 'foto': row.foto,
@@ -226,3 +227,58 @@ def nroClienteFC():
         print()
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
+
+#jsonify lo que hace es convierte lo que trae de la base de datos a json
+@fechaCliente.route('/api/tablaInformacion', methods=['GET'])
+def tablaInformacion():
+    try:
+        # Datos de ejemplo en la consulta
+        data_query = [
+            {
+                "Empresa": "EMA",
+                "ZP": "1° ZP",
+                "BP_CR": "BP CR",
+                "FAD": "FAD",
+                "NV": "NV",
+                "UZP": "UZP",
+                "ZP_CR_2": "ZP CR",
+            },
+            {
+                "Empresa": "METROGAS",
+                "ZP": "1001",
+                "BP_CR": "1001",
+                "FAD": "1000",
+                "NV": "1001",
+                "UZP": "1001",
+                "ZP_CR_2": "1001",
+            },
+        ]
+        
+        datosPiezasPostales = []
+
+        # Corregido: Acceso a los datos en el diccionario utilizando corchetes []
+        for row in data_query:
+            datosPiezasPostales.append({
+                'Empresa': row['Empresa'],      # Corregido el acceso a los elementos del diccionario
+                'ZP': row['ZP'],
+                'BP_CR': row['BP_CR'],
+                'FAD': row['FAD'],
+                'NV': row['NV'],
+                'UZP': row['UZP'],
+                'ZP_CR_2': row['ZP_CR_2'],
+            })
+
+        if not datosPiezasPostales:
+            return jsonify({"message": "Recursos no encontrados"}), 204
+        
+        keys = list(datosPiezasPostales[0].keys())
+
+        return jsonify({
+            "message": "Conexión y consulta exitosas", 
+            "columns": keys, 
+            "dataTabla": datosPiezasPostales
+        }), 200
+
+    except Exception as e:
+        print(e)  # Corregido: Mostrar el error real en la consola
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500

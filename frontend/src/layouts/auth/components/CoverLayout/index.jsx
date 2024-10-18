@@ -73,7 +73,6 @@ function CoverLayout({ color, header, title, description, image, top, children }
             right={{ md: "20rem", xl: "20rem" }}
             mr={-20}
             sx={{
-              transform: "skewX(-10deg)",
               overflow: "hidden",
               borderBottomLeftRadius: ({ borders: { borderRadius } }) => borderRadius.lg,
             }}
@@ -83,9 +82,10 @@ function CoverLayout({ color, header, title, description, image, top, children }
               ml={-1.5}
               height="90%"
               sx={{
-                backgroundImage: `url(${image})`,
-                backgroundSize: "cover",
-                transform: "skewX(10deg)",
+                  backgroundImage: `url(${image})`,
+                  backgroundSize: "contain", // Hace que la imagen cubra todo el contenedor
+                  backgroundRepeat: "no-repeat", // Evita que la imagen se repita
+                  backgroundPosition: "center", // Centra la imagen
               }}
             />
           </SoftBox>

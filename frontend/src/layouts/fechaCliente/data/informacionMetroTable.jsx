@@ -29,7 +29,7 @@ const toDate = (dayjsObject) =>
   new Date(dayjsObject.year(), dayjsObject.month(), dayjsObject.date());
 const todayGMT3 = dayjs().subtract(3, "hour");
 
-export default function CalleAlturaTable({ data, columns }) {
+export default function InformacionMetroTable({ data, columns }) {
   const [order, setOrder] = React.useState("asc");
   const [orderBy, setOrderBy] = React.useState("cantidadDePiezas");
   const [selected, setSelected] = React.useState([]);
@@ -143,102 +143,53 @@ export default function CalleAlturaTable({ data, columns }) {
 
   const headCells = [
     {
-      id: "fechaEmision",
+      id: "Empresa",
       numeric: false,
       disablePadding: false,
-      label: "F. Emision",
-      labelComplete: "Fecha de Emision",
+      label: "Empresa",
+      labelComplete: "Empresa",
     },
     {
-      id: "nroCliente",
+      id: "ZP",
       numeric: false,
       disablePadding: false,
-      label: "Nro. Cliente",
-      labelComplete: "Numero de Cliente",
+      label: "1° BAJO PUERTA ZONA PELIGROSA",
+      labelComplete: "1° BAJO PUERTA ZONA PELIGROSA",
     },
     {
-      id: "titular",
+      id: "BP_CR",
       numeric: false,
       disablePadding: false,
-      label: "Titular",
-      labelComplete: "Titular",
+      label: "BAJO PUERTA",
+      labelComplete: "BAJO PUERTA",
     },
     {
-      id: "direccion",
+      id: "FAD",
       numeric: false,
       disablePadding: false,
-      label: "Direccion",
-      labelComplete: "Direccion",
+      label: "FIRMADO (AD)",
+      labelComplete: "FIRMADO (AD)",
     },
     {
-      id: "localidad",
+      id: "NV",
       numeric: false,
       disablePadding: false,
-      label: "Localidad",
-      labelComplete: "Localidad",
+      label: "NO VISITADO",
+      labelComplete: "NO VISITADO",
     },
     {
-      id: "fecha",
+      id: "UZP",
       numeric: false,
       disablePadding: false,
-      label: "F. Dist.",
-      labelComplete: "Fecha de Distribucion",
+      label: "ULTIMA ZONA PELIGROSA",
+      labelComplete: "ULTIMA ZONA PELIGROSA",
     },
     {
-      id: "hora",
+      id: "ZP_CR_2",
       numeric: false,
       disablePadding: false,
-      label: "Hora",
-      labelComplete: "Hora",
-    },
-    {
-      id: "estadoPieza",
-      numeric: false,
-      disablePadding: false,
-      label: "Est E.",
-      labelComplete: "Estado EMA",
-    },
-    {
-      id: "estadoMetro",
-      numeric: false,
-      disablePadding: false,
-      label: "Est M.",
-      labelComplete: "Estado Metrogas",
-    },
-    {
-      id: "obsVisita",
-      numeric: false,
-      disablePadding: false,
-      label: "Obs. Visita",
-      labelComplete: "Observacion de Visita",
-    },
-    {
-      id: "geoVisita",
-      numeric: false,
-      disablePadding: false,
-      label: "V.",
-      labelComplete: "Geoposicion de Visita",
-    },
-    {
-      id: "foto",
-      numeric: false,
-      disablePadding: false,
-      label: "Foto",
-      labelComplete: "Foto",
-    },
-    {
-      id: "firma",
-      numeric: false,
-      disablePadding: false,
-      label: "Firma",
-      labelComplete: "Firma",
-    },
-    {
-      id: "imagenAD",
-      numeric: false,
-      disablePadding: false,
-      label: "Im. AD",
-      labelComplete: "Imagen Aviso Deuda",
+      label: "BAJO PUERTA  ZONA PELIGROSA",
+      labelComplete: "BAJO PUERTA  ZONA PELIGROSA",
     },
   ];
 
@@ -462,91 +413,6 @@ export default function CalleAlturaTable({ data, columns }) {
                               </TableCell>
                             )
                         )}
-
-                        <TableCell
-                          id={`${row.id}-geoVisita-1`}
-                          sx={{
-                            paddingTop: "2px",
-                            paddingBottom: "0px",
-                            paddingLeft: "2.5rem",
-                          }}
-                        >
-                          <a
-                            href={row.geoVisita ? row.geoVisita : "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              textDecoration: "none",
-                              color: row.geoVisita ? "#4682B4" : "#D3D3D3",
-                            }}
-                          >
-                            <MapIcon fontSize="medium" />
-                          </a>
-                        </TableCell>
-
-                          <TableCell
-                            id={`${row.id}-foto-1`}
-                            sx={{
-                              paddingTop: "2px",
-                              paddingBottom: "0px",
-                            }}
-                          >
-                            <a
-                              href={row.foto ? row.foto : "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                textDecoration: "none",
-                                color: row.foto ? "#4682B4" : "#D3D3D3",
-                              }}
-                            >
-                              <PhotoIcon fontSize="medium" />
-                            </a>
-                          </TableCell>
-
-                          <TableCell
-                            id={`${row.id}-firma-1`}
-                            sx={{
-                              paddingTop: "2px",
-                              paddingBottom: "0px",
-                            }}
-                          >
-                            <a
-                              href={row.firma !== '-' ? row.firma : "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                textDecoration: "none",
-                                color: row.firma !== '-' ? "#4682B4" : "#D3D3D3",
-                                pointerEvents: row.firma !== '-' ? "auto" : "none", // Deshabilita el click si es '-'
-                                cursor: row.firma !== '-' ? "pointer" : "not-allowed",
-                              }}
-                            >
-                              <Edit fontSize="medium" />
-                            </a>
-                          </TableCell>
-                          
-                          <TableCell
-                            id={`${row.id}-firma-1`}
-                            sx={{
-                              paddingTop: "2px",
-                              paddingBottom: "0px",
-                            }}
-                          >
-                            <a
-                              href={row.firma !== '-' ? row.firma : "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                textDecoration: "none",
-                                color: "#D3D3D3",
-                                pointerEvents: "none", // Deshabilita el click si es '-'
-                                cursor: "not-allowed",
-                              }}
-                            >
-                              <ArticleIcon fontSize="medium" />
-                            </a>
-                          </TableCell>
                       </TableRow>
                     ) : null}
                   </>
@@ -590,7 +456,7 @@ export default function CalleAlturaTable({ data, columns }) {
   );
 }
 
-CalleAlturaTable.propTypes = {
+InformacionMetroTable.propTypes = {
   data: PropTypes.array.isRequired,
   columns: PropTypes.array.isRequired,
   control: PropTypes.object.isRequired,

@@ -14,6 +14,9 @@ import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
 import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
 import styled from "styled-components";
+import * as XLSX from 'xlsx';
+import { margin } from "@mui/system";
+import InformacionMetroTable from "./data/informacionMetroTable";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -39,6 +42,21 @@ const FechaCliente = () => {
   const [filtroCliente, setFiltroCliente] = useState(null);
   const [datosFiltrados, setDatosFiltrados] = useState([]);
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
+  const [dataInfo, setDataInfo] = useState([]);
+  const [columnsInfo, setColumnsInfo] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_BACK}/api/tablaInformacion`, { mode: "cors" })
+      .then((response) => response.json())
+      .then((apiData) => {
+        if (apiData.dataTabla && apiData.columns) {
+          setDataInfo(apiData.dataTabla);
+          setColumnsInfo(apiData.columns);
+        } else {
+        }
+      })
+      .catch((error) => {});
+    }, []);
 
   const onSubmit = async (data) => {
     try {
@@ -131,6 +149,23 @@ const FechaCliente = () => {
       console.error("Error en la solicitud geoMapaItems:", error);
       setPuntosMapa([]);
     }
+
+    try {
+      // tercera solicitud: tabla info
+      const url3 = new URL(`${API_BACK}/api/tablaInformacion`);
+
+      const response3 = await fetch(url3);
+      const apiData3 = await response3.json();
+
+      if (apiData3.dataTabla) {
+        setDataInfo(apiData3.dataTabla);
+        setColumnsInfo(apiData3.columns);
+      } else {
+        console.error("No se recibieron datos de info API");
+      }
+    } catch (error) {
+      console.error("Error en la solicitud de info:", error);
+    }
   };
 
   const convertirFecha = (fechaStr) => {
@@ -192,6 +227,30 @@ const FechaCliente = () => {
     return arrayCoordenadas;
   };
 
+  const exportarAExcel = (data) => {
+    const formattedData = data.map(row => ({
+      "Fecha Emision": row.fechaEmision ? row.fechaEmision : '-',
+      "Numero de Cliente": row.nroCliente ? row.nroCliente : '-',
+      "Titular": row.titular ? row.titular : '-',
+      "Direccion": row.direccion ? row.direccion : '-',
+      "Localidad": row.localidad ? row.localidad : '-',
+      "Fecha de Distribucion": row.fecha ? row.fecha : '-',
+      "Hora": row.hora ? row.hora : '-',
+      "Estado EMA": row.estadoPieza ? row.estadoPieza : '-',
+      "Estado Metrogas": row.estadoMetro ? row.estadoMetro : '-',
+      "Observacion de Visita": row.obsVisita ? row.obsVisita : '-',
+      "Visita": row.geoVisita ? row.geoVisita : '-',
+      "Foto": row.foto ? row.foto : '-',
+      "Firma": row.firma ? row.firma : '-',
+      "Imagen Aviso Deuda": '-',
+}));
+  
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    XLSX.writeFile(workbook, 'Seguimiento.xlsx');
+  };
+
   return (
     <>
       <SoftBox display="flex" flexDirection="column" alignItems="center">
@@ -203,7 +262,7 @@ const FechaCliente = () => {
           <SoftBox p={3}>
             <SoftTypography variant="h4">Filtros</SoftTypography>
             <Divider />
-
+            
             <form onSubmit={handleSubmit(onSubmit)}>
               <SoftBox
                 display="flex"
@@ -242,7 +301,7 @@ const FechaCliente = () => {
                     )}
                   />
                 </SoftBox>
-
+                
                 <SoftBox
                   display="flex"
                   flexDirection="column"
@@ -269,7 +328,7 @@ const FechaCliente = () => {
                     />
                   </SoftBox>
                 </SoftBox>
-
+                
                 <SoftBox
                   display="flex"
                   justifyContent="flex-end"
@@ -297,21 +356,21 @@ const FechaCliente = () => {
             </form>
           </SoftBox>
         </Card>
-
+        
+        
         <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
-          <SoftBox justifyContent="center">
-            <Card>
-              {user ? (
-                <SoftBox p={3}>
-                  {(user.idGrupoCliente === 2 ||
+        {user && (user.idGrupoCliente === 2 ||
                     user.idGrupoCliente === null) &&
                   puntosMapa ? (
+          <SoftBox justifyContent="center">
+            <Card>
+                <SoftBox p={3}>
                     <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />
-                  ) : null}
                 </SoftBox>
-              ) : null}
             </Card>
           </SoftBox>
+          
+        ) : null}
         </SoftBox>
 
         <SoftBox
@@ -322,6 +381,24 @@ const FechaCliente = () => {
           <SoftBox justifyContent="center">
             <Card>
               {user ? (
+                <>
+                <SoftBox sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <SoftButton
+                    variant="gradient"
+                    color="info"
+                    onClick={() => exportarAExcel(datosFiltrados, 'Consulta Cliente')}
+                    style={{
+                      border: "none",
+                      fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+                      fontSize: "0.875rem",
+                      fontWeight: "700",
+                      color: "#FFFFFF",
+                      textTransform: "uppercase",marginTop: "1.5rem", marginLeft: "1.5rem"
+                    }}
+                  >
+                  Exportar a Excel
+                  </SoftButton>
+                  </SoftBox>
                 <SoftBox p={3}>
                   {user.idGrupoCliente !== 4 ? (
                     <PRSTable data={datosFiltrados} columns={columns} />
@@ -329,10 +406,29 @@ const FechaCliente = () => {
                     <CalleAlturaTable data={datosFiltrados} columns={columns} />
                   )}
                 </SoftBox>
+                </>
               ) : null}
             </Card>
           </SoftBox>
         </SoftBox>
+
+
+        {user && user.idGrupoCliente === 4? (
+        <SoftBox
+          paddingBottom={3}
+          style={{ width: "90%" }}
+          justifyContent="center"
+        >
+          <SoftBox justifyContent="center">
+            <Card>
+                <SoftBox p={3}>
+                  <InformacionMetroTable data={dataInfo} columns={columnsInfo} />
+                </SoftBox>
+            </Card>
+          </SoftBox>
+        </SoftBox>
+      ) : null}          
+
       </SoftBox>
 
       <PopUp
