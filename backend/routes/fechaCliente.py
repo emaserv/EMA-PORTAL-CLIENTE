@@ -123,7 +123,7 @@ def tablaFC():
         print("AAAAA", datosPiezasPostales)
 
         if not datosPiezasPostales:
-            return jsonify({"message": "Recursos no encontrados"}), 404
+            return jsonify({"message": "Recursos no encontrados"}), 204
 
         keys = list(datosPiezasPostales[0].keys())
 
@@ -133,7 +133,7 @@ def tablaFC():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 
-@fechaCliente.route('/apiFecha/geoMapaItems', methods=['GET'])
+@fechaCliente.route('/api/fecha/geoMapaItems', methods=['GET'])
 def mapaItems():
     numeroCliente = request.args.get('cliente')
     fechaDesde = request.args.get('fechaDesde')
@@ -239,18 +239,18 @@ def tablaInformacion():
                 "ZP": "1° ZP",
                 "BP_CR": "BP CR",
                 "FAD": "FAD",
-                "NV": "NV",
+                "NV": "NR",
                 "UZP": "UZP",
                 "ZP_CR_2": "ZP CR",
             },
             {
                 "Empresa": "METROGAS",
-                "ZP": "1001",
-                "BP_CR": "1001",
-                "FAD": "1000",
-                "NV": "1001",
-                "UZP": "1001",
-                "ZP_CR_2": "1001",
+                "ZP": "BAJO PUERTA",
+                "BP_CR": "BAJO PUERTA",
+                "FAD": "BAJO FIRMA",
+                "NV": "NO RESPONDE LLAMADO",
+                "UZP": "BAJO PUERTA",
+                "ZP_CR_2": "BAJO PUERTA",
             },
         ]
         

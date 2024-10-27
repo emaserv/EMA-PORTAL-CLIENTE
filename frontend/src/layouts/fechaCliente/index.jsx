@@ -8,13 +8,13 @@ import DatePickerValue from "components/DatePicker";
 import SoftInputBase from "components/SoftInputBase";
 import { useForm, Controller } from "react-hook-form";
 import PRSTable from "./data/fechaClientePRSTable";
-import { API_BACK } from "../../config";
 import { useAuth } from "layouts/auth/AuthContext";
 import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
 import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
 import styled from "styled-components";
 import * as XLSX from 'xlsx';
+import axios from 'axios';
 import { margin } from "@mui/system";
 import InformacionMetroTable from "./data/informacionMetroTable";
 
@@ -46,7 +46,7 @@ const FechaCliente = () => {
   const [columnsInfo, setColumnsInfo] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BACK}/api/tablaInformacion`, { mode: "cors" })
+    fetch(`/api/tablaInformacion`, { mode: "cors" })
       .then((response) => response.json())
       .then((apiData) => {
         if (apiData.dataTabla && apiData.columns) {
@@ -87,29 +87,24 @@ const FechaCliente = () => {
 
     try {
       // Primera solicitud: fecha-cliente
-      const url1 = new URL(`${API_BACK}/api/fecha-cliente`);
+      const url1 = `/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí
       const params1 = {
         cliente: cliente || "",
         grupoCliente: user.idGrupoCliente || "",
         fechaDesde: fechaDesde || "",
         fechaHasta: fechaHasta || "",
       };
-
-      Object.keys(params1).forEach((key) => {
-        if (params1[key]) {
-          url1.searchParams.append(key, params1[key]);
-        }
-      });
-
-      const response1 = await fetch(url1);
+    
+      // Enviar parámetros en la URL con axios.get
+      const response1 = await axios.get(url1, { params: params1 });
       console.log("Response", response1.status);
-      const apiData1 = await response1.json();
-
+      const apiData1 = response1.data;
+    
       if (apiData1.dataTabla) {
         setAllData(apiData1.dataTabla);
         setColumns(apiData1.columns);
         filtrarDatos(apiData1.dataTabla, cliente, fechaDesde, fechaHasta);
-      } else if (response1.status === 404) {
+      } else {
         cambiarEstadoPopUp1(true);
         console.error("No se recibieron datos de fecha-cliente API");
         setAllData([]);
@@ -118,26 +113,21 @@ const FechaCliente = () => {
       console.error("Error en la solicitud fecha-cliente:", error);
       setAllData([]);
     }
-
+    
     try {
       // Segunda solicitud: geoMapaItems
-      const url2 = new URL(`${API_BACK}/apiFecha/geoMapaItems`);
+      const url2 = `/api/fecha/geoMapaItems`;
       const params2 = {
-        cliente: cliente,
-        grupoCliente: user.idGrupoCliente,
-        fechaDesde: fechaDesde,
-        fechaHasta: fechaHasta,
+        cliente: cliente || "",
+        grupoCliente: user.idGrupoCliente || "",
+        fechaDesde: fechaDesde || "",
+        fechaHasta: fechaHasta || "",
       };
-
-      Object.keys(params2).forEach((key) => {
-        if (params2[key]) {
-          url2.searchParams.append(key, params2[key]);
-        }
-      });
-
-      const response2 = await fetch(url2);
-      const apiData2 = await response2.json();
-
+    
+      // Enviar parámetros en la URL con axios.get
+      const response2 = await axios.get(url2, { params: params2 });
+      const apiData2 = response2.data;
+    
       if (apiData2.dataTabla) {
         setPuntosMapa(apiData2.dataTabla);
         setColumnsMapa(apiData2.columns);
@@ -149,6 +139,7 @@ const FechaCliente = () => {
       console.error("Error en la solicitud geoMapaItems:", error);
       setPuntosMapa([]);
     }
+    
   };
 
   const convertirFecha = (fechaStr) => {
@@ -231,7 +222,7 @@ const FechaCliente = () => {
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    XLSX.writeFile(workbook, 'Seguimiento.xlsx');
+    XLSX.writeFile(workbook, 'Consulta-fecha-cliente.xlsx');
   };
 
   return (
@@ -341,11 +332,11 @@ const FechaCliente = () => {
         </Card>
         
         
-        <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
+        <SoftBox paddingTop={3} style={{ width: "90%" }} justifyContent="center">
         {user && (user.idGrupoCliente === 2 ||
                     user.idGrupoCliente === null) &&
                   puntosMapa ? (
-          <SoftBox justifyContent="center">
+          <SoftBox paddingBottom={3} justifyContent="center">
             <Card>
                 <SoftBox p={3}>
                     <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />

@@ -134,7 +134,7 @@ def tablaRC():
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
-@radioCliente.route('/apiRadio/geoMapaItems', methods=['GET'])
+@radioCliente.route('/api/radio/geoMapaItems', methods=['GET'])
 def mapaItems():
     plan = request.args.get('plan')
     sucursal = request.args.get('sucursal')

@@ -168,14 +168,14 @@ export default function InformacionMetroTable({ data, columns }) {
       numeric: false,
       disablePadding: false,
       label: "FIRMADO (AD)",
-      labelComplete: "FIRMADO (AD)",
+      labelComplete: "FIRMADO COMUNICACION",
     },
     {
       id: "NV",
       numeric: false,
       disablePadding: false,
-      label: "NO VISITADO",
-      labelComplete: "NO VISITADO",
+      label: "NO RESPONDE LLAMADO",
+      labelComplete: "NO RESPONDE LLAMADO",
     },
     {
       id: "UZP",

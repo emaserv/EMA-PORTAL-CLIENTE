@@ -57,4 +57,4 @@ if __name__ == "__main__":
         db.create_all()
         print("Conexión a la base de datos exitosa")
     
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=5000)
