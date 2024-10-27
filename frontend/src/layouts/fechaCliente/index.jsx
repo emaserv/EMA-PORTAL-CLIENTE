@@ -268,7 +268,7 @@ const FechaCliente = () => {
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    XLSX.writeFile(workbook, 'Seguimiento.xlsx');
+    XLSX.writeFile(workbook, 'Consulta-fecha-cliente.xlsx');
   };
   
 
