@@ -319,20 +319,8 @@ const FechaCliente = () => {
                   pt={3}
                   px={3}
                 >
-                  <SoftButton variant="gradient" color="info">
-                    <input
-                      type="submit"
-                      value="Filtrar"
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                        fontSize: "0.875rem",
-                        fontWeight: "700",
-                        color: "#FFFFFF",
-                        textTransform: "uppercase",
-                      }}
-                    />
+                  <SoftButton variant="gradient" color="info" type="submit">
+                    Filtrar
                   </SoftButton>
                 </SoftBox>
               </SoftBox>
@@ -341,7 +329,7 @@ const FechaCliente = () => {
         </Card>
         
         
-        <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
+        <SoftBox paddingTop={3} style={{ width: "90%" }} justifyContent="center">
         {user && (user.idGrupoCliente === 2 ||
                     user.idGrupoCliente === null) &&
                   puntosMapa ? (
@@ -370,18 +358,16 @@ const FechaCliente = () => {
                     variant="gradient"
                     color="info"
                     onClick={() => exportarAExcel(datosFiltrados, 'Consulta Cliente')}
+                    type="submit"
                     style={{
                       border: "none",
-                      fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                      fontSize: "0.875rem",
-                      fontWeight: "700",
-                      color: "#FFFFFF",
-                      textTransform: "uppercase",marginTop: "1.5rem", marginLeft: "1.5rem"
+                      marginTop: "1.25rem", 
+                      marginLeft: "1.5rem"
                     }}
                   >
-                  Exportar a Excel
+                    Exportar a Excel
                   </SoftButton>
-                  </SoftBox>
+                </SoftBox>
                 <SoftBox p={3}>
                   {user.idGrupoCliente !== 4 ? (
                     <PRSTable data={datosFiltrados} columns={columns} />

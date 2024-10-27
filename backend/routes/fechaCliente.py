@@ -45,6 +45,7 @@ def format_date(date_str):
         return None
     
     return nuevaFecha
+
 @fechaCliente.route('/api/fecha-cliente', methods=['GET'])
 def tablaFC():
     numeroCliente = request.args.get('cliente')

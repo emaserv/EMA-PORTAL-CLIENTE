@@ -118,20 +118,8 @@ const SignIn = () => {
           )}
 
           <SoftBox mt={4} mb={1}>
-            <SoftButton variant="gradient" color="info" fullWidth>
-              <input
-                type="submit"
-                value="Iniciar Sesión"
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                  fontSize: '0.875rem',
-                  fontWeight: '700',
-                  color: '#FFFFFF',
-                  textTransform: 'uppercase',
-                }}
-              />
+            <SoftButton variant="gradient" color="info" type="submit" fullWidth>
+              Iniciar Sesion
             </SoftButton>
           </SoftBox>
         </form>

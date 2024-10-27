@@ -381,51 +381,55 @@ export default function InformacionMetroTable({ data, columns }) {
                     {/* Primera fila */}
                     {row.estadoPieza !== "BM" ? (
                       <TableRow
-                        key={`${rowKey}`} // Proporcionar una clave única para la primera fila
-                        hover
-                        tabIndex={-1}
-                      >
-                        {columns.map(
-                          (column) =>
-                            // Con esto oculto la columna que tiene el id
-                            // NO BORRAR LA COLUMNA ID PORQUE SI NO SE ROMPE LA TABLA
-                            column !== "id" &&
-                            column !== "geoVisita" &&
-                            column !== "grupoCliente" &&
-                            column !== "plan" &&
-                            column !== "radio" &&
-                            column !== "sucursal" &&
-                            column !== "firma" &&
-                            column !== "foto" && (
-                              <TableCell
-                                key={`${row.id}-${column}-${index}`}
-                                align="center"
-                                sx={{
-                                  fontSize: "0.875rem",
-                                  paddingTop: "2px",
-                                  paddingBottom: "2px",
-                                }}
+                      key={rowKey} // Proporcionar una clave única para la fila
+                      hover
+                      tabIndex={-1}
+                      sx={{
+                        backgroundColor: index % 2 !== 0 ? "lightgrey" : "white", // Fondo distinto para filas pares
+                      }}
+                    >
+                      {columns.map((column, colIndex) => {
+                        // Lista de columnas que deseas ocultar
+                        const hiddenColumns = [
+                          "id",
+                          "geoVisita",
+                          "grupoCliente",
+                          "plan",
+                          "radio",
+                          "sucursal",
+                          "firma",
+                          "foto",
+                        ];
+                    
+                        // Ocultar columna si está en la lista de columnas ocultas
+                        if (hiddenColumns.includes(column)) {
+                          return null;
+                        }
+                    
+                        return (
+                          <TableCell
+                            key={`${row.id}-${column}-${colIndex}`}
+                            align="center"
+                            sx={{
+                              fontSize: "0.875rem",
+                              paddingTop: "2px",
+                              paddingBottom: "2px",
+                            }}
+                          >
+                            {column !== "porcentaje" ? (
+                              <MobileFriendlyTooltip
+                                title={row[column] ? row[column] : "Sin información"}
                               >
-                                {column !== "porcentaje" ? (
-                                  <MobileFriendlyTooltip
-                                    title={
-                                      row[column]
-                                        ? row[column]
-                                        : "Sin información"
-                                    }
-                                  >
-                                    <span>{truncarTexto(row[column], 12)}</span>
-                                  </MobileFriendlyTooltip>
-                                ) : (
-                                  <Completion
-                                    value={row[column]}
-                                    color="info"
-                                  />
-                                )}
-                              </TableCell>
-                            )
-                        )}
-                      </TableRow>
+                                <span>{truncarTexto(row[column], 12)}</span>
+                              </MobileFriendlyTooltip>
+                            ) : (
+                              <Completion value={row[column]} color="info" />
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                    
                     ) : null}
                   </>
                 );
