@@ -254,6 +254,8 @@ const FechaCliente = () => {
           "Estado EMA": row.estadoPieza || '-',
           "Estado Metrogas": row.estadoMetro || '-',
           "Observacion de Visita": row.obsVisita || '-',
+          "DNI": '-',
+          "Nombre": '-',
           "Visita": row.geoVisita || '-',
           "Foto": row.foto || '-',  
           "Firma": row.firma || '-',
