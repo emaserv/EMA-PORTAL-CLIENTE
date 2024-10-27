@@ -202,28 +202,66 @@ const FechaCliente = () => {
   };
 
   const exportarAExcel = (data) => {
-    const formattedData = data.map(row => ({
-      "Fecha Emision": row.fechaEmision ? row.fechaEmision : '-',
-      "Numero de Cliente": row.nroCliente ? row.nroCliente : '-',
-      "Titular": row.titular ? row.titular : '-',
-      "Direccion": row.direccion ? row.direccion : '-',
-      "Localidad": row.localidad ? row.localidad : '-',
-      "Fecha de Distribucion": row.fecha ? row.fecha : '-',
-      "Hora": row.hora ? row.hora : '-',
-      "Estado EMA": row.estadoPieza ? row.estadoPieza : '-',
-      "Estado Metrogas": row.estadoMetro ? row.estadoMetro : '-',
-      "Observacion de Visita": row.obsVisita ? row.obsVisita : '-',
-      "Visita": row.geoVisita ? row.geoVisita : '-',
-      "Foto": row.foto ? row.foto : '-',
-      "Firma": row.firma ? row.firma : '-',
-      "Imagen Aviso Deuda": '-',
-}));
+    const regex = /[^/]+ \/ [^/]+ \/ [^/]+/;
   
+    const formattedData = data.map(row => {
+      // Comprobación de coincidencia con regex
+      if (regex.test(row.obsVisita)) {
+
+        // esto es para splitear la obs de visita en dni nombre observacion
+        const splitBySlash = (str) => {
+          return str.split('/');
+        };
+        
+
+        // Caso 1: Si cumple con el regex
+        return {
+          "Fecha Emision": row.fechaEmision || '-',
+          "Numero de Cliente": row.nroCliente || '-',
+          "Titular": row.titular || '-',
+          "Direccion": row.direccion || '-',
+          "Localidad": row.localidad || '-',
+          "Fecha de Distribucion": row.fecha || '-',
+          "Hora": row.hora || '-',
+          "Estado EMA": row.estadoPieza || '-',
+          "Estado Metrogas": row.estadoMetro || '-',
+          "Observacion de Visita": splitBySlash(row.obsVisita)[2] || '-',
+          "DNI": splitBySlash(row.obsVisita)[0] || '-',
+          "Nombre": splitBySlash(row.obsVisita)[1] || '-',
+          "Visita": row.geoVisita || '-',
+          "Foto": row.foto || '-',
+          "Firma": row.firma || '-',
+          "Imagen Aviso Deuda": '-',
+        };
+      } else {
+        return {
+          "Fecha Emision": row.fechaEmision || '-',
+          "Numero de Cliente": row.nroCliente || '-',
+          "Titular": row.titular || '-',
+          "Direccion": row.direccion || '-',
+          "Localidad": row.localidad || '-',
+          "Fecha de Distribucion": row.fecha || '-',
+          "Hora": row.hora || '-',
+          "Estado EMA": row.estadoPieza || '-',
+          "Estado Metrogas": row.estadoMetro || '-',
+          "Observacion de Visita": row.obsVisita || '-',
+          "DNI": '-',
+          "Nombre": '-',
+          "Visita": row.geoVisita || '-',
+          "Foto": row.foto || '-',  
+          "Firma": row.firma || '-',
+          "Imagen Aviso Deuda": '-', 
+        };
+      }
+    });
+  
+    // Creación y exportación del archivo Excel
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
     XLSX.writeFile(workbook, 'Consulta-fecha-cliente.xlsx');
   };
+  
 
   return (
     <>
