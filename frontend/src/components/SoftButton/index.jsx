@@ -22,7 +22,7 @@ import PropTypes from "prop-types";
 import SoftButtonRoot from "components/SoftButton/SoftButtonRoot";
 
 const SoftButton = forwardRef(
-  ({ color, variant, size, circular, iconOnly, children, ...rest }, ref) => (
+  ({ color, variant, size, circular, iconOnly, type, children, ...rest }, ref) => (
     <SoftButtonRoot
       {...rest}
       ref={ref}
@@ -30,6 +30,7 @@ const SoftButton = forwardRef(
       variant={variant === "gradient" ? "contained" : variant}
       size={size}
       ownerState={{ color, variant, size, circular, iconOnly }}
+      type={type} // Se añade la propiedad type
     >
       {children}
     </SoftButtonRoot>
@@ -43,6 +44,7 @@ SoftButton.defaultProps = {
   color: "white",
   circular: false,
   iconOnly: false,
+  type: "button", // Valor predeterminado para type
 };
 
 // Typechecking props for the SoftButton
@@ -64,6 +66,7 @@ SoftButton.propTypes = {
   circular: PropTypes.bool,
   iconOnly: PropTypes.bool,
   children: PropTypes.node.isRequired,
+  type: PropTypes.oneOf(["button", "submit", "reset"]), // Nueva línea para validar type
 };
 
 export default SoftButton;
