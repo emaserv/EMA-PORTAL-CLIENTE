@@ -46,7 +46,7 @@ const RadioCliente = () => {
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
 
   const onSubmit = (data) => {
-    console.log(data);
+    //console.log(data);
     const fechaDesde = data.fechaDesde ? DataConverter(data.fechaDesde) : null;
     const fechaHasta = data.fechaHasta ? DataConverter(data.fechaHasta) : null;
 
@@ -96,11 +96,11 @@ const RadioCliente = () => {
       // Hacemos la petición con fetch
       const response = await fetch(url);
 
-      console.log("API:", response); // Verifica la respuesta completa
+      //console.log("API:", response); // Verifica la respuesta completa
       const apiData1 = await response.json();
-      console.log("Datos de la API:", apiData1);
+      //console.log("Datos de la API:", apiData1);
       if (apiData1.dataTabla) {
-        console.log("PuntosMapa data:", apiData1.dataTabla);
+        //console.log("PuntosMapa data:", apiData1.dataTabla);
         setPuntosMapa(apiData1.dataTabla);
         setColumns(apiData1.columns);
         filtrarPuntosMapa(
@@ -116,7 +116,7 @@ const RadioCliente = () => {
         setPuntosMapa([]);
       }
     } catch (error) {
-      console.log("error", error);
+      //console.log("error", error);
     }
 
     try {
@@ -130,10 +130,10 @@ const RadioCliente = () => {
       );
 
       const apiData2 = await response2.json();
-      console.log("Response from radio-cliente API:", apiData2); // Verifica la respuesta completa
+      //console.log("Response from radio-cliente API:", apiData2); // Verifica la respuesta completa
 
       if (apiData2.dataTabla) {
-        console.log("Datos de la Tabla:", apiData2);
+        //console.log("Datos de la Tabla:", apiData2);
         setAllData(apiData2.dataTabla);
         setColumns(apiData2.columns);
         filtrarDatos(
@@ -150,7 +150,7 @@ const RadioCliente = () => {
         setAllData([]);
       }
     } catch (error) {
-      console.log("error", error);
+      //console.log("error", error);
     }
 
     // Tercera solicitud: geoMapaCamino
@@ -175,11 +175,11 @@ const RadioCliente = () => {
       // Hacemos la petición con fetch
       const response3 = await fetch(url);
 
-      console.log("API:", response3); // Verifica la respuesta completa
+      //console.log("API:", response3); // Verifica la respuesta completa
       const apiData3 = await response3.json();
-      console.log("Datos de la API:", apiData3);
+      //console.log("Datos de la API:", apiData3);
       if (apiData3.dataGeoCamino) {
-        console.log("PuntosCamino data:", apiData3.dataGeoCamino);
+        //console.log("PuntosCamino data:", apiData3.dataGeoCamino);
         setCaminoMapa(apiData3.dataGeoCamino);
         setColumnsCamino(apiData3.columns);
         filtrarCaminoMapa(
@@ -195,7 +195,7 @@ const RadioCliente = () => {
         setCaminoMapa([]);
       }
     } catch (error) {
-      console.log("error", error);
+      //console.log("error", error);
     }
   };
 
@@ -207,18 +207,18 @@ const RadioCliente = () => {
     fechaDesde,
     fechaHasta
   ) => {
-    console.log("DAAA", data);
+    //console.log("DAAA", data);
     const datosFiltrados = data.filter((item) => {
-      console.log("WASA1", fechaDesde);
-      console.log("WASA2", fechaHasta);
-      console.log("WASA3", item.fecha);
+      //console.log("WASA1", fechaDesde);
+      //console.log("WASA2", fechaHasta);
+      //console.log("WASA3", item.fecha);
 
       const fechaParts = item.fecha.split("/"); // Divide la fecha en día, mes y año
       const dia = fechaParts[0];
       const mes = fechaParts[1];
       const año = `20${fechaParts[2]}`; // Asume que 'yy' está en el rango 2000-2099
       const itemFecha = `${año}-${mes}-${dia}`; // Reorganiza a 'yyyy-mm-dd'// Formato YYYY-MM-DD
-      console.log("WASA33", itemFecha);
+      //console.log("WASA33", itemFecha);
 
       const cumplePlan = plan ? item.plan === plan : true;
       const cumpleSucursal = sucursal ? item.sucursal === sucursal : true;
@@ -226,9 +226,9 @@ const RadioCliente = () => {
       const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
       const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
 
-      console.log("WASA1", fechaDesde);
-      console.log("WASA2", fechaHasta);
-      console.log("WASA3", itemFecha);
+      //console.log("WASA1", fechaDesde);
+      //console.log("WASA2", fechaHasta);
+      //console.log("WASA3", itemFecha);
 
       return (
         cumplePlan &&
@@ -239,7 +239,7 @@ const RadioCliente = () => {
       );
     });
 
-    console.log("dataaa", datosFiltrados);
+    //console.log("dataaa", datosFiltrados);
 
     setDatosFiltrados(datosFiltrados);
   };
@@ -270,10 +270,10 @@ const RadioCliente = () => {
       );
     });
 
-    console.log("caminoFiltrado", caminoFiltrado);
+    //console.log("caminoFiltrado", caminoFiltrado);
 
     setCaminoMapaFiltrado(caminoFiltrado);
-    console.log("caminoFiltrado", caminoMapaFiltrado);
+    //console.log("caminoFiltrado", caminoMapaFiltrado);
   };
 
   const filtrarPuntosMapa = (
@@ -296,14 +296,14 @@ const RadioCliente = () => {
       return cumplePlan && cumpleSucursal && cumpleRadio; // && cumpleFechaDesde && cumpleFechaHasta;
     });
 
-    console.log("puntosFiltrados", puntosFiltrados);
+    //console.log("puntosFiltrados", puntosFiltrados);
 
     setPuntosMapaFiltrados(puntosFiltrados);
-    console.log("puntosFiltrados", puntosMapaFiltrados);
+    //console.log("puntosFiltrados", puntosMapaFiltrados);
   };
 
   const armarArrayCoordenadas = (data) => {
-    console.log("aaa", data);
+    //console.log("aaa", data);
     let arrayCoordenadas = [];
 
     for (let i = 0; i < data.length; i++) {
@@ -313,7 +313,7 @@ const RadioCliente = () => {
       arrayCoordenadas.push([latitud, longitud]);
     }
 
-    console.log("PRINT ARRAY COORD", arrayCoordenadas);
+    //console.log("PRINT ARRAY COORD", arrayCoordenadas);
     return arrayCoordenadas;
   };
 

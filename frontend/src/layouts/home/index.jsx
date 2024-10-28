@@ -59,11 +59,11 @@ const Home = () => {
 
       // Imprimir el contenido del FormData
       for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
+        //console.log(`${key}:`, value);
       }
 
       const response = await axios.post(`${API_BACK}/api/upload`, formData);
-      console.log("response", response)
+      //console.log("response", response)
 
       if(response.status === 200){
         setLoading(false);

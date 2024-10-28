@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
   // Función para iniciar sesión
   const login = (userData) => {
     setUser(userData);
-    console.log("PASE X ACA", JSON.stringify(userData));
+    //console.log("PASE X ACA", JSON.stringify(userData));
     // Aquí puedes agregar lógica para guardar el token en localStorage o cookies
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
