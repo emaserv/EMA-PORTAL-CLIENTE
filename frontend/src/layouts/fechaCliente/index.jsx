@@ -287,9 +287,8 @@ const FechaCliente = () => {
                   <SoftTypography
                     component="label"
                     variant="caption"
-                    fontWeight="bold"
                     marginTop={-2}
-                    fontSize={{ xs: "1rem", sm: "1.25rem" }} // Responsive font size
+                    fontSize={{ xs: "0.75rem", sm: "1rem" }} // Responsive font size
                   >
                     N° de Cliente
                   </SoftTypography>
@@ -327,9 +326,9 @@ const FechaCliente = () => {
                   <SoftTypography
                     component="label"
                     variant="caption"
-                    fontWeight="bold"
+                    marginTop={1}
                     marginBottom={-1}
-                    fontSize={{ xs: "1rem", sm: "1.25rem" }}
+                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
                   >
                     Fecha
                   </SoftTypography>
