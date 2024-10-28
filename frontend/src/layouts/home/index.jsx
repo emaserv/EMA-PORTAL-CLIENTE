@@ -61,7 +61,7 @@ const Home = () => {
         //console.log(`${key}:`, value);
       }
 
-      const response = await axios.post(`${API_BACK}/api/upload`, formData);
+      const response = await axios.post(`/api/upload`, formData);
       //console.log("response", response)
 
       if(response.status === 200){

@@ -95,15 +95,11 @@ const FechaCliente = () => {
         fechaHasta: fechaHasta || "",
       };
 
-      Object.keys(params1).forEach((key) => {
-        if (params1[key]) {
-          url1.searchParams.append(key, params1[key]);
-        }
-      });
+      
 
-      const response1 = await fetch(url1);
+      const response1 = await axios.get(url1, { params: params1 });
       console.log("Response", response1.status);
-      const apiData1 = await response1.json();
+      const apiData1 = response1.data;
 
       if (apiData1.dataTabla) {
         setAllData(apiData1.dataTabla);
@@ -289,6 +285,9 @@ const FechaCliente = () => {
               >
                 <SoftBox>
                   <SoftTypography
+                    component="label"
+                    variant="caption"
+                    fontWeight="bold"
                     marginTop={-2}
                     fontSize={{ xs: "1rem", sm: "1.25rem" }} // Responsive font size
                   >
@@ -326,6 +325,9 @@ const FechaCliente = () => {
                   marginLeft={{ md: 3 }}
                 >
                   <SoftTypography
+                    component="label"
+                    variant="caption"
+                    fontWeight="bold"
                     marginBottom={-1}
                     fontSize={{ xs: "1rem", sm: "1.25rem" }}
                   >
