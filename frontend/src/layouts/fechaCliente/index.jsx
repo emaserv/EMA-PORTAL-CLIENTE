@@ -73,7 +73,7 @@ const FechaCliente = () => {
 
       fetchData(data.numCliente || null, fechaDesde, fechaHasta);
     } catch (error) {
-      console.log("Error en el submit:", error);
+      //console.log("Error en el submit:", error);
     }
   };
 
@@ -94,12 +94,17 @@ const FechaCliente = () => {
         fechaDesde: fechaDesde || "",
         fechaHasta: fechaHasta || "",
       };
-    
-      // Enviar parámetros en la URL con axios.get
-      const response1 = await axios.get(url1, { params: params1 });
+
+      Object.keys(params1).forEach((key) => {
+        if (params1[key]) {
+          url1.searchParams.append(key, params1[key]);
+        }
+      });
+
+      const response1 = await fetch(url1);
       console.log("Response", response1.status);
-      const apiData1 = response1.data;
-    
+      const apiData1 = await response1.json();
+
       if (apiData1.dataTabla) {
         setAllData(apiData1.dataTabla);
         setColumns(apiData1.columns);
@@ -153,38 +158,38 @@ const FechaCliente = () => {
   };
 
   const filtrarDatos = (data, cliente, fechaDesde, fechaHasta) => {
-    console.log("DAAA", data);
+    //console.log("DAAA", data);
     const datosFiltrados = data.filter((item) => {
-      console.log("WASA1", fechaDesde);
-      console.log("WASA2", fechaHasta);
-      console.log("WASA3", item.fecha);
+      //console.log("WASA1", fechaDesde);
+      //console.log("WASA2", fechaHasta);
+      //console.log("WASA3", item.fecha);
 
       const fechaParts = item.fecha.split("/"); // Divide la fecha en día, mes y año
       const dia = fechaParts[0];
       const mes = fechaParts[1];
       const año = `20${fechaParts[2]}`; // Asume que 'yy' está en el rango 2000-2099
       const itemFecha = `${año}-${mes}-${dia}`; // Reorganiza a 'yyyy-mm-dd'// Formato YYYY-MM-DD
-      console.log("WASA33", itemFecha);
+      //console.log("WASA33", itemFecha);
 
-      console.log("item", item);
+      //console.log("item", item);
       const cumpleCliente = cliente ? item.nroCliente === cliente : true;
       const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
       const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
 
-      console.log("WASA1", fechaDesde);
-      console.log("WASA2", fechaHasta);
-      console.log("WASA3", itemFecha);
+      //console.log("WASA1", fechaDesde);
+      //console.log("WASA2", fechaHasta);
+      //console.log("WASA3", itemFecha);
 
       return cumpleCliente && cumpleFechaDesde && cumpleFechaHasta;
     });
 
-    console.log("dataaa", datosFiltrados);
+    //console.log("dataaa", datosFiltrados);
 
     setDatosFiltrados(datosFiltrados);
   };
 
   const armarArrayCoordenadas = (data) => {
-    console.log("dataaaaaa", data);
+    //console.log("dataaaaaa", data);
 
     let arrayCoordenadas = [];
 
@@ -197,7 +202,7 @@ const FechaCliente = () => {
       }
     }
 
-    console.log("PRINT ARRAY COORD", arrayCoordenadas);
+    //console.log("PRINT ARRAY COORD", arrayCoordenadas);
     return arrayCoordenadas;
   };
 

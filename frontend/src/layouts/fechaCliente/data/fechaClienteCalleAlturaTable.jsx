@@ -367,7 +367,7 @@ export default function CalleAlturaTable({ data, columns }) {
 
   // Función para truncar texto
   const truncarTexto = (texto, limite) => {
-    console.log("WASAAAAAA", texto);
+    //console.log("WASAAAAAA", texto);
     if (!texto || typeof texto !== 'string') {
       return ''; // O devuelve otro valor predeterminado si lo prefieres
     }
