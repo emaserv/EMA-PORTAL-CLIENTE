@@ -1,3 +1,4 @@
+import re
 from sqlalchemy import func, cast, Text, text
 from models.dai.Dai import Dai
 from db.QueryObj import QueryObj
@@ -24,11 +25,11 @@ def procesar_geo(entry):
 
 class AdapterDAI:
     def leerDAI(entry):
-        print("WASAAAAAAAAAAAAAA", entry['Legajos'])
+        print("WASAAAAAAAAAAAAAA", entry['legajo'])
         latitud_, longitud_ = procesar_geo(entry)   
         dai = Dai(
-            idGrupoCliente = obtenerIdGrupoCliente(entry['Grupo Cliente']), 
-            legajoDist = str(entry['Legajos']) if entry['Legajos'] != None else None,
+            #idGrupoCliente = obtenerIdGrupoCliente(entry['Grupo Cliente']), 
+            legajoDist = str(entry['legajo']) if entry['legajo'] != None else None,
             fecha =  convertir_fecha(entry['date']),
             hora =  chequeadorHora(entry['time']),
             #latitud = str(entry['Latitud']) if entry['Latitud'] != None else None,
@@ -84,6 +85,21 @@ def convertir_fecha(fecha_str):
     print('fecha_str', fecha_str)
     if fecha_str == '-':
         return None
+    
+    def es_fecha_iso(fecha_str):
+    # Expresión regular para verificar el formato ISO 8601
+        patron_iso = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$'
+        return re.match(patron_iso, fecha_str) is not None
+    
+    if es_fecha_iso(fecha_str):
+        try:
+            # Convertir la fecha del formato ISO 8601 a un objeto datetime
+            fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M:%S.%f')
+        
+            # Convertir el objeto datetime al formato 'dd/mm/yyyy'
+            fecha_str = fecha_obj.strftime('%d/%m/%Y')
+        except ValueError:
+            raise ValueError("Error en la conversión de la fecha.")
 
     try:
         # Convertir la fecha del formato 'dd/mm/yyyy' a un objeto datetime
