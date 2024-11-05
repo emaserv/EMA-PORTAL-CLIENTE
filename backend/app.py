@@ -19,6 +19,7 @@ except Exception as e:
     print(f"Error al conectar a la base de datos: {str(e)}")
     
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
 from models.usuario.Usuario import Usuario
 from models.cliente.GrupoCliente import GrupoCliente
