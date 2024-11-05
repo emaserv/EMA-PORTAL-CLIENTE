@@ -12,6 +12,8 @@ import { useAuth } from "layouts/auth/AuthContext";
 import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
 import styled from "styled-components";
+import {API_BACK} from '../../config'
+
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -75,7 +77,7 @@ const RadioCliente = () => {
 
     // Primera solicitud: geoMapaItems
     try {
-      const url = new URL(`/api/radio/geoMapaItems`);
+      const url = new URL(`${API_BACK}/api/radio/geoMapaItems`);
       const params = {
         plan: plan || "",
         sucursal: sucursal || "",
@@ -121,7 +123,7 @@ const RadioCliente = () => {
     try {
       // Segunda solicitud: radio-cliente
       const response2 = await fetch(
-        `/api/radio-cliente?plan=${plan || ""}&sucursal=${
+        `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
           sucursal || ""
         }&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${
           fechaDesde || ""
@@ -154,7 +156,7 @@ const RadioCliente = () => {
 
     // Tercera solicitud: geoMapaCamino
     try {
-      const url = new URL(`/api/geoMapaCamino`);
+      const url = new URL(`${API_BACK}/api/geoMapaCamino`);
       const params = {
         plan: plan || "",
         sucursal: sucursal || "",
