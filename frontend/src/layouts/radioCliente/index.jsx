@@ -101,7 +101,7 @@ const RadioCliente = () => {
       const apiData1 = await response.json();
       //console.log("Datos de la API:", apiData1);
       if (apiData1.dataTabla) {
-        //console.log("PuntosMapa data:", apiData1.dataTabla);
+        console.log("PuntosMapa data:", apiData1.dataTabla);
         setPuntosMapa(apiData1.dataTabla);
         setColumns(apiData1.columns);
         filtrarPuntosMapa(

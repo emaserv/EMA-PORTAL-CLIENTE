@@ -73,12 +73,15 @@ function MyMap({ arrayPuntos, arrayCamino }) {
         </Marker>
       ))}
 
+      cambios en la logica para que el mapa se mueva hacia los puntos luego del filtro
       {camino.length > 0 && puntos.length > 0 ? (
         <>
-          <Polyline positions={camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} {...polylineOptions} />
-          <FitBoundsExample positions={camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
+          <Polyline positions={camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
+          <FitBoundsExample positions={[...camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])]), ...puntos.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])]} />
         </>
-      ) : <FitBoundsExample positions={[[-34.61093894313541, -58.386118685562906]]} /> }
+      ) : (
+        <FitBoundsExample positions={puntos.length > 0 ? puntos.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])]) : [[-34.61093894313541, -58.386118685562906]]} />
+      )}
     </MapContainer>
   );
 }
