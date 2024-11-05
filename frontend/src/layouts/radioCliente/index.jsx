@@ -13,6 +13,7 @@ import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
 import styled from "styled-components";
 import {API_BACK} from '../../config'
+import LoadingModal from '../../components/loadingModal';
 
 
 const DataConverter = (fechaDeSincronizacion) => {
@@ -45,8 +46,10 @@ const RadioCliente = () => {
   const [filtroRadio, setFiltroRadio] = useState(null);
   const [datosFiltrados, setDatosFiltrados] = useState([]);
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
+  const [loading, setLoading] = useState(false); // Estado para manejar el loading
 
   const onSubmit = (data) => {
+    setLoading(true);
     //console.log(data);
     const fechaDesde = data.fechaDesde ? DataConverter(data.fechaDesde) : null;
     const fechaHasta = data.fechaHasta ? DataConverter(data.fechaHasta) : null;
@@ -67,6 +70,7 @@ const RadioCliente = () => {
   };
 
   const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
+    setLoading(true);
     if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta) {
       setAllData([]);
       setPuntosMapa([]);
@@ -101,7 +105,7 @@ const RadioCliente = () => {
       const apiData1 = await response.json();
       //console.log("Datos de la API:", apiData1);
       if (apiData1.dataTabla) {
-        console.log("PuntosMapa data:", apiData1.dataTabla);
+        //console.log("PuntosMapa data:", apiData1.dataTabla);
         setPuntosMapa(apiData1.dataTabla);
         setColumns(apiData1.columns);
         filtrarPuntosMapa(
@@ -197,7 +201,9 @@ const RadioCliente = () => {
       }
     } catch (error) {
       //console.log("error", error);
-    }
+    } finally {
+      setLoading(false); // Asegúrate de cambiar el estado a false aquí
+  }
   };
 
   const filtrarDatos = (
@@ -441,26 +447,20 @@ const RadioCliente = () => {
                   pt={2}
                   px={3}
                 >
-                  <SoftButton variant="gradient" color="info">
-                    <input
-                      type="submit"
-                      value="Filtrar"
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                        fontSize: "0.875rem",
-                        fontWeight: "700",
-                        color: "#FFFFFF",
-                        textTransform: "uppercase",
-                      }}
-                    />
+                  <SoftButton 
+                    variant="gradient" 
+                    color="info" 
+                    type="submit" // Asegúrate de incluir el tipo "submit" aquí
+                  >
+                    Filtrar
                   </SoftButton>
                 </SoftBox>
               </SoftBox>
             </form>
           </SoftBox>
         </Card>
+
+        <LoadingModal isOpen={loading} />
 
         <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
           <SoftBox justifyContent="center">
