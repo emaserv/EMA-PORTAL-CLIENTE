@@ -15,8 +15,8 @@ import PopUp from "components/PopUp";
 import styled from "styled-components";
 import * as XLSX from 'xlsx';
 import axios from 'axios';
-import { margin } from "@mui/system";
 import InformacionMetroTable from "./data/informacionMetroTable";
+import {API_BACK} from '../../config'
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -46,7 +46,7 @@ const FechaCliente = () => {
   const [columnsInfo, setColumnsInfo] = useState([]);
 
   useEffect(() => {
-    fetch(`/api/tablaInformacion`, { mode: "cors" })
+    fetch(`${API_BACK}/api/tablaInformacion`, { mode: "cors" })
       .then((response) => response.json())
       .then((apiData) => {
         if (apiData.dataTabla && apiData.columns) {
@@ -87,7 +87,7 @@ const FechaCliente = () => {
 
     try {
       // Primera solicitud: fecha-cliente
-      const url1 = `/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí
+      const url1 = `${API_BACK}/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí
       const params1 = {
         cliente: cliente || "",
         grupoCliente: user.idGrupoCliente || "",
@@ -117,7 +117,7 @@ const FechaCliente = () => {
     
     try {
       // Segunda solicitud: geoMapaItems
-      const url2 = `/api/fecha/geoMapaItems`;
+      const url2 = `${API_BACK}/api/fecha/geoMapaItems`;
       const params2 = {
         cliente: cliente || "",
         grupoCliente: user.idGrupoCliente || "",

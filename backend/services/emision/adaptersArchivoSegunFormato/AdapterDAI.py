@@ -14,7 +14,7 @@ class AdapterDAI:
             legajoDist = str(entry['Legajos']) if entry['Legajos'] != None else None,
             fecha =  convertir_fecha(entry['date']),
             hora =  chequeadorHora(entry['time']),
-            latitud = str(entry['Latitud']) if entry['Latitud'] != None else None,
+            latitud = str(entry['Latstud']) if entry['Latitud'] != None else None,
             longitud =  str(entry['Longitud']) if entry['Longitud'] != None else None,
         )
     
