@@ -24,6 +24,10 @@ import axios from "axios";
 //IMPORTO URL BACK
 import { useAuth } from "layouts/auth/AuthContext";
 
+
+import {API_BACK} from '../../config'
+
+
 const Home = () => {
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
   const [fallo, cambiarEstadoPopUpFallo] = useState(false);
@@ -61,7 +65,7 @@ const Home = () => {
         //console.log(`${key}:`, value);
       }
 
-      const response = await axios.post(`/api/upload`, formData);
+      const response = await axios.post(`${API_BACK}/api/upload`, formData);
       //console.log("response", response)
 
       if(response.status === 200){

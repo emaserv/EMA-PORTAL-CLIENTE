@@ -8,6 +8,7 @@ import CoverLayout  from 'layouts/auth/components/CoverLayout';
 import logoEma from 'assets/images/Portal-Cliente-Images/Logo-ema.png';
 import SoftInputBase from 'components/SoftInputBase';
 import { useAuth } from 'layouts/auth/AuthContext'; // Importa el hook useAuth del contexto de autenticación
+import {API_BACK} from '../../../config'
 
 const SignIn = () => {
   const { handleSubmit, control, formState: { errors } } = useForm();
@@ -24,7 +25,7 @@ const SignIn = () => {
     formData.append('data', JSON.stringify(data));
 
     try {
-      const response = await axios.post(`/api/login`, formData);
+      const response = await axios.post(`${API_BACK}/api/login`, formData);
       if (response.status === 200) {
         const userData = response.data; // Supongamos que response.data tiene la estructura { usuarios: [...] }
         //console.log("Datos completos:", userData.data, userData.data[0]);

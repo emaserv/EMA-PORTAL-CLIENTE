@@ -5,6 +5,9 @@ from flask import Blueprint, jsonify, request, current_app, json
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
 from datetime import datetime
+import pymysql
+
+
 
 radioCliente = Blueprint('radioCliente', __name__)
 
@@ -122,7 +125,8 @@ def tablaRC():
                 'obsVisita': row.obsVisita,
                 'geoVisita': row.geoVisita,
                 'foto': row.foto,
-                'firma': row.firma
+                'firma': row.firma,
+                'legajo': row.legajo
             })
 
         if not datosPiezasPostales:
@@ -198,7 +202,8 @@ def mapaItems():
                 'sucursal': row.sucursal,
                 'latitud': row.latitud,
                 'longitud': row.longitud,
-                'fecha': row.fechaDistrib
+                'fecha': row.fechaDistrib,
+                'hora': row.horaDistrib
             })
 
         if not datosPiezasPostales:
@@ -210,8 +215,47 @@ def mapaItems():
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
+
+
+
+
+@radioCliente.route('/api/get-presentismo', methods=['GET'])
+def obtener_presentismo():
+    hini = request.args.get('hini') 
+    hfin = request.args.get('hfin')
+    legajo = request.args.get('legajo') 
+    conn = pymysql.connect(host="emaservicios.cluster-carhqkyg8c9r.us-east-1.rds.amazonaws.com", user="admin", passwd="W2bu^N_iMpg2Lvt",db="ema_ruteo" )
+    cursor = conn.cursor()
+
+    legajo_query = f"SELECT id FROM ubicaciones WHERE legajo = '{legajo}' LIMIT 1"
+    cursor.execute(legajo_query)
+    result = cursor.fetchone()
+    
+    if result:
+        nombre_tabla = "ubicaciones_" + result[0]
+        result = []
+        query = f"""
+            SELECT * FROM {nombre_tabla}
+                WHERE fecha BETWEEN '{hini}' AND '{hfin}' ORDER BY fecha ASC
+            """
+        cursor.execute(query)
+        columns = cursor.description
+        for value in cursor.fetchall():
+            tmp = {}
+            for (index, column) in enumerate(value):
+                # Convierte la cadena JSON a una estructura de datos en Python
+                if columns[index][0] == 'json' and column is not None:
+                    tmp[columns[index][0]] = json.loads(column)
+                else:
+                    tmp[columns[index][0]] = column
+            result.append(tmp)
+    return jsonify(result)
+
+    
+
 @radioCliente.route('/api/geoMapaCamino', methods=['GET'])
 def mapaCamino():
+    # Obtén los parámetros de la solicitud GET
     plan = request.args.get('plan')
     sucursal = request.args.get('sucursal')
     radio = request.args.get('radio')
@@ -228,30 +272,27 @@ def mapaCamino():
         AND d."legajoDist" = gie.legajo
         '''
 
+        # Lista para agregar condiciones WHERE
         where_clauses = []
         qParams = {}
 
-        # Filtra por grupoCliente si es válido
-        if grupoCliente != 'null' and grupoCliente:
+        # Filtra por grupoCliente
+        if grupoCliente and grupoCliente.lower() != 'null':
             where_clauses.append('gie."idGrupoCliente" = :grupoCliente')
             qParams['grupoCliente'] = grupoCliente
 
-        # Filtra por plan
+        # Filtra por plan, sucursal y radio si están presentes
         if plan:
             where_clauses.append('gie."planTurno" = :plan')
-            qParams['plan'] = str(plan)
-
-        # Filtra por sucursal
+            qParams['plan'] = plan
         if sucursal:
             where_clauses.append('gie.sucursal = :sucursal')
-            qParams['sucursal'] = str(sucursal)
-
-        # Filtra por radio
+            qParams['sucursal'] = sucursal
         if radio:
             where_clauses.append('gie.radio = :radio')
-            qParams['radio'] = str(radio)
+            qParams['radio'] = radio
 
-        # Manejo de las fechas
+        # Manejo de las fechas con BETWEEN y condiciones adicionales
         if fechaDesde and fechaHasta:
             where_clauses.append('gie."fechaDistrib" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
@@ -263,26 +304,20 @@ def mapaCamino():
             where_clauses.append('gie."fechaDistrib" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
-        # Cláusula ORDER BY
-        order_clause = ' ORDER BY 3, 5'
+        # Agregar cláusula WHERE si hay condiciones
+        where_clause = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ''
+        order_clause = ' ORDER BY d."fecha", d."hora"'
 
-        # Construir la consulta final
-        if where_clauses:
-            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = queryBase + where_clause + order_clause
-        else:
-            query = queryBase + order_clause
+        # Consulta final
+        query = text(queryBase + where_clause + order_clause)
 
         # Ejecutar la consulta
-        query = text(query)
-
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(query, qParams)
+            data_query = session.execute(query, qParams).fetchall()
 
-        dataGeoCamino = []
-
-        for row in data_query:
-            dataGeoCamino.append({
+        # Convertir resultados a diccionarios para JSON
+        dataGeoCamino = [
+            {
                 'id': row.id,
                 'idGrupoCliente': row.idGrupoCliente,
                 'legajoDist': row.legajoDist,
@@ -290,17 +325,67 @@ def mapaCamino():
                 'hora': row.hora,
                 'latitud': row.latitud,
                 'longitud': row.longitud
-            })
+            } for row in data_query
+        ]
 
+        # Verificar si los datos están vacíos
         if not dataGeoCamino:
             return jsonify({"message": "Recursos no encontrados"}), 204
 
+        # Obtener columnas para la respuesta
         keys = list(dataGeoCamino[0].keys())
 
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataGeoCamino": dataGeoCamino}), 200
+
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
+
+
+@radioCliente.route('/geo-dai', methods=['GET'])
+def get_dai_data():
+    # Obtener parámetros de la solicitud
+    fechaini = request.args.get('hini')  # Fecha de inicio en formato YYYY-MM-DD    
+    fechafin = request.args.get('hfin')  # Fecha de fin en formato YYYY-MM-DD
+    legajo = request.args.get('legajo')      # Número de legajo
+    
+    # Query parametrizada para seleccionar entre rango de fecha y hora
+    query = f"""
+    SELECT id, "idGrupoCliente", "legajoDist", fecha, hora, latitud, longitud, "descEstado", pushpin, 
+           velocidad, altitud, odometro, "distReportada", direccion, "zonaGeo", "mensConductor"
+    FROM public.dai
+    WHERE (fecha || ' ' || hora)::timestamp BETWEEN '{fechaini}' AND '{fechafin}'
+    AND "legajoDist" = '{legajo}'
+    """
+    query = text(query)
+    try:
+        # Ejecutar query
+        with DatabaseSession().get_session() as session:
+            data_query = session.execute(query).fetchall()
+
+        dataGeoCamino = [
+            {
+                'id': row.id,
+                'legajoDist': row.legajoDist,
+                'fecha': row.fecha,
+                'hora': row.hora,
+                'latitud': row.latitud,
+                'longitud': row.longitud
+            } for row in data_query
+        ]
+        # Verificar si los datos están vacíos
+        if not dataGeoCamino:
+            return jsonify({"message": "Recursos no encontrados"}), 204
+
+        # Obtener columnas para la respuesta
+        keys = list(dataGeoCamino[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataGeoCamino": dataGeoCamino}), 200
+
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
+    
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route('/api/plan', methods=['GET'])
