@@ -17,6 +17,7 @@ import * as XLSX from 'xlsx';
 import axios from 'axios';
 import InformacionMetroTable from "./data/informacionMetroTable";
 import {API_BACK} from '../../config'
+import LoadingModal from '../../components/loadingModal';
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -44,6 +45,7 @@ const FechaCliente = () => {
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
   const [dataInfo, setDataInfo] = useState([]);
   const [columnsInfo, setColumnsInfo] = useState([]);
+  const [loading, SetLoading] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BACK}/api/tablaInformacion`, { mode: "cors" })
@@ -59,6 +61,7 @@ const FechaCliente = () => {
     }, []);
 
   const onSubmit = async (data) => {
+    SetLoading(true);
     try {
       const fechaDesde = data.fechaDesde
         ? DataConverter(data.fechaDesde)
@@ -71,13 +74,15 @@ const FechaCliente = () => {
       setFiltroFechaDesde(fechaDesde);
       setFiltroFechaHasta(fechaHasta);
 
-      fetchData(data.numCliente || null, fechaDesde, fechaHasta);
+      await fetchData(data.numCliente || null, fechaDesde, fechaHasta);
     } catch (error) {
       //console.log("Error en el submit:", error);
+    } finally {
+      SetLoading(false);
     }
   };
 
-  const fetchData = async (cliente, fechaDesde, fechaHasta) => {
+  const fetchData = async (cliente, fechaDesde, fechaHasta) => {    
     if (!cliente && !fechaDesde && !fechaHasta) {
       setAllData([]);
       setPuntosMapa([]);
@@ -92,7 +97,7 @@ const FechaCliente = () => {
         cliente: cliente || "",
         grupoCliente: user.idGrupoCliente || "",
         fechaDesde: fechaDesde || "",
-        fechaHasta: fechaHasta || "",
+        fechaHasta: fechaHasta || "",        
       };
 
       
@@ -131,6 +136,7 @@ const FechaCliente = () => {
     
       if (apiData2.dataTabla) {
         setPuntosMapa(apiData2.dataTabla);
+        //console.log(puntosMapa);        
         setColumnsMapa(apiData2.columns);
       } else {
         console.error("No se recibieron datos de geoMapaItems API");
@@ -139,8 +145,7 @@ const FechaCliente = () => {
     } catch (error) {
       console.error("Error en la solicitud geoMapaItems:", error);
       setPuntosMapa([]);
-    }
-    
+    }     
   };
 
   const convertirFecha = (fechaStr) => {
@@ -198,7 +203,6 @@ const FechaCliente = () => {
       }
     }
 
-    //console.log("PRINT ARRAY COORD", arrayCoordenadas);
     return arrayCoordenadas;
   };
 
@@ -362,6 +366,8 @@ const FechaCliente = () => {
             </form>
           </SoftBox>
         </Card>
+
+        <LoadingModal isOpen={loading} />
         
         
         <SoftBox paddingTop={3} style={{ width: "90%" }} justifyContent="center">
@@ -371,7 +377,7 @@ const FechaCliente = () => {
           <SoftBox paddingBottom={3} justifyContent="center">
             <Card>
                 <SoftBox p={3}>
-                    <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />
+                  <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />
                 </SoftBox>
             </Card>
           </SoftBox>
