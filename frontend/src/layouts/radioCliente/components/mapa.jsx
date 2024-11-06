@@ -1,6 +1,6 @@
 import { React, useEffect, useState } from 'react';
 import PropTypes from "prop-types";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -31,10 +31,9 @@ function FitBoundsExample({ positions }) {
   return null;
 }
 
-function MyMap({ arrayPuntos, arrayCamino }) {
+function MyMap({ arrayPuntos, arrayCamino, geoJsonData }) {
   const [puntos, setPuntos] = useState([]);
   const [camino, setCamino] = useState([]);
-
 
   // Efecto para cargar los puntos desde arrayPuntos
   useEffect(() => {
@@ -73,12 +72,17 @@ function MyMap({ arrayPuntos, arrayCamino }) {
         </Marker>
       ))}
 
-      {camino.length > 0 && puntos.length > 0 ? (
+      {puntos.length > 0 ? (
         <>
           <Polyline positions={camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} {...polylineOptions} />
-          <FitBoundsExample positions={camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
+          <FitBoundsExample positions={puntos.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
         </>
       ) : <FitBoundsExample positions={[[-34.61093894313541, -58.386118685562906]]} /> }
+
+      {/* Renderizar GeoJSON si se proporciona */}
+      {geoJsonData.length > 0 && geoJsonData.map((route, index) => (
+        <GeoJSON key={index} data={route} style={{ color: 'red', weight: 5 }} />
+      ))}
     </MapContainer>
   );
 }
@@ -88,4 +92,5 @@ export default MyMap;
 MyMap.propTypes = {
   arrayPuntos: PropTypes.array.isRequired, // Puntos iniciales
   arrayCamino: PropTypes.array.isRequired, // Camino (rutas) para la polilínea
+  geoJsonData: PropTypes.object // GeoJSON para renderizar en el mapa
 };
