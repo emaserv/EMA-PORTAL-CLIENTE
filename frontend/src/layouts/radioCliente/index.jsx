@@ -13,8 +13,9 @@ import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
 import styled from "styled-components";
 import {API_BACK} from '../../config'
-import L from 'leaflet';
+import LoadingModal from '../../components/loadingModal';
 
+import L from 'leaflet';
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -46,12 +47,15 @@ const RadioCliente = () => {
   const [filtroRadio, setFiltroRadio] = useState(null);
   const [datosFiltrados, setDatosFiltrados] = useState([]);
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
+  const [loading, setLoading] = useState(false); // Estado para manejar el loading
   const [legajo, setLegajo] = useState(null)
   const [hini, setHini] = useState(null)
   const [hfin, setHfin] = useState(null)
   const [geoJsonData, setGeoJsonData] = useState([])
 
+  
   const onSubmit = (data) => {
+    setLoading(true);
     //console.log(data);
     const fechaDesde = data.fechaDesde ? DataConverter(data.fechaDesde) : null;
     const fechaHasta = data.fechaHasta ? DataConverter(data.fechaHasta) : null;
@@ -565,26 +569,20 @@ async function processCoordinates(data) {
                   pt={2}
                   px={3}
                 >
-                  <SoftButton variant="gradient" color="info">
-                    <input
-                      type="submit"
-                      value="Filtrar"
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                        fontSize: "0.875rem",
-                        fontWeight: "700",
-                        color: "#FFFFFF",
-                        textTransform: "uppercase",
-                      }}
-                    />
+                  <SoftButton 
+                    variant="gradient" 
+                    color="info" 
+                    type="submit" // Asegúrate de incluir el tipo "submit" aquí
+                  >
+                    Filtrar
                   </SoftButton>
                 </SoftBox>
               </SoftBox>
             </form>
           </SoftBox>
         </Card>
+
+        <LoadingModal isOpen={loading} />
 
         <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
           <SoftBox justifyContent="center">
