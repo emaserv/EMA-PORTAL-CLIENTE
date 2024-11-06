@@ -19,6 +19,7 @@ except Exception as e:
     print(f"Error al conectar a la base de datos: {str(e)}")
     
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
 from models.usuario.Usuario import Usuario
 from models.cliente.GrupoCliente import GrupoCliente
@@ -28,11 +29,13 @@ from routes.auth import auth
 from routes.fechaCliente import fechaCliente
 from routes.radioCliente import radioCliente
 from routes.importador import importador
+from routes.geoJson import geoJson
 
 app.register_blueprint(auth)
 app.register_blueprint(fechaCliente)
 app.register_blueprint(radioCliente)
 app.register_blueprint(importador)
+app.register_blueprint(geoJson)
 
 from services.adaptersRest.AdapterUsuario import AdapterUsuario
 from services.adaptersRest.AdapterGrupoCliente import AdapterGrupoCliente
