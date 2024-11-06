@@ -1,3 +1,4 @@
+import re
 from sqlalchemy import func, cast, Text, text
 from models.dai.Dai import Dai
 from db.QueryObj import QueryObj
@@ -5,6 +6,31 @@ from db.masterRepo import DatabaseSession
 from flask import Blueprint, jsonify, request, current_app, json
 from datetime import datetime
 
+
+class AdapterDAI:
+    def leerDAI(entry):
+        print("WASAAAAAAAAAAAAAA", entry['legajo'])
+        latitud_, longitud_ = procesar_geo(entry)   
+        dai = Dai(
+            #idGrupoCliente = obtenerIdGrupoCliente(entry['Grupo Cliente']), 
+            legajoDist = str(entry['legajo']) if entry['legajo'] != None else None,
+            fecha =  convertir_fecha(entry['date']),
+            hora =  chequeadorHora(entry['time']),
+            latitud=latitud_,
+            longitud=longitud_,
+            descEstado = str(entry['statusdesc']) if entry['statusdesc'] != None else None,
+            pushpin = str(entry['pushpin']) if entry['pushpin'] != None else None,
+            velocidad = str(entry['speedh']) if entry['speedh'] != None else None,
+            altitud = str(entry['altitude']) if entry['altitude'] != None else None,
+            odometro = str(entry['odometer']) if entry['odometer'] != None else None,
+            distReportada = str(entry['reportdistance']) if entry['reportdistance'] != None else None,
+            direccion = str(entry['address']) if entry['address'] != None else None,
+            zonaGeo = str(entry['geozonedesc']) if entry['geozonedesc'] != None else None,
+            mensConductor = str(entry['drivermessage']) if entry['drivermessage'] != None else None,
+        )
+    
+        return dai
+    
 def procesar_geo(entry):
     if 'geopoint' in entry and entry['geopoint'] != '-':
         geo_str = entry['geopoint']
@@ -21,32 +47,6 @@ def procesar_geo(entry):
         latitud, longitud = None, None
     
     return latitud, longitud
-
-class AdapterDAI:
-    def leerDAI(entry):
-        print("WASAAAAAAAAAAAAAA", entry['Legajos'])
-        latitud_, longitud_ = procesar_geo(entry)   
-        dai = Dai(
-            idGrupoCliente = obtenerIdGrupoCliente(entry['Grupo Cliente']), 
-            legajoDist = str(entry['Legajos']) if entry['Legajos'] != None else None,
-            fecha =  convertir_fecha(entry['date']),
-            hora =  chequeadorHora(entry['time']),
-            #latitud = str(entry['Latitud']) if entry['Latitud'] != None else None,
-            #longitud =  str(entry['Longitud']) if entry['Longitud'] != None else None,
-            latitud=latitud_,
-            longitud=longitud_,
-            descEstado = str(entry['statusdesc']) if entry['statusdesc'] != None else None,
-            pushpin = str(entry['pushpin']) if entry['pushpin'] != None else None,
-            velocidad = str(entry['speedh']) if entry['speedh'] != None else None,
-            altitud = str(entry['altitude']) if entry['altitude'] != None else None,
-            odometro = str(entry['odometer']) if entry['odometer'] != None else None,
-            distReportada = str(entry['reportdistance']) if entry['reportdistance'] != None else None,
-            direccion = str(entry['address']) if entry['address'] != None else None,
-            zonaGeo = str(entry['geozonedesc']) if entry['geozonedesc'] != None else None,
-            mensConductor = str(entry['drivermessage']) if entry['drivermessage'] != None else None,
-        )
-    
-        return dai
     
 def chequeadorHora(hora):
     print('hora', str(hora))
@@ -84,6 +84,21 @@ def convertir_fecha(fecha_str):
     print('fecha_str', fecha_str)
     if fecha_str == '-':
         return None
+    
+    def es_fecha_iso(fecha_str):
+    # Expresión regular para verificar el formato ISO 8601
+        patron_iso = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$'
+        return re.match(patron_iso, fecha_str) is not None
+    
+    if es_fecha_iso(fecha_str):
+        try:
+            # Convertir la fecha del formato ISO 8601 a un objeto datetime
+            fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M:%S.%f')
+        
+            # Convertir el objeto datetime al formato 'dd/mm/yyyy'
+            fecha_str = fecha_obj.strftime('%d/%m/%Y')
+        except ValueError:
+            raise ValueError("Error en la conversión de la fecha.")
 
     try:
         # Convertir la fecha del formato 'dd/mm/yyyy' a un objeto datetime

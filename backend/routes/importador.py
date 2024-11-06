@@ -6,6 +6,7 @@ from services.emision import factoryAdapterArchivo
 from services.emision import adapterEmisionCSV
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
+from models.geoJson.GeoJson import GeoJson
 
 importador = Blueprint('importador', __name__)
 
@@ -29,8 +30,13 @@ def uploadFileAndData():
         return jsonify({'error': 'No JSON data part'}), 400
 
     try:
-        data_dict = json.loads(json_data)
-        data = XSLXtoJSONconverter(file, data_dict.get('idFormato'))
+        data_dict = json.loads(json_data) 
+        if data_dict.get('idFormato') == 4:
+            # Se recibe un json
+            file_content = file.read()
+            data = json.loads(file_content)
+        else:
+            data = XSLXtoJSONconverter(file, data_dict.get('idFormato'))
 
         JSONsaver(file, data)
 
@@ -78,6 +84,20 @@ def uploadFileAndData():
 
                     session.add(dai)    
                     session.commit()
+            
+            elif data_dict.get('idFormato') == 4:                
+
+                print("pase por geoJson")
+                print(data)
+                json_data = json.dumps(data)
+                encoded_data = json_data.encode('utf-8')
+
+                geoJson = GeoJson (
+                    geoData=encoded_data
+                )
+
+                session.add(geoJson)    
+                session.commit()
             
 
         return {'message': 'File uploaded and converted to JSON successfully'}, 200
