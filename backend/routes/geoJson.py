@@ -15,13 +15,17 @@ def getGeoJson():
         
         json_data = request.form.get('data')
         data_dict = json.loads(json_data)
-        idGeoJson = data_dict.get('idGeoJson')
+        plan = data_dict.get('plan')
+        sucursal = data_dict.get('sucursal')
+        radio = data_dict.get('radio')
 
-        if idGeoJson is None:
-            return jsonify({"message": "idGeoJson is missing"}), 400 
+        if not all([plan, sucursal, radio]):
+            return jsonify({"message": "Faltan parametros 'plan', 'sucursal', o 'radio'"}), 400
+        
+        nombre_buscar = f"{plan}-{sucursal}-{radio}"
         
         with DatabaseSession().get_session() as session:
-            geojson = session.query(GeoJson).filter(GeoJson.id == idGeoJson).first()
+            geojson = session.query(GeoJson).filter(GeoJson.nombre == nombre_buscar).first()
             if geojson is None:
                 return jsonify({'error': 'GeoJson not found'}), 404
             
