@@ -89,11 +89,13 @@ def uploadFileAndData():
 
                 print("pase por geoJson")
                 print(data)
+                #nombreArchivo = data.get("name")
                 json_data = json.dumps(data)
                 encoded_data = json_data.encode('utf-8')
 
                 geoJson = GeoJson (
-                    geoData=encoded_data
+                    geoData = encoded_data,
+                    nombre = data.get("name")
                 )
 
                 session.add(geoJson)    
