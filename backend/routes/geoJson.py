@@ -8,17 +8,12 @@ geoJson = Blueprint('geoJson', __name__)
 @geoJson.route('/api/geoJson/consultarGeoJson', methods=['POST'])
 def getGeoJson():
     print("entro")
+    
+    plan = request.form.get('plan')
+    sucursal = request.form.get('sucursal')
+    radio = request.form.get('radio')
+    
     try:
-        # Ensure data is sent in the request
-        if not request.form.get('data'):
-           return jsonify({"message": "No data provided"}), 400
-        
-        json_data = request.form.get('data')
-        data_dict = json.loads(json_data)
-        plan = data_dict.get('plan')
-        sucursal = data_dict.get('sucursal')
-        radio = data_dict.get('radio')
-
         if not all([plan, sucursal, radio]):
             return jsonify({"message": "Faltan parametros 'plan', 'sucursal', o 'radio'"}), 400
         
