@@ -129,6 +129,8 @@ def tablaRC():
                 'legajo': row.legajo
             })
 
+        print(datosPiezasPostales)
+
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 404
         

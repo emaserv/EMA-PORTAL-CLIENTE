@@ -453,7 +453,9 @@ export default function PRSTable({ data, columns }) {
                         column !== "geoVisita" &&
                         column !== "firma" &&
                         column !== "direccion" &&
-                        column !== "foto" && (
+                        column !== "foto" &&
+                        column !== "estadoMetro" &&
+                        column !== "legajo" && (
                           <TableCell
                             key={`${row.id}-${column}`}
                             align="left"

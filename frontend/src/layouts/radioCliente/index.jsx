@@ -101,9 +101,11 @@ const fetchGeoMapaItems = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
       setPuntosMapa(apiData1.dataTabla);
       setColumns(apiData1.columns);
       filtrarPuntosMapa(apiData1.dataTabla, plan, sucursal, radio, fechaDesde, fechaHasta);
+      setLoading(false);
     } else {
       console.error("No se recibieron datos de geoMapaItems API");
       setPuntosMapa([]);
+      setLoading(false);
     }
   } catch (error) {
     console.error("Error en fetchGeoMapaItems:", error);
