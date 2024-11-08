@@ -7,7 +7,6 @@ geoJson = Blueprint('geoJson', __name__)
 
 @geoJson.route('/api/geoJson/consultarGeoJson', methods=['POST'])
 def getGeoJson():
-    print("entro")
     
     plan = request.form.get('plan')
     sucursal = request.form.get('sucursal')

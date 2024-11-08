@@ -137,7 +137,7 @@ const fetchRadioCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
 // Función para realizar la tercera solicitud: geoMapaCamino
 const fetchGeoMapaCamino = async () => {
   try {
-    const url = new URL(`${API_BACK}/geo-dai`);
+    const url = new URL(`${API_BACK}/api/geo-dai`);
     const params = {
       legajo: legajo,
       hini: hini.toISOString(),
