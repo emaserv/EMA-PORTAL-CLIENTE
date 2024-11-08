@@ -37,7 +37,6 @@ def format_date(date_str):
         anio = date_str[2:4]
         mes = date_str[5:7]
         dia = date_str[8:10]
-        print("anioo", anio, mes, dia)
 
         nuevaFecha = dia + "/" + mes + "/" + anio
 
@@ -121,7 +120,6 @@ def tablaFC():
                 'firma': row.firma
             })
 
-        print("AAAAA", datosPiezasPostales)
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204

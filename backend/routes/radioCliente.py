@@ -42,8 +42,7 @@ def format_date(date_str):
         dia = date_str[8:10]
 
         nuevaFecha = dia + "/" + mes + "/" + anio
-        
-        print(nuevaFecha)
+
     except ValueError:
         return None
     
@@ -128,7 +127,6 @@ def tablaRC():
                 'firma': row.firma,
                 'legajo': row.legajo
             })
-
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 404

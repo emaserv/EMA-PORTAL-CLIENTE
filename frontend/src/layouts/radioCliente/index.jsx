@@ -147,6 +147,7 @@ const fetchRadioCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
 const fetchGeoMapaCamino = async () => {
   try {
     const url = new URL('/api/geo-dai', window.location.origin);
+
     const params = {
       legajo: legajo,
       hini: hini.toISOString(),
