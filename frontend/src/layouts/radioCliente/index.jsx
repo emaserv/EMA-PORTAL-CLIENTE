@@ -76,9 +76,13 @@ const RadioCliente = () => {
   };
 
   // Función para realizar la primera solicitud: geoMapaItems
+// Función para realizar la primera solicitud: geoMapaItems
 const fetchGeoMapaItems = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
   try {
-    const url = new URL(`${API_BACK}/api/radio/geoMapaItems`);
+    // Create the base URL object
+    const url = new URL('/api/radio/geoMapaItems', window.location.origin);
+
+    // Define parameters with default values if not provided
     const params = {
       plan: plan || "",
       sucursal: sucursal || "",
@@ -88,35 +92,40 @@ const fetchGeoMapaItems = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
       fechaHasta: fechaHasta || "",
     };
 
-    Object.keys(params).forEach((key) => {
-      if (params[key]) {
-        url.searchParams.append(key, params[key]);
+    // Append each non-empty parameter to the URL
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) {
+        url.searchParams.append(key, value);
       }
     });
 
+    // Fetch data from the API with the constructed URL
     const response = await fetch(url);
     const apiData1 = await response.json();
 
+    // Check for data and update the state accordingly
     if (apiData1.dataTabla) {
       setPuntosMapa(apiData1.dataTabla);
       setColumns(apiData1.columns);
       filtrarPuntosMapa(apiData1.dataTabla, plan, sucursal, radio, fechaDesde, fechaHasta);
-      setLoading(false);
     } else {
       console.error("No se recibieron datos de geoMapaItems API");
       setPuntosMapa([]);
-      setLoading(false);
     }
+
+    setLoading(false);
   } catch (error) {
     console.error("Error en fetchGeoMapaItems:", error);
+    setLoading(false);
   }
 };
+
 
 // Función para realizar la segunda solicitud: radio-cliente
 const fetchRadioCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
   try {
     const response2 = await fetch(
-      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
+      `/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
     );
 
     const apiData2 = await response2.json();
@@ -137,7 +146,7 @@ const fetchRadioCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
 // Función para realizar la tercera solicitud: geoMapaCamino
 const fetchGeoMapaCamino = async () => {
   try {
-    const url = new URL(`${API_BACK}/geo-dai`);
+    const url = new URL('/api/geo-dai', window.location.origin);
     const params = {
       legajo: legajo,
       hini: hini.toISOString(),
