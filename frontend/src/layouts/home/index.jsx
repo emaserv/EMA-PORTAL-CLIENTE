@@ -164,6 +164,7 @@ const Home = () => {
                   </Grid>
                 ) : null}
 
+                {user.idGrupoCliente !== 4 ? (
                 <Grid
                     sx={{ textAlign: "left", marginTop: "1rem" }} // Centrado del texto
                     item
@@ -182,6 +183,7 @@ const Home = () => {
                       </Link>
                     </div>
                   </Grid>
+                  ) : null}
 
               </Grid>             
               
