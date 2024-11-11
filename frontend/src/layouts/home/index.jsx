@@ -127,7 +127,7 @@ const Home = () => {
                 <Grid
                   sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                   item
-                  xs={15}
+                  xs={12}
                 >
                   <div className="content" display="flex">
                     <Link to="/fecha-cliente">
@@ -147,7 +147,7 @@ const Home = () => {
                   <Grid
                     sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                     item
-                    xs={1}
+                    xs={12}
                   >
                     <div className="content" display="flex">
                       <Link to="/radio-cliente">
@@ -163,7 +163,28 @@ const Home = () => {
                     </div>
                   </Grid>
                 ) : null}
-              </Grid>
+
+                <Grid
+                    sx={{ textAlign: "left", marginTop: "1rem" }} // Centrado del texto
+                    item
+                    xs={12}
+                  >
+                    <div className="content" display="flex">
+                      <Link to="/consulta-firmas">
+                        <SoftButton
+                          variant="gradient"
+                          color="info"
+                          size="large"
+                          sx={{ width: "30rem" }}
+                        >
+                          Consulta por Firmas
+                        </SoftButton>
+                      </Link>
+                    </div>
+                  </Grid>
+
+              </Grid>             
+              
             ) : null}
           </SoftBox>
 
