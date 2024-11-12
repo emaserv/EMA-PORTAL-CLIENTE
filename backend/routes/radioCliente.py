@@ -42,8 +42,7 @@ def format_date(date_str):
         dia = date_str[8:10]
 
         nuevaFecha = dia + "/" + mes + "/" + anio
-        
-        print(nuevaFecha)
+
     except ValueError:
         return None
     
@@ -342,7 +341,7 @@ def mapaCamino():
 
 
 
-@radioCliente.route('/geo-dai', methods=['GET'])
+@radioCliente.route('/api/geo-dai', methods=['GET'])
 def get_dai_data():
     # Obtener parámetros de la solicitud
     fechaini = request.args.get('hini')  # Fecha de inicio en formato YYYY-MM-DD    
@@ -373,6 +372,9 @@ def get_dai_data():
                 'longitud': row.longitud
             } for row in data_query
         ]
+
+        print(dataGeoCamino)
+
         # Verificar si los datos están vacíos
         if not dataGeoCamino:
             return jsonify({"message": "Recursos no encontrados"}), 204

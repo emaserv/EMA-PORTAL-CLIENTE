@@ -7,7 +7,6 @@ geoJson = Blueprint('geoJson', __name__)
 
 @geoJson.route('/api/geoJson/consultarGeoJson', methods=['POST'])
 def getGeoJson():
-    print("entro")
     
     plan = request.form.get('plan')
     sucursal = request.form.get('sucursal')
@@ -17,7 +16,7 @@ def getGeoJson():
         if not all([plan, sucursal, radio]):
             return jsonify({"message": "Faltan parametros 'plan', 'sucursal', o 'radio'"}), 400
         
-        nombre_buscar = f"{plan}-{sucursal}-{radio}"
+        nombre_buscar = f"{sucursal}-{plan}-{radio}"
         
         with DatabaseSession().get_session() as session:
             geojson = session.query(GeoJson).filter(GeoJson.nombre == nombre_buscar).first()
