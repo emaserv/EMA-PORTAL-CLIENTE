@@ -25,6 +25,7 @@ const DataConverter = (fechaDeSincronizacion) => {
   return `${year}-${month}-${day}`;
 };
 
+
 const RadioCliente = () => {
   const { user } = useAuth();
   const {
@@ -56,7 +57,7 @@ const RadioCliente = () => {
   
   const onSubmit = (data) => {
     setLoading(true);
-    //console.log(data);
+
     const fechaDesde = data.fechaDesde ? DataConverter(data.fechaDesde) : null;
     const fechaHasta = data.fechaHasta ? DataConverter(data.fechaHasta) : null;
 
@@ -75,12 +76,59 @@ const RadioCliente = () => {
     );
   };
 
+
+// Función para formatear un valor a dos dígitos
+const formatToTwoDigits = (value) => {
+  return value && value.length === 1 ? `0${value}` : value;
+};
+
+// Función para realizar la solicitud a la API de geoJson
+const fetchGeoJsonData = async (sucursal, plan, radio) => {
+  try {
+    setLoading(true);
+    const formattedPlan = formatToTwoDigits(plan);
+    const formattedSucursal = formatToTwoDigits(sucursal);
+    const formattedRadio = formatToTwoDigits(radio);
+
+    const url = new URL(`${API_BACK}/api/geoJson/consultarGeoJson`);
+    const params = { sucursal: formattedSucursal, plan: formattedPlan, radio: formattedRadio };
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) {
+        url.searchParams.append(key, value);
+      }
+    });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.geoData) {
+          setGeoJsonData(data.geoData);
+      } else {
+        console.error("No se encontraron datos para esta combinación.");
+        setGeoJsonData([]);
+      }
+    } catch (error) {
+      console.error("Error en fetchGeoJsonData:", error);
+    } finally {
+      setLoading(false);
+    }
+};
+
+
   // Función para realizar la primera solicitud: geoMapaItems
 // Función para realizar la primera solicitud: geoMapaItems
 const fetchGeoMapaItems = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
   try {
+    setLoading(true);
     // Create the base URL object
-    const url = new URL('/api/radio/geoMapaItems', window.location.origin);
+    const url = new URL(`${API_BACK}/api/radio/geoMapaItems`);
 
     // Define parameters with default values if not provided
     const params = {
@@ -117,6 +165,8 @@ const fetchGeoMapaItems = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
   } catch (error) {
     console.error("Error en fetchGeoMapaItems:", error);
     setLoading(false);
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -124,8 +174,9 @@ const fetchGeoMapaItems = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
 // Función para realizar la segunda solicitud: radio-cliente
 const fetchRadioCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
   try {
+    setLoading(true);
     const response2 = await fetch(
-      `/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
+      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
     );
 
     const apiData2 = await response2.json();
@@ -140,13 +191,15 @@ const fetchRadioCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
     }
   } catch (error) {
     console.error("Error en fetchRadioCliente:", error);
+  } finally {
+    setLoading(false);
   }
 };
 
 // Función para realizar la tercera solicitud: geoMapaCamino
 const fetchGeoMapaCamino = async () => {
   try {
-    const url = new URL('/api/geo-dai', window.location.origin);
+    const url = new URL(`${API_BACK}/api/geo-dai`);
 
     const params = {
       legajo: legajo,
@@ -183,12 +236,14 @@ const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
     setPuntosMapa([]);
     setCaminoMapa([]);
     setDatosFiltrados([]);
+    setGeoJsonData([]);
     return;
   }
 
   // Llamadas a las tres funciones
   await fetchGeoMapaItems(plan, sucursal, radio, fechaDesde, fechaHasta);
   await fetchRadioCliente(plan, sucursal, radio, fechaDesde, fechaHasta);
+  await fetchGeoJsonData(sucursal, plan, radio);
 };
 
   const filtrarDatos = (
