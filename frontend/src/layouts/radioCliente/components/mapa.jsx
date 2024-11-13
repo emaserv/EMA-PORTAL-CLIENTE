@@ -53,6 +53,14 @@ function MyMap({ arrayPuntos, arrayCamino, geoJsonData }) {
     weight: 5, // Grosor de la línea
   };
 
+
+  const geoJsonStyle = {
+    color: 'red',
+    weight: 1,
+    opacity: 0.6,
+    fillOpacity: 0.6
+  };
+
   return (
     <MapContainer zoom={16} style={{ height: '300px', width: '100%' }}>
       <TileLayer
@@ -83,9 +91,12 @@ function MyMap({ arrayPuntos, arrayCamino, geoJsonData }) {
       )}
 
       {/* Renderizar GeoJSON si se proporciona */}
-      {geoJsonData.length > 0 && geoJsonData.map((route, index) => (
-        <GeoJSON key={index} data={route} style={{ color: 'red', weight: 5 }} />
-      ))}
+      {geoJsonData && geoJsonData.type === "FeatureCollection" && (
+      <GeoJSON 
+        data={geoJsonData} 
+        style={geoJsonStyle} 
+      />
+)}
 
     </MapContainer>
   );
