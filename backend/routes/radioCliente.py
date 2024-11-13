@@ -7,8 +7,6 @@ from db.masterRepo import DatabaseSession
 from datetime import datetime
 import pymysql
 
-
-
 radioCliente = Blueprint('radioCliente', __name__)
 
 def get_column_names(model):
@@ -118,7 +116,7 @@ def tablaRC():
                 'radio': row.radio,
                 'direccion': row.direccion,
                 'localidad': row.localidad,
-                'fecha': format_date(row.fecha),
+                'fecha': format_date(row.fechaCertificacion),
                 'hora': format_time(row.hora),  # Usa la función de formateo aquí
                 'estadoPieza': row.estadoPieza,
                 'obsVisita': row.obsVisita,

@@ -36,7 +36,9 @@ class AdapterPSM:
             tipoDePieza = None, 
             localidad = entry['Localidad'] if entry['Localidad'] != 'None' else None,
             firma = entry['Firma'] if entry['Firma'] else None,
-            fechaCertificacion = convertir_fecha(entry['Fecha']),
+            fechaEmision = convertir_fecha(entry['Fecha Emision']),
+            fechaCertificacion = convertir_fecha(entry['Fecha certificada']),
+            fechaIngreso = convertir_fecha(entry['Fecha Ingreso']),
         )
         print('pase el primero')
 

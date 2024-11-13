@@ -30,3 +30,4 @@ class ItemEmision(db.Model):
     altura = db.Column(db.Text)
     fechaEmision = db.Column(db.Text)
     fechaCertificacion = db.Column(db.Text)
+    fechaIngreso = db.Column(db.Text)
