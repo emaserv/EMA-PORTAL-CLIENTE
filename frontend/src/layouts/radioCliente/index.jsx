@@ -53,6 +53,7 @@ const RadioCliente = () => {
   const [hini, setHini] = useState(null)
   const [hfin, setHfin] = useState(null)
   const [geoJsonData, setGeoJsonData] = useState([])
+  const [geoJsonData2, setGeoJsonData2] = useState([])
 
   
   const onSubmit = (data) => {
@@ -109,10 +110,11 @@ const fetchGeoJsonData = async (sucursal, plan, radio) => {
     const data = await response.json();
 
     if (response.ok && data.geoData) {
-          setGeoJsonData(data.geoData);
+        console.log("radio", data.geoData)
+        setGeoJsonData2(data.geoData);
       } else {
         console.error("No se encontraron datos para esta combinación.");
-        setGeoJsonData([]);
+        setGeoJsonData2([]);
       }
     } catch (error) {
       console.error("Error en fetchGeoJsonData:", error);
@@ -218,11 +220,12 @@ const fetchGeoMapaCamino = async () => {
 
     if (apiData3.dataGeoCamino) {
       const results = await processCoordinates(apiData3.dataGeoCamino);
+      console.log(results);
       setGeoJsonData(results);
       setColumnsCamino(apiData3.columns);
     } else {
       console.error("No se recibieron datos de geoCamino API");
-      setCaminoMapa([]);
+      setGeoJsonData([]);
     }
   } catch (error) {
     console.error("Error en fetchGeoMapaCamino:", error);
@@ -365,15 +368,6 @@ function chunkArray(array, chunkSize) {
   return chunks;
 }
 
-// Simulación de una función para pegar coordenadas a las calles
-// Función para dividir el array en chunks
-function chunkArray(array, chunkSize) {
-  const chunks = [];
-  for (let i = 0; i < array.length; i += chunkSize) {
-    chunks.push(array.slice(i, i + chunkSize));
-  }
-  return chunks;
-}
 
 // Función para obtener la ruta desde la API de OSRM
 async function getRouteFromAPI(chunk) {
@@ -454,13 +448,13 @@ async function processCoordinates(data) {
       const fechaMin = new Date(Math.min(...fechas));
       const fechaMax = new Date(Math.max(...fechas));
     
+      console.log("HOLAA", fechaMin, fechaMax);
       // Guardar los resultados en el estado
       setHini(fechaMin);
       setHfin(fechaMax);
     }
 
     setLegajo(data[0].legajo)
-
 
     setPuntosMapaFiltrados(puntosFiltrados);
     //console.log("puntosFiltrados", puntosMapaFiltrados);
@@ -476,6 +470,7 @@ async function processCoordinates(data) {
       const longitud = parseFloat(data[i].longitud);
       arrayCoordenadas.push([latitud, longitud]);
     }
+    console.log("AAAA", arrayCoordenadas)
 
     //console.log("PRINT ARRAY COORD", arrayCoordenadas);
     return arrayCoordenadas;
@@ -509,7 +504,10 @@ async function processCoordinates(data) {
 
   useEffect(()=>{
 
-    fetchGeoMapaCamino()
+    if (!legajo)
+      return;
+    else
+      fetchGeoMapaCamino();
 
   },[legajo])
 
@@ -659,6 +657,7 @@ async function processCoordinates(data) {
                   arrayPuntos={armarArrayCoordenadas(puntosMapa)}
                   arrayCamino={armarArrayCoordenadas(caminoMapa)}
                   geoJsonData={geoJsonData}
+                  geoJsonData2={geoJsonData2}
                 />
               </SoftBox>
             </Card>

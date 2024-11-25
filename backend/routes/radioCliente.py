@@ -341,24 +341,21 @@ def mapaCamino():
 
 @radioCliente.route('/api/geo-dai', methods=['GET'])
 def get_dai_data():
-    # Obtener parámetros de la solicitud
-    fechaini = request.args.get('hini')  # Fecha de inicio en formato YYYY-MM-DD    
-    fechafin = request.args.get('hfin')  # Fecha de fin en formato YYYY-MM-DD
-    legajo = request.args.get('legajo')      # Número de legajo
-    
-    # Query parametrizada para seleccionar entre rango de fecha y hora
-    query = f"""
-    SELECT id, "idGrupoCliente", "legajoDist", fecha, hora, latitud, longitud, "descEstado", pushpin, 
-           velocidad, altitud, odometro, "distReportada", direccion, "zonaGeo", "mensConductor"
-    FROM public.dai
-    WHERE (fecha || ' ' || hora)::timestamp BETWEEN '{fechaini}' AND '{fechafin}'
-    AND "legajoDist" = '{legajo}'
-    """
-    query = text(query)
+    fechaini = request.args.get('hini')
+    fechafin = request.args.get('hfin')
+    legajo = request.args.get('legajo')
+
+    query = text("""
+        SELECT id, "idGrupoCliente", "legajoDist", fecha, hora, latitud, longitud, "descEstado", pushpin, 
+               velocidad, altitud, odometro, "distReportada", direccion, "zonaGeo", "mensConductor"
+        FROM public.dai
+        WHERE (fecha || ' ' || hora)::timestamp BETWEEN :fechaini AND :fechafin
+        AND "legajoDist" = :legajo
+    """)
+
     try:
-        # Ejecutar query
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(query).fetchall()
+            data_query = session.execute(query, {"fechaini": fechaini, "fechafin": fechafin, "legajo": legajo}).fetchall()
 
         dataGeoCamino = [
             {
@@ -371,21 +368,20 @@ def get_dai_data():
             } for row in data_query
         ]
 
-        print(dataGeoCamino)
-
-        # Verificar si los datos están vacíos
         if not dataGeoCamino:
-            return jsonify({"message": "Recursos no encontrados"}), 204
+            # Envía un JSON vacío en lugar de una respuesta 204
+            return jsonify({"dataGeoCamino": [], "columns": []}), 200
 
-        # Obtener columnas para la respuesta
         keys = list(dataGeoCamino[0].keys())
 
+        print ("camino", dataGeoCamino)
+        
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataGeoCamino": dataGeoCamino}), 200
 
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 500
-    
+
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route('/api/plan', methods=['GET'])
@@ -446,7 +442,6 @@ def sucursalRC():
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route('/api/radio', methods=['GET'])
 def radioRC():
-    
     try:        
         query = text('SELECT DISTINCT("radio") FROM "itemEmision"')
 
