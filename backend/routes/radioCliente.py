@@ -80,16 +80,16 @@ def tablaRC():
 
         # Verifica si se proporcionan ambos parámetros de fecha para usar BETWEEN
         if fechaDesde != '' and fechaHasta != '':
-            where_clauses.append('rc."fecha" BETWEEN :fechaDesde AND :fechaHasta')
+            where_clauses.append('rc."fechaCertificacion" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
         elif fechaDesde != '':
             # Si solo se proporciona fechaDesde, busca desde esa fecha en adelante
-            where_clauses.append('rc."fecha" >= :fechaDesde')
+            where_clauses.append('rc."fechaCertificacion" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
         elif fechaHasta != '':
             # Si solo se proporciona fechaHasta, busca hasta esa fecha
-            where_clauses.append('rc."fecha" <= :fechaHasta')
+            where_clauses.append('rc."fechaCertificacion" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
         if where_clauses:
@@ -168,16 +168,16 @@ def mapaItems():
 
         # Verifica si se proporcionan ambos parámetros de fecha para usar BETWEEN
         if fechaDesde and fechaHasta :
-            where_clauses.append('gie."fechaDistrib" BETWEEN :fechaDesde AND :fechaHasta')
+            where_clauses.append('gie."fechaCertificacion" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
         elif fechaDesde:
             # Si solo se proporciona fechaDesde, busca desde esa fecha en adelante
-            where_clauses.append('gie."fechaDistrib" >= :fechaDesde')
+            where_clauses.append('gie."fechaCertificacion" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
         elif fechaHasta:
             # Si solo se proporciona fechaHasta, busca hasta esa fecha
-            where_clauses.append('gie."fechaDistrib" <= :fechaHasta')
+            where_clauses.append('gie."fechaCertificacion" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
         if where_clauses:
