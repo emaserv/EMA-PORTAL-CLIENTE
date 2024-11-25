@@ -4,7 +4,7 @@ import json
 from flask import Blueprint, jsonify, request, current_app, json
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
-from datetime import datetime
+from datetime import datetime, timedelta
 import pymysql
 
 radioCliente = Blueprint('radioCliente', __name__)
@@ -345,6 +345,21 @@ def get_dai_data():
     fechafin = request.args.get('hfin')
     legajo = request.args.get('legajo')
 
+    fechaini_dt = datetime.fromisoformat(fechaini.replace('Z', '+00:00'))  # Convertir a datetime
+    fechaini_menos_4 = fechaini_dt - timedelta(hours=4)  # Restar 4 horas
+
+    # Si necesitas el formato de string original, convertir de vuelta a ISO 8601
+    fechaini_final = fechaini_menos_4.isoformat()
+
+    fechafin_dt = datetime.fromisoformat(fechafin.replace('Z', '+00:00'))  # Convertir a datetime
+    fechafin_menos_2 = fechafin_dt - timedelta(hours=2)  # Restar 4 horas
+
+    # Si necesitas el formato de string original, convertir de vuelta a ISO 8601
+    fechafin_final = fechafin_menos_2.isoformat()
+
+    print("PRUEBAAA", fechaini_final)  # '2024-10-08T09:50:00+00:00'
+    print("PRUEBAAA", fechafin_final)  # '2024-10-08T09:50:00+00:00'
+
     query = text("""
         SELECT id, "idGrupoCliente", "legajoDist", fecha, hora, latitud, longitud, "descEstado", pushpin, 
                velocidad, altitud, odometro, "distReportada", direccion, "zonaGeo", "mensConductor"
@@ -355,7 +370,7 @@ def get_dai_data():
 
     try:
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(query, {"fechaini": fechaini, "fechafin": fechafin, "legajo": legajo}).fetchall()
+            data_query = session.execute(query, {"fechaini": fechaini_final, "fechafin": fechafin_final, "legajo": legajo}).fetchall()
 
         dataGeoCamino = [
             {

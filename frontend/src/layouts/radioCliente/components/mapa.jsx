@@ -82,7 +82,6 @@ function MyMap({ arrayPuntos, arrayCamino, geoJsonData, geoJsonData2 }) {
         </Marker>
       ))}
 
-      cambios en la logica para que el mapa se mueva hacia los puntos luego del filtro
       {camino.length > 0 && puntos.length > 0 ? (
         <>
           <Polyline positions={camino.filter(pos => pos[0] && pos[1]).map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
@@ -94,7 +93,7 @@ function MyMap({ arrayPuntos, arrayCamino, geoJsonData, geoJsonData2 }) {
 
       {/* Renderizar GeoJSON si se proporciona */}
       {geoJsonData.length > 0 && geoJsonData.map((route, index) => (
-        <GeoJSON key={index} data={route} style={{ color: 'red', weight: 5 }} />
+        <GeoJSON key={index} data={route} style={{ color: 'green', weight: 5 }} />
       ))}
 
       {geoJsonData2  && geoJsonData2.type === "FeatureCollection" && (
