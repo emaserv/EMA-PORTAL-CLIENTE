@@ -291,14 +291,14 @@ def mapaCamino():
 
         # Manejo de las fechas con BETWEEN y condiciones adicionales
         if fechaDesde and fechaHasta:
-            where_clauses.append('gie."fechaDistrib" BETWEEN :fechaDesde AND :fechaHasta')
+            where_clauses.append('gie."fechaCertificacion" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
         elif fechaDesde:
-            where_clauses.append('gie."fechaDistrib" >= :fechaDesde')
+            where_clauses.append('gie."fechaCertificacion" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
         elif fechaHasta:
-            where_clauses.append('gie."fechaDistrib" <= :fechaHasta')
+            where_clauses.append('gie."fechaCertificacion" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
         # Agregar cláusula WHERE si hay condiciones

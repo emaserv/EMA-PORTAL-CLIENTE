@@ -210,6 +210,7 @@ const fetchGeoMapaCamino = async () => {
     };
 
     console.log("HOLAA",hini.toISOString())
+    console.log("HOLAA",hfin.toISOString())
 
     Object.keys(params).forEach((key) => {
       if (params[key]) {
