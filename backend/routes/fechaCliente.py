@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request, current_app, json
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
 from datetime import datetime
+import requests
 
 fechaCliente = Blueprint('fechaCliente', __name__)
 
@@ -44,6 +45,38 @@ def format_date(date_str):
         return None
     
     return nuevaFecha
+
+def format_date_para_url(date_str):
+    if date_str is None:
+        return None
+    
+    try:
+        anio = date_str[2:4]
+        mes = date_str[5:7]
+        dia = date_str[8:10]
+
+        nuevaFecha = dia + mes + "20" + anio
+
+    except ValueError:
+        return None
+    
+    return nuevaFecha
+
+def fetch_data(nroCliente, fechaEmision):
+    url = f"https://metrogasdocs2.docuprint.com/Api/Form/{nroCliente}/{fechaEmision}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Verifica si hubo un error en la solicitud
+        data = response.json()  # Si la respuesta es JSON, la devuelve como un diccionario
+        # Asegurarse de que la clave 'Url' existe en la respuesta
+        if "Url" in data:
+            return data["Url"]
+        else:
+            print("El campo 'Url' no se encuentra en la respuesta.")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Error al hacer la solicitud: {e}")
+        return None
 
 @fechaCliente.route('/api/fecha-cliente', methods=['GET'])
 def tablaFC():
@@ -117,9 +150,11 @@ def tablaFC():
                 'obsVisita': row.obsVisita,
                 'geoVisita': row.geoVisita,
                 'foto': row.foto,
-                'firma': row.firma
+                'firma': row.firma,
+                'acuseDeDeuda': fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))
             })
-
+            
+        print(datosPiezasPostales)
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204

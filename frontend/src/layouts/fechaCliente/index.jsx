@@ -413,7 +413,7 @@ const FechaCliente = () => {
                   {user.idGrupoCliente !== 4 ? (
                     <PRSTable data={datosFiltrados} columns={columns} />
                   ) : (
-                    <CalleAlturaTable data={datosFiltrados} columns={columns} />
+                    <CalleAlturaTable data={datosFiltrados} columns={columns}  />
                   )}
                 </SoftBox>
                 </>
