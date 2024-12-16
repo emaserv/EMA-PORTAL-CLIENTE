@@ -69,14 +69,15 @@ def fetch_data(nroCliente, fechaEmision):
         response.raise_for_status()  # Verifica si hubo un error en la solicitud
         data = response.json()  # Si la respuesta es JSON, la devuelve como un diccionario
         # Asegurarse de que la clave 'Url' existe en la respuesta
-        if "Url" in data:
-            return data["Url"]
+        if data:
+            return data
         else:
-            print("El campo 'Url' no se encuentra en la respuesta.")
+            print("La respuesta se encuentra vacia.")
             return None
     except requests.exceptions.RequestException as e:
         print(f"Error al hacer la solicitud: {e}")
         return None
+
 
 @fechaCliente.route('/api/fecha-cliente', methods=['GET'])
 def tablaFC():
@@ -135,6 +136,7 @@ def tablaFC():
             datosPiezasPostales.append({
                 'id': row.id,
                 'fechaEmision': format_date(row.fechaEmision),
+                'fechaVencimiento': fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Vencimiento"],
                 'grupoCliente': row.grupoCliente,
                 'nroCliente': row.nroCliente,
                 'titular': row.titular,
@@ -145,13 +147,14 @@ def tablaFC():
                 'localidad': row.localidad,
                 'fecha': format_date(row.fecha),
                 'hora': format_time(row.hora),  # Usa la función de formateo aquí
+                'importe': str("${:,.2f}".format(fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Importe"])),
                 'estadoPieza': row.estadoPieza,
                 'estadoMetro': row.estadoMetro,
                 'obsVisita': row.obsVisita,
                 'geoVisita': row.geoVisita,
                 'foto': row.foto,
                 'firma': row.firma,
-                'acuseDeDeuda': fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))
+                'acuseDeDeuda': fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Url"]
             })
             
         print(datosPiezasPostales)

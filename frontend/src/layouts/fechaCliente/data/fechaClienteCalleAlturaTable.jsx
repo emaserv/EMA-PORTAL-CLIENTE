@@ -151,6 +151,13 @@ export default function CalleAlturaTable({ data, columns }) {
       labelComplete: "Fecha de Emision",
     },
     {
+      id: "fechaVencimiento",
+      numeric: false,
+      disablePadding: false,
+      label: "F. Vencimiento",
+      labelComplete: "Fecha de Vencimiento",
+    },
+    {
       id: "nroCliente",
       numeric: false,
       disablePadding: false,
@@ -193,19 +200,26 @@ export default function CalleAlturaTable({ data, columns }) {
       labelComplete: "Hora",
     },
     {
+      id: "importe",
+      numeric: false,
+      disablePadding: false,
+      label: "Importe",
+      labelComplete: "Importe",
+    },
+    {
       id: "estadoPieza",
       numeric: false,
       disablePadding: false,
       label: "Est E.",
       labelComplete: "Estado EMA",
     },
-    {
-      id: "estadoMetro",
-      numeric: false,
-      disablePadding: false,
-      label: "Est M.",
-      labelComplete: "Estado Metrogas",
-    },
+    //{
+    //  id: "estadoMetro",
+    //  numeric: false,
+    //  disablePadding: false,
+    // label: "Est M.",
+    //  labelComplete: "Estado Metrogas",
+    //},
     {
       id: "obsVisita",
       numeric: false,
@@ -442,7 +456,8 @@ export default function CalleAlturaTable({ data, columns }) {
                             column !== "sucursal" &&
                             column !== "firma" &&
                             column !== "foto" &&
-                            column !== "acuseDeDeuda" && (
+                            column !== "acuseDeDeuda" &&
+                            column !== "estadoMetro" && (
                               <TableCell
                                 key={`${row.id}-${column}-${index}`}
                                 align="left"
