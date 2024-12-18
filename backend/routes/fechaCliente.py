@@ -319,3 +319,173 @@ def tablaInformacion():
     except Exception as e:
         print(e)  # Corregido: Mostrar el error real en la consola
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+    
+
+@fechaCliente.route('/api/emision-cliente', methods=['GET'])
+def tablaEmision():
+    idEmision = request.args.get('idEmision')
+    print(idEmision)
+    
+    try:
+        queryBase = 'SELECT * FROM "fechaCliente" fc'
+        
+        where_clauses = []
+        qParams = {}
+
+        # Verificar y agregar los parámetros condicionalmente
+        if idEmision:
+            where_clauses.append('fc."idEmision" = :idEmision')
+            qParams['idEmision'] = idEmision
+
+        # Combinar cláusulas WHERE si existen
+        if where_clauses:
+            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
+            query = queryBase + where_clause
+
+        # Convertir a TextClause después de armar la consulta completa
+        query = text(query)
+
+        # Ejecutar la consulta
+        with DatabaseSession().get_session() as session:
+            data_query = session.execute(query, qParams)
+
+        datosPiezasPostales = []
+        cache_fetch = {}
+        for row in data_query:
+            key = (row.nroCliente, format_date_para_url(row.fechaEmision))
+            if key not in cache_fetch:
+                cache_fetch[key] = fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))
+            
+            data = cache_fetch[key]
+            datosPiezasPostales.append({
+                'id': row.id,
+                'fechaEmision': format_date(row.fechaEmision),
+                'fechaVencimiento': data["Vencimiento"],
+                'nroCliente': row.nroCliente,
+                'titular': row.titular,
+                'plan': row.planTurno,
+                'sucursal': row.sucursal,
+                'radio': row.radio,
+                'direccion': row.direccion,
+                'localidad': row.localidad,
+                'fecha': format_date(row.fecha),
+                'hora': format_time(row.hora),
+                'importe': str("${:,.2f}".format(data["Importe"])),
+                'estadoPieza': row.estadoPieza,
+                'estadoMetro': row.estadoMetro,
+                'obsVisita': row.obsVisita,
+                'geoVisita': row.geoVisita,
+                'foto': row.foto,
+                'firma': row.firma,
+                'acuseDeDeuda': data["Url"]
+            })
+
+        if not datosPiezasPostales:
+            return jsonify({"message": "Recursos no encontrados"}), 204
+
+        keys = list(datosPiezasPostales[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
+
+    except Exception as e:
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+
+@fechaCliente.route('/api/emisiones', methods=['GET'])
+def get_emisiones():
+    try:
+        queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+
+        # Ejecutar la consulta
+        with DatabaseSession().get_session() as session:
+            data_query = session.execute(queryBase)
+
+        datosPiezasPostales = []
+        
+        for row in data_query:
+            datosPiezasPostales.append({
+                'id': row.id,
+                'nombre': row.nombre
+            })
+
+        if not datosPiezasPostales:
+            return jsonify({"message": "Recursos no encontrados"}), 204
+
+        keys = list(datosPiezasPostales[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "multiplesEmision": datosPiezasPostales}), 200
+
+    except Exception as e:
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+
+def buscar_por_id(data, id_buscado):
+    for item in data:
+        if str(item['id']) == id_buscado:
+            return str(item['nombre'])
+    return None
+
+
+@fechaCliente.route('/api/informe-emision', methods=['GET'])
+def informeEmision():
+    idEmision = request.args.get('idEmision')
+    
+    try:
+        queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+        
+        with DatabaseSession().get_session() as session:
+            data_query_search = session.execute(queryBaseSearch)
+        
+        dataQueryBusqueda = []
+        
+        for row in data_query_search:
+             dataQueryBusqueda.append({
+                'id': row.id, 
+                'nombre': row.nombre
+            })
+        
+        fechaEncontrada = buscar_por_id(dataQueryBusqueda, idEmision)
+        
+        queryBase = 'SELECT * FROM "informeClienteMetrogas" icm'
+        
+        where_clauses = []
+        qParams = {}
+
+        # Verificar y agregar los parámetros condicionalmente
+        if idEmision:
+            where_clauses.append('icm."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEncontrada
+
+        # Combinar cláusulas WHERE si existen
+        if where_clauses:
+            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
+            query = queryBase + where_clause
+
+        # Convertir a TextClause después de armar la consulta completa
+        query = text(query + " ORDER BY 7 DESC")
+
+        # Ejecutar la consulta
+        with DatabaseSession().get_session() as session:
+            data_query = session.execute(query, qParams)
+
+        datosPiezasPostales = []
+        
+        for row in data_query:
+            
+            datosPiezasPostales.append({
+                'id': row.id, 
+                'idEmision': row.idEmision,
+                'fechaEmision': row.fechaEmision,
+                'localidad': row.localidad,
+                'estadoPieza': row.estadoPieza,
+                'estadoMetro': row.estadoMetro,
+                'count': str(row.count),
+            })
+
+        if not datosPiezasPostales:
+            return jsonify({"message": "Recursos no encontrados"}), 204
+
+        keys = list(datosPiezasPostales[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
+
+    except Exception as e:
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500

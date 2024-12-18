@@ -4,8 +4,7 @@ class AdapterEmision:
     def convertQueryToJson(objQuery):
         emisionJson = {
             "id": objQuery.id,
-            "nombre": objQuery.nombre,
-            "id_grupo_cliente": objQuery.id_grupo_cliente
+            "nombre": objQuery.nombre
             }
         return emisionJson
     
@@ -14,6 +13,5 @@ class AdapterEmision:
         
         emision.id = data_dict.get('id')
         emision.nombre = data_dict.get('nombre')
-        emision.id_grupo_cliente = data_dict.get('id_grupo_cliente')
 
         return emision

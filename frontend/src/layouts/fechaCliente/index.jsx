@@ -100,7 +100,6 @@ const FechaCliente = () => {
         fechaHasta: fechaHasta || "",        
       };
 
-      
 
       const response1 = await axios.get(url1, { params: params1 });
       console.log("Response", response1.status);
