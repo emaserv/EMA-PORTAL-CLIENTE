@@ -4,7 +4,7 @@ import json
 from flask import Blueprint, jsonify, request, current_app, json
 from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
-from datetime import datetime
+from datetime import datetime, timedelta
 import pymysql
 
 radioCliente = Blueprint('radioCliente', __name__)
@@ -80,16 +80,16 @@ def tablaRC():
 
         # Verifica si se proporcionan ambos parámetros de fecha para usar BETWEEN
         if fechaDesde != '' and fechaHasta != '':
-            where_clauses.append('rc."fecha" BETWEEN :fechaDesde AND :fechaHasta')
+            where_clauses.append('rc."fechaCertificacion" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
         elif fechaDesde != '':
             # Si solo se proporciona fechaDesde, busca desde esa fecha en adelante
-            where_clauses.append('rc."fecha" >= :fechaDesde')
+            where_clauses.append('rc."fechaCertificacion" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
         elif fechaHasta != '':
             # Si solo se proporciona fechaHasta, busca hasta esa fecha
-            where_clauses.append('rc."fecha" <= :fechaHasta')
+            where_clauses.append('rc."fechaCertificacion" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
         if where_clauses:
@@ -168,16 +168,16 @@ def mapaItems():
 
         # Verifica si se proporcionan ambos parámetros de fecha para usar BETWEEN
         if fechaDesde and fechaHasta :
-            where_clauses.append('gie."fechaDistrib" BETWEEN :fechaDesde AND :fechaHasta')
+            where_clauses.append('gie."fechaCertificacion" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
         elif fechaDesde:
             # Si solo se proporciona fechaDesde, busca desde esa fecha en adelante
-            where_clauses.append('gie."fechaDistrib" >= :fechaDesde')
+            where_clauses.append('gie."fechaCertificacion" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
         elif fechaHasta:
             # Si solo se proporciona fechaHasta, busca hasta esa fecha
-            where_clauses.append('gie."fechaDistrib" <= :fechaHasta')
+            where_clauses.append('gie."fechaCertificacion" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
         if where_clauses:
@@ -291,14 +291,14 @@ def mapaCamino():
 
         # Manejo de las fechas con BETWEEN y condiciones adicionales
         if fechaDesde and fechaHasta:
-            where_clauses.append('gie."fechaDistrib" BETWEEN :fechaDesde AND :fechaHasta')
+            where_clauses.append('gie."fechaCertificacion" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
         elif fechaDesde:
-            where_clauses.append('gie."fechaDistrib" >= :fechaDesde')
+            where_clauses.append('gie."fechaCertificacion" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
         elif fechaHasta:
-            where_clauses.append('gie."fechaDistrib" <= :fechaHasta')
+            where_clauses.append('gie."fechaCertificacion" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
         # Agregar cláusula WHERE si hay condiciones
@@ -341,24 +341,36 @@ def mapaCamino():
 
 @radioCliente.route('/api/geo-dai', methods=['GET'])
 def get_dai_data():
-    # Obtener parámetros de la solicitud
-    fechaini = request.args.get('hini')  # Fecha de inicio en formato YYYY-MM-DD    
-    fechafin = request.args.get('hfin')  # Fecha de fin en formato YYYY-MM-DD
-    legajo = request.args.get('legajo')      # Número de legajo
-    
-    # Query parametrizada para seleccionar entre rango de fecha y hora
-    query = f"""
-    SELECT id, "idGrupoCliente", "legajoDist", fecha, hora, latitud, longitud, "descEstado", pushpin, 
-           velocidad, altitud, odometro, "distReportada", direccion, "zonaGeo", "mensConductor"
-    FROM public.dai
-    WHERE (fecha || ' ' || hora)::timestamp BETWEEN '{fechaini}' AND '{fechafin}'
-    AND "legajoDist" = '{legajo}'
-    """
-    query = text(query)
+    fechaini = request.args.get('hini')
+    fechafin = request.args.get('hfin')
+    legajo = request.args.get('legajo')
+
+    fechaini_dt = datetime.fromisoformat(fechaini.replace('Z', '+00:00'))  # Convertir a datetime
+    fechaini_menos_4 = fechaini_dt - timedelta(hours=4)  # Restar 4 horas
+
+    # Si necesitas el formato de string original, convertir de vuelta a ISO 8601
+    fechaini_final = fechaini_menos_4.isoformat()
+
+    fechafin_dt = datetime.fromisoformat(fechafin.replace('Z', '+00:00'))  # Convertir a datetime
+    fechafin_menos_2 = fechafin_dt - timedelta(hours=2)  # Restar 4 horas
+
+    # Si necesitas el formato de string original, convertir de vuelta a ISO 8601
+    fechafin_final = fechafin_menos_2.isoformat()
+
+    print("PRUEBAAA", fechaini_final)  # '2024-10-08T09:50:00+00:00'
+    print("PRUEBAAA", fechafin_final)  # '2024-10-08T09:50:00+00:00'
+
+    query = text("""
+        SELECT id, "idGrupoCliente", "legajoDist", fecha, hora, latitud, longitud, "descEstado", pushpin, 
+               velocidad, altitud, odometro, "distReportada", direccion, "zonaGeo", "mensConductor"
+        FROM public.dai
+        WHERE (fecha || ' ' || hora)::timestamp BETWEEN :fechaini AND :fechafin
+        AND "legajoDist" = :legajo
+    """)
+
     try:
-        # Ejecutar query
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(query).fetchall()
+            data_query = session.execute(query, {"fechaini": fechaini_final, "fechafin": fechafin_final, "legajo": legajo}).fetchall()
 
         dataGeoCamino = [
             {
@@ -371,21 +383,20 @@ def get_dai_data():
             } for row in data_query
         ]
 
-        print(dataGeoCamino)
-
-        # Verificar si los datos están vacíos
         if not dataGeoCamino:
-            return jsonify({"message": "Recursos no encontrados"}), 204
+            # Envía un JSON vacío en lugar de una respuesta 204
+            return jsonify({"dataGeoCamino": [], "columns": []}), 200
 
-        # Obtener columnas para la respuesta
         keys = list(dataGeoCamino[0].keys())
 
+        print ("camino", dataGeoCamino)
+        
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataGeoCamino": dataGeoCamino}), 200
 
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 500
-    
+
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route('/api/plan', methods=['GET'])
@@ -446,7 +457,6 @@ def sucursalRC():
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route('/api/radio', methods=['GET'])
 def radioRC():
-    
     try:        
         query = text('SELECT DISTINCT("radio") FROM "itemEmision"')
 

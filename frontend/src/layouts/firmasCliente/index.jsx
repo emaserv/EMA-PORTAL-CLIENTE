@@ -310,7 +310,7 @@ const filtrarDatos = (data, plan, sucursal, radio, fechaDesde, fechaHasta) => {
         </Card>
 
         <SoftBox
-          paddingBottom={3}
+          py={3}
           style={{ width: "90%" }}
           justifyContent="center"
         >

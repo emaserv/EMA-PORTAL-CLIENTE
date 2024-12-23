@@ -24,6 +24,8 @@ def getGeoJson():
                 return jsonify({'error': 'GeoJson not found'}), 404
 
             geojson_data = geojson.geoData.decode('utf-8')
+        
+        print("geojson", json.loads(geojson_data))
 
         return jsonify({"message": "Conexión y consulta exitosas", "geoData": json.loads(geojson_data)})
 

@@ -22,6 +22,7 @@ import MapIcon from "@mui/icons-material/Map";
 import Edit from "@mui/icons-material/Edit";
 import ArticleIcon from "@mui/icons-material/Article";
 import MobileFriendlyTooltip from "components/TooltipMobile";
+import axios from "axios";
 
 dayjs.locale("ES");
 
@@ -150,6 +151,13 @@ export default function CalleAlturaTable({ data, columns }) {
       labelComplete: "Fecha de Emision",
     },
     {
+      id: "fechaVencimiento",
+      numeric: false,
+      disablePadding: false,
+      label: "F. Vencimiento",
+      labelComplete: "Fecha de Vencimiento",
+    },
+    {
       id: "nroCliente",
       numeric: false,
       disablePadding: false,
@@ -192,19 +200,26 @@ export default function CalleAlturaTable({ data, columns }) {
       labelComplete: "Hora",
     },
     {
+      id: "importe",
+      numeric: false,
+      disablePadding: false,
+      label: "Importe",
+      labelComplete: "Importe",
+    },
+    {
       id: "estadoPieza",
       numeric: false,
       disablePadding: false,
       label: "Est E.",
       labelComplete: "Estado EMA",
     },
-    {
-      id: "estadoMetro",
-      numeric: false,
-      disablePadding: false,
-      label: "Est M.",
-      labelComplete: "Estado Metrogas",
-    },
+    //{
+    //  id: "estadoMetro",
+    //  numeric: false,
+    //  disablePadding: false,
+    // label: "Est M.",
+    //  labelComplete: "Estado Metrogas",
+    //},
     {
       id: "obsVisita",
       numeric: false,
@@ -389,6 +404,7 @@ export default function CalleAlturaTable({ data, columns }) {
     [data, order, orderBy, page, rowsPerPage, startDate, endDate]
   );
 
+
   return (
     <Box sx={{ width: "100%" }}>
       <Paper sx={{ width: "100%", mb: 2 }}>
@@ -439,7 +455,9 @@ export default function CalleAlturaTable({ data, columns }) {
                             column !== "radio" &&
                             column !== "sucursal" &&
                             column !== "firma" &&
-                            column !== "foto" && (
+                            column !== "foto" &&
+                            column !== "acuseDeDeuda" &&
+                            column !== "estadoMetro" && (
                               <TableCell
                                 key={`${row.id}-${column}-${index}`}
                                 align="left"
@@ -534,14 +552,14 @@ export default function CalleAlturaTable({ data, columns }) {
                             }}
                           >
                             <a
-                              href={row.firma !== '-' ? row.firma : "#"}
+                              href={row.acuseDeDeuda !== '-' ? row.acuseDeDeuda : "#"} // Obtener el link de la factura
                               target="_blank"
                               rel="noopener noreferrer"
                               style={{
                                 textDecoration: "none",
-                                color: "#D3D3D3",
-                                pointerEvents: "none", // Deshabilita el click si es '-'
-                                cursor: "not-allowed",
+                                color: row.acuseDeDeuda !== '-' ? "#4682B4" : "#D3D3D3",
+                                pointerEvents: row.acuseDeDeuda !== '-' ? "auto" : "none", // Deshabilita el click si es '-'
+                                cursor: row.acuseDeDeuda !== '-' ? "pointer" : "not-allowed",
                               }}
                             >
                               <ArticleIcon fontSize="medium" />

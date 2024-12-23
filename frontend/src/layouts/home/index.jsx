@@ -144,6 +144,27 @@ const Home = () => {
                 </Grid>
 
                 {user.idGrupoCliente !== 4 ? (
+                <Grid
+                  sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
+                  item
+                  xs={12}
+                >
+                  <div className="content" display="flex">
+                    <Link to="/consulta-emision">
+                      <SoftButton
+                        variant="gradient"
+                        color="info"
+                        size="large"
+                        sx={{ width: "30rem" }}
+                      >
+                        Consulta por Emision
+                      </SoftButton>
+                    </Link>
+                  </div>
+                </Grid>)
+                : null}
+
+                {user.idGrupoCliente !== 4 ? (
                   <Grid
                     sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                     item

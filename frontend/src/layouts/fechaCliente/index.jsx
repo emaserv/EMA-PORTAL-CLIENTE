@@ -100,7 +100,6 @@ const FechaCliente = () => {
         fechaHasta: fechaHasta || "",        
       };
 
-      
 
       const response1 = await axios.get(url1, { params: params1 });
       console.log("Response", response1.status);
@@ -413,7 +412,7 @@ const FechaCliente = () => {
                   {user.idGrupoCliente !== 4 ? (
                     <PRSTable data={datosFiltrados} columns={columns} />
                   ) : (
-                    <CalleAlturaTable data={datosFiltrados} columns={columns} />
+                    <CalleAlturaTable data={datosFiltrados} columns={columns}  />
                   )}
                 </SoftBox>
                 </>

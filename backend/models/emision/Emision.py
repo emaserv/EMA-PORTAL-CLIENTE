@@ -6,5 +6,6 @@ class Emision(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nombre = db.Column(db.Text)
+    
 
     itemsEmision = relationship("ItemEmision", backref="emision", foreign_keys="[ItemEmision.idEmision]", cascade="all, delete-orphan")

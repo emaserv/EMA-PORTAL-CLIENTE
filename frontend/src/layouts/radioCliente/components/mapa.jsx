@@ -31,10 +31,12 @@ function FitBoundsExample({ positions }) {
   return null;
 }
 
-function MyMap({ arrayPuntos, arrayCamino, geoJsonData }) {
+function MyMap({ arrayPuntos, arrayCamino, geoJsonData, geoJsonData2 }) {
   const [puntos, setPuntos] = useState([]);
   const [camino, setCamino] = useState([]);
 
+  console.log("waos", geoJsonData)
+  console.log("waos", geoJsonData2)
   // Efecto para cargar los puntos desde arrayPuntos
   useEffect(() => {
     if (arrayPuntos.length > 0) {
@@ -55,7 +57,7 @@ function MyMap({ arrayPuntos, arrayCamino, geoJsonData }) {
 
 
   const geoJsonStyle = {
-    color: 'red',
+    color: 'blue',
     weight: 1,
     opacity: 0.6,
     fillOpacity: 0.6
@@ -80,23 +82,26 @@ function MyMap({ arrayPuntos, arrayCamino, geoJsonData }) {
         </Marker>
       ))}
 
-      cambios en la logica para que el mapa se mueva hacia los puntos luego del filtro
       {camino.length > 0 && puntos.length > 0 ? (
         <>
-          <Polyline positions={camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
-          <FitBoundsExample positions={[...camino.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])]), ...puntos.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])]} />
+          <Polyline positions={camino.filter(pos => pos[0] && pos[1]).map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
+          <FitBoundsExample positions={[...camino.filter(pos => pos[0] && pos[1]).map(pos => [parseFloat(pos[0]), parseFloat(pos[1])]), ...puntos.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])]} />
         </>
       ) : (
         <FitBoundsExample positions={puntos.length > 0 ? puntos.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])]) : [[-34.61093894313541, -58.386118685562906]]} />
       )}
 
       {/* Renderizar GeoJSON si se proporciona */}
-      {geoJsonData && geoJsonData.type === "FeatureCollection" && (
-      <GeoJSON 
-        data={geoJsonData} 
-        style={geoJsonStyle} 
+      {geoJsonData.length > 0 && geoJsonData.map((route, index) => (
+        <GeoJSON key={index} data={route} style={{ color: 'green', weight: 5 }} />
+      ))}
+
+      {geoJsonData2  && geoJsonData2.type === "FeatureCollection" && (
+        <GeoJSON 
+          data={geoJsonData2} 
+          style={geoJsonStyle} 
       />
-)}
+      )}
 
     </MapContainer>
   );

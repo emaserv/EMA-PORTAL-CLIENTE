@@ -18,7 +18,6 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
   };
 
   const stackRef = React.useRef(null);
-  const [popperWidth, setPopperWidth] = React.useState(null);
 
   
 
