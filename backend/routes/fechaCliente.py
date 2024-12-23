@@ -345,41 +345,81 @@ def tablaEmision():
         # Convertir a TextClause después de armar la consulta completa
         query = text(query)
 
+        query_insert = text('INSERT INTO "itemEmision"("avisoMetro", "fechaVencimientoMetro", "importeMetro") VALUES(:urlAviso, :fechaVencimiento, :importe) WHERE id = :id')
+        qParamsInsert = {}
+
         # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
             data_query = session.execute(query, qParams)
 
         datosPiezasPostales = []
         cache_fetch = {}
+        
         for row in data_query:
-            key = (row.nroCliente, format_date_para_url(row.fechaEmision))
-            if key not in cache_fetch:
-                cache_fetch[key] = fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))
             
-            data = cache_fetch[key]
-            datosPiezasPostales.append({
-                'id': row.id,
-                'fechaEmision': format_date(row.fechaEmision),
-                'fechaVencimiento': data["Vencimiento"],
-                'nroCliente': row.nroCliente,
-                'titular': row.titular,
-                'plan': row.planTurno,
-                'sucursal': row.sucursal,
-                'radio': row.radio,
-                'direccion': row.direccion,
-                'localidad': row.localidad,
-                'fecha': format_date(row.fecha),
-                'hora': format_time(row.hora),
-                'importe': str("${:,.2f}".format(data["Importe"])),
-                'estadoPieza': row.estadoPieza,
-                'estadoMetro': row.estadoMetro,
-                'obsVisita': row.obsVisita,
-                'geoVisita': row.geoVisita,
-                'foto': row.foto,
-                'firma': row.firma,
-                'acuseDeDeuda': data["Url"]
-            })
+            if not (row.avisoDeuda and row.fechaVencimientoMetro and row.importeMetro):
 
+                key = (row.nroCliente, format_date_para_url(row.fechaEmision))
+                
+                if key not in cache_fetch:
+                    cache_fetch[key] = fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))
+                    
+                    qParamsInsert['urlAviso'] = cache_fetch[key]["Url"]
+                    qParamsInsert['fechaVencimiento'] = cache_fetch[key]["Vencimiento"]
+                    qParamsInsert['importe'] = cache_fetch[key]["Importe"]
+                    qParamsInsert['id'] = row.id
+                    
+                    with DatabaseSession().get_session() as session:
+                        query_insert = session.execute(query_insert, qParamsInsert)
+            
+                data = cache_fetch[key]
+                datosPiezasPostales.append({
+                    'id': row.id,
+                    'fechaEmision': format_date(row.fechaEmision),
+                    'fechaVencimiento': data["Vencimiento"],
+                    'nroCliente': row.nroCliente,
+                    'titular': row.titular,
+                    'plan': row.planTurno,
+                    'sucursal': row.sucursal,
+                    'radio': row.radio,
+                    'direccion': row.direccion,
+                    'localidad': row.localidad,
+                    'fecha': format_date(row.fecha),
+                    'hora': format_time(row.hora),
+                    'importe': str("${:,.2f}".format(data["Importe"])),
+                    'estadoPieza': row.estadoPieza,
+                    'estadoMetro': row.estadoMetro,
+                    'obsVisita': row.obsVisita,
+                    'geoVisita': row.geoVisita,
+                    'foto': row.foto,
+                    'firma': row.firma,
+                    'acuseDeDeuda': data["Url"]
+                })
+
+            else:
+                datosPiezasPostales.append({
+                    'id': row.id,
+                    'fechaEmision': format_date(row.fechaEmision),
+                    'fechaVencimiento': row.fechaVencimientoMetro,
+                    'nroCliente': row.nroCliente,
+                    'titular': row.titular,
+                    'plan': row.planTurno,
+                    'sucursal': row.sucursal,
+                    'radio': row.radio,
+                    'direccion': row.direccion,
+                    'localidad': row.localidad,
+                    'fecha': format_date(row.fecha),
+                    'hora': format_time(row.hora),
+                    'importe': str("${:,.2f}".format(row.importeMetro)),
+                    'estadoPieza': row.estadoPieza,
+                    'estadoMetro': row.estadoMetro,
+                    'obsVisita': row.obsVisita,
+                    'geoVisita': row.geoVisita,
+                    'foto': row.foto,
+                    'firma': row.firma,
+                    'acuseDeDeuda': row.avisoMetro
+                })
+            
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204
 
@@ -478,6 +518,89 @@ def informeEmision():
                 'estadoPieza': row.estadoPieza,
                 'estadoMetro': row.estadoMetro,
                 'count': str(row.count),
+            })
+
+        if not datosPiezasPostales:
+            return jsonify({"message": "Recursos no encontrados"}), 204
+
+        keys = list(datosPiezasPostales[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
+
+    except Exception as e:
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+
+
+@fechaCliente.route('/api/informe-emision-extendido', methods=['GET'])
+def informeEmisionExtendido():
+    idEmision = request.args.get('idEmision')
+    
+    try:
+        queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+        
+        with DatabaseSession().get_session() as session:
+            data_query_search = session.execute(queryBaseSearch)
+        
+        dataQueryBusqueda = []
+        
+        for row in data_query_search:
+             dataQueryBusqueda.append({
+                'id': row.id, 
+                'nombre': row.nombre
+            })
+        
+        fechaEncontrada = buscar_por_id(dataQueryBusqueda, idEmision)
+        
+        queryBase = 'SELECT * FROM "itemEmision" ie'
+        
+        where_clauses = []
+        qParams = {}
+
+        # Verificar y agregar los parámetros condicionalmente
+        if idEmision:
+            where_clauses.append('ie."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEncontrada
+            
+            where_clauses.append('ie."estadoMetro" != :estadoAnulado ')
+            qParams['estadoAnulado'] = 'NR'
+    
+
+        # Combinar cláusulas WHERE si existen
+        if where_clauses:
+            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
+            query = queryBase + where_clause
+
+        # Convertir a TextClause después de armar la consulta completa
+        query = text(query)
+
+        # Ejecutar la consulta
+        with DatabaseSession().get_session() as session:
+            data_query = session.execute(query, qParams)
+
+        datosPiezasPostales = []
+        
+        for row in data_query:
+            
+            datosPiezasPostales.append({
+                'id': row.id,
+                'fechaEmision': format_date(row.fechaEmision),
+                'fechaVencimiento': row.fechaVencimientoMetro,
+                'nroCliente': row.nroCliente,
+                'titular': row.titular,
+                'plan': row.planTurno,
+                'sucursal': row.sucursal,
+                'radio': row.radio,
+                'direccion': row.direccion,
+                'localidad': row.localidad,
+                'fecha': format_date(row.fecha),
+                'hora': format_time(row.hora),
+                'importe': str("${:,.2f}".format(row.importeMetro)),
+                'estadoPieza': row.estadoPieza,
+                'estadoMetro': row.estadoMetro,
+                'obsVisita': row.obsVisita,
+                'geoVisita': row.geoVisita,
+                'foto': row.foto,
+                'firma': row.firma
             })
 
         if not datosPiezasPostales:

@@ -13,11 +13,11 @@ import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
 import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
 import styled from "styled-components";
-import * as XLSX from 'xlsx';
-import axios from 'axios';
+import * as XLSX from "xlsx";
+import axios from "axios";
 import InformacionMetroTable from "./data/informacionMetroTable";
-import {API_BACK} from '../../config'
-import LoadingModal from '../../components/loadingModal';
+import { API_BACK } from "../../config";
+import LoadingModal from "../../components/loadingModal";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -58,7 +58,7 @@ const FechaCliente = () => {
         }
       })
       .catch((error) => {});
-    }, []);
+  }, []);
 
   const onSubmit = async (data) => {
     SetLoading(true);
@@ -82,7 +82,7 @@ const FechaCliente = () => {
     }
   };
 
-  const fetchData = async (cliente, fechaDesde, fechaHasta) => {    
+  const fetchData = async (cliente, fechaDesde, fechaHasta) => {
     if (!cliente && !fechaDesde && !fechaHasta) {
       setAllData([]);
       setPuntosMapa([]);
@@ -97,9 +97,8 @@ const FechaCliente = () => {
         cliente: cliente || "",
         grupoCliente: user.idGrupoCliente || "",
         fechaDesde: fechaDesde || "",
-        fechaHasta: fechaHasta || "",        
+        fechaHasta: fechaHasta || "",
       };
-
 
       const response1 = await axios.get(url1, { params: params1 });
       console.log("Response", response1.status);
@@ -118,7 +117,7 @@ const FechaCliente = () => {
       console.error("Error en la solicitud fecha-cliente:", error);
       setAllData([]);
     }
-    
+
     try {
       // Segunda solicitud: geoMapaItems
       const url2 = `${API_BACK}/api/fecha/geoMapaItems`;
@@ -128,14 +127,14 @@ const FechaCliente = () => {
         fechaDesde: fechaDesde || "",
         fechaHasta: fechaHasta || "",
       };
-    
+
       // Enviar parámetros en la URL con axios.get
       const response2 = await axios.get(url2, { params: params2 });
       const apiData2 = response2.data;
-    
+
       if (apiData2.dataTabla) {
         setPuntosMapa(apiData2.dataTabla);
-        //console.log(puntosMapa);        
+        //console.log(puntosMapa);
         setColumnsMapa(apiData2.columns);
       } else {
         console.error("No se recibieron datos de geoMapaItems API");
@@ -144,7 +143,7 @@ const FechaCliente = () => {
     } catch (error) {
       console.error("Error en la solicitud geoMapaItems:", error);
       setPuntosMapa([]);
-    }     
+    }
   };
 
   const convertirFecha = (fechaStr) => {
@@ -207,65 +206,62 @@ const FechaCliente = () => {
 
   const exportarAExcel = (data) => {
     const regex = /[^/]+ \/ [^/]+ \/ [^/]+/;
-  
-    const formattedData = data.map(row => {
+
+    const formattedData = data.map((row) => {
       // Comprobación de coincidencia con regex
       if (regex.test(row.obsVisita)) {
-
         // esto es para splitear la obs de visita en dni nombre observacion
         const splitBySlash = (str) => {
-          return str.split('/');
+          return str.split("/");
         };
-        
 
         // Caso 1: Si cumple con el regex
         return {
-          "Fecha Emision": row.fechaEmision || '-',
-          "Numero de Cliente": row.nroCliente || '-',
-          "Titular": row.titular || '-',
-          "Direccion": row.direccion || '-',
-          "Localidad": row.localidad || '-',
-          "Fecha de Distribucion": row.fecha || '-',
-          "Hora": row.hora || '-',
-          "Estado EMA": row.estadoPieza || '-',
-          "Estado Metrogas": row.estadoMetro || '-',
-          "Observacion de Visita": splitBySlash(row.obsVisita)[2] || '-',
-          "DNI": splitBySlash(row.obsVisita)[0] || '-',
-          "Nombre": splitBySlash(row.obsVisita)[1] || '-',
-          "Visita": row.geoVisita || '-',
-          "Foto": row.foto || '-',
-          "Firma": row.firma || '-',
-          "Imagen Aviso Deuda": '-',
+          "Fecha Emision": row.fechaEmision || "-",
+          "Numero de Cliente": row.nroCliente || "-",
+          Titular: row.titular || "-",
+          Direccion: row.direccion || "-",
+          Localidad: row.localidad || "-",
+          "Fecha de Distribucion": row.fecha || "-",
+          Hora: row.hora || "-",
+          "Estado EMA": row.estadoPieza || "-",
+          "Estado Metrogas": row.estadoMetro || "-",
+          "Observacion de Visita": splitBySlash(row.obsVisita)[2] || "-",
+          DNI: splitBySlash(row.obsVisita)[0] || "-",
+          Nombre: splitBySlash(row.obsVisita)[1] || "-",
+          Visita: row.geoVisita || "-",
+          Foto: row.foto || "-",
+          Firma: row.firma || "-",
+          "Imagen Aviso Deuda": "-",
         };
       } else {
         return {
-          "Fecha Emision": row.fechaEmision || '-',
-          "Numero de Cliente": row.nroCliente || '-',
-          "Titular": row.titular || '-',
-          "Direccion": row.direccion || '-',
-          "Localidad": row.localidad || '-',
-          "Fecha de Distribucion": row.fecha || '-',
-          "Hora": row.hora || '-',
-          "Estado EMA": row.estadoPieza || '-',
-          "Estado Metrogas": row.estadoMetro || '-',
-          "Observacion de Visita": row.obsVisita || '-',
-          "DNI": '-',
-          "Nombre": '-',
-          "Visita": row.geoVisita || '-',
-          "Foto": row.foto || '-',  
-          "Firma": row.firma || '-',
-          "Imagen Aviso Deuda": '-', 
+          "Fecha Emision": row.fechaEmision || "-",
+          "Numero de Cliente": row.nroCliente || "-",
+          Titular: row.titular || "-",
+          Direccion: row.direccion || "-",
+          Localidad: row.localidad || "-",
+          "Fecha de Distribucion": row.fecha || "-",
+          Hora: row.hora || "-",
+          "Estado EMA": row.estadoPieza || "-",
+          "Estado Metrogas": row.estadoMetro || "-",
+          "Observacion de Visita": row.obsVisita || "-",
+          DNI: "-",
+          Nombre: "-",
+          Visita: row.geoVisita || "-",
+          Foto: row.foto || "-",
+          Firma: row.firma || "-",
+          "Imagen Aviso Deuda": "-",
         };
       }
     });
-  
+
     // Creación y exportación del archivo Excel
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    XLSX.writeFile(workbook, 'Consulta-fecha-cliente.xlsx');
+    XLSX.writeFile(workbook, "Consulta-fecha-cliente.xlsx");
   };
-  
 
   return (
     <>
@@ -278,7 +274,7 @@ const FechaCliente = () => {
           <SoftBox p={3}>
             <SoftTypography variant="h4">Filtros</SoftTypography>
             <Divider />
-            
+
             <form onSubmit={handleSubmit(onSubmit)}>
               <SoftBox
                 display="flex"
@@ -290,8 +286,11 @@ const FechaCliente = () => {
                   <SoftTypography
                     component="label"
                     variant="caption"
-                    marginTop={-2}
-                    fontSize={{ xs: "0.75rem", sm: "1rem" }} // Responsive font size
+                    sx={{
+                      marginTop: "1",
+                      marginBottom: "-1",
+                      fontSize: { xs: "0.75rem", sm: "1rem" },
+                    }}
                   >
                     N° de Cliente
                   </SoftTypography>
@@ -319,7 +318,7 @@ const FechaCliente = () => {
                     )}
                   />
                 </SoftBox>
-                
+
                 <SoftBox
                   display="flex"
                   flexDirection="column"
@@ -329,13 +328,17 @@ const FechaCliente = () => {
                   <SoftTypography
                     component="label"
                     variant="caption"
-                    marginTop={1}
-                    marginBottom={-1}
+                    marginTop={2}
+                    marginBottom={0}
                     fontSize={{ xs: "0.75rem", sm: "1rem" }}
                   >
                     Fecha
                   </SoftTypography>
-                  <SoftBox display="flex" alignItems="center" flexDirection={{ xs: "column", md: "row" }}>
+                  <SoftBox
+                    display="flex"
+                    alignItems="center"
+                    flexDirection={{ xs: "column", md: "row" }}
+                  >
                     <Controller
                       name="fechaDesde"
                       control={control}
@@ -349,7 +352,7 @@ const FechaCliente = () => {
                     />
                   </SoftBox>
                 </SoftBox>
-                
+
                 <SoftBox
                   display="flex"
                   justifyContent="flex-end"
@@ -367,21 +370,23 @@ const FechaCliente = () => {
         </Card>
 
         <LoadingModal isOpen={loading} />
-        
-        
-        <SoftBox paddingTop={3} style={{ width: "90%" }} justifyContent="center">
-        {user && (user.idGrupoCliente === 2 ||
-                    user.idGrupoCliente === null) &&
-                  puntosMapa ? (
-          <SoftBox paddingBottom={3} justifyContent="center">
-            <Card>
+
+        <SoftBox
+          paddingTop={3}
+          style={{ width: "90%" }}
+          justifyContent="center"
+        >
+          {user &&
+          (user.idGrupoCliente === 2 || user.idGrupoCliente === null) &&
+          puntosMapa ? (
+            <SoftBox paddingBottom={3} justifyContent="center">
+              <Card>
                 <SoftBox p={3}>
                   <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />
                 </SoftBox>
-            </Card>
-          </SoftBox>
-          
-        ) : null}
+              </Card>
+            </SoftBox>
+          ) : null}
         </SoftBox>
 
         <SoftBox
@@ -393,51 +398,59 @@ const FechaCliente = () => {
             <Card>
               {user ? (
                 <>
-                <SoftBox sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  <SoftButton
-                    variant="gradient"
-                    color="info"
-                    onClick={() => exportarAExcel(datosFiltrados, 'Consulta Cliente')}
-                    type="submit"
-                    style={{
-                      border: "none",
-                      marginTop: "1.25rem", 
-                      marginLeft: "1.5rem"
-                    }}
+                  <SoftBox
+                    sx={{ display: "flex", justifyContent: "flex-start" }}
                   >
-                    Exportar a Excel
-                  </SoftButton>
-                </SoftBox>
-                <SoftBox p={3}>
-                  {user.idGrupoCliente !== 4 ? (
-                    <PRSTable data={datosFiltrados} columns={columns} />
-                  ) : (
-                    <CalleAlturaTable data={datosFiltrados} columns={columns}  />
-                  )}
-                </SoftBox>
+                    <SoftButton
+                      variant="gradient"
+                      color="info"
+                      onClick={() =>
+                        exportarAExcel(datosFiltrados, "Consulta Cliente")
+                      }
+                      type="submit"
+                      style={{
+                        border: "none",
+                        marginTop: "1.25rem",
+                        marginLeft: "1.5rem",
+                      }}
+                    >
+                      Exportar a Excel
+                    </SoftButton>
+                  </SoftBox>
+                  <SoftBox p={3}>
+                    {user.idGrupoCliente !== 4 ? (
+                      <PRSTable data={datosFiltrados} columns={columns} />
+                    ) : (
+                      <CalleAlturaTable
+                        data={datosFiltrados}
+                        columns={columns}
+                      />
+                    )}
+                  </SoftBox>
                 </>
               ) : null}
             </Card>
           </SoftBox>
         </SoftBox>
 
-
-        {user && user.idGrupoCliente === 4? (
-        <SoftBox
-          paddingBottom={3}
-          style={{ width: "90%" }}
-          justifyContent="center"
-        >
-          <SoftBox justifyContent="center">
-            <Card>
+        {user && user.idGrupoCliente === 4 ? (
+          <SoftBox
+            paddingBottom={3}
+            style={{ width: "90%" }}
+            justifyContent="center"
+          >
+            <SoftBox justifyContent="center">
+              <Card>
                 <SoftBox p={3}>
-                  <InformacionMetroTable data={dataInfo} columns={columnsInfo} />
+                  <InformacionMetroTable
+                    data={dataInfo}
+                    columns={columnsInfo}
+                  />
                 </SoftBox>
-            </Card>
+              </Card>
+            </SoftBox>
           </SoftBox>
-        </SoftBox>
-      ) : null}          
-
+        ) : null}
       </SoftBox>
 
       <PopUp
