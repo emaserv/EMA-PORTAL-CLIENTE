@@ -14,6 +14,7 @@ import InformacionMetroTable from "./data/informacionMetroTable";
 import { API_BACK } from "../../config";
 import LoadingModal from "../../components/loadingModal";
 import DropdownList from "components/DropdownList";
+import AlertDlg from "components/AlertDlg";
 
 const InformesCliente = () => {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ const InformesCliente = () => {
     handleSubmit,
     control,
     formState: { errors },
+    getValues,
   } = useForm();
   const [dataInfo, setDataInfo] = useState([]);
   const [columnsInfo, setColumnsInfo] = useState([]);
@@ -29,6 +31,11 @@ const InformesCliente = () => {
   const [columnsEmision, setColumnsEmision] = useState([]);
   const [loading, SetLoading] = useState(false);
   const [mutex, setMutex] = useState(false);
+
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+
+  
 
   useEffect(() => {
     fetch(`${API_BACK}/api/tablaInformacion`, { mode: "cors" })
@@ -97,64 +104,117 @@ const InformesCliente = () => {
     }
   };
 
-  const exportarAExcel = (data) => {
-    const regex = /[^/]+ \/ [^/]+ \/ [^/]+/;
-
-    const formattedData = data.map((row) => {
-      // Comprobación de coincidencia con regex
-      if (regex.test(row.obsVisita)) {
-        // esto es para splitear la obs de visita en dni nombre observacion
-        const splitBySlash = (str) => {
-          return str.split("/");
-        };
-
-        // Caso 1: Si cumple con el regex
-        return {
-          "Fecha Emision": row.fechaEmision || "-",
-          "Numero de Cliente": row.nroCliente || "-",
+  const exportarAExcel = async (idEmision) => {
+    if (!idEmision) {
+      console.error("ID de Emisión no seleccionado.");
+      return;
+    }
+  
+    try {
+      SetLoading(true);
+  
+      const url = `${API_BACK}/api/informe-emision-extendido?idEmision=${idEmision}`;      
+      const response = await axios.get(url);
+      const apiData = response.data;
+  
+      if (apiData.dataTabla) {
+        // Formatear los datos para exportar
+        const formattedData = apiData.dataTabla.map((row) => ({
+          ID: row.id || "-",
+          "Fecha Emisión": row.fechaEmision || "-",
+          "Número Cliente": row.nroCliente || "-",
           Titular: row.titular || "-",
-          Direccion: row.direccion || "-",
+          Plan: row.plan || "-",
+          Sucursal: row.sucursal || "-",
+          Radio: row.radio || "-",
+          Dirección: row.direccion || "-",
           Localidad: row.localidad || "-",
-          "Fecha de Distribucion": row.fecha || "-",
+          Fecha: row.fecha || "-",
           Hora: row.hora || "-",
-          "Estado EMA": row.estadoPieza || "-",
-          "Estado Metrogas": row.estadoMetro || "-",
-          "Observacion de Visita": splitBySlash(row.obsVisita)[2] || "-",
-          DNI: splitBySlash(row.obsVisita)[0] || "-",
-          Nombre: splitBySlash(row.obsVisita)[1] || "-",
-          Visita: row.geoVisita || "-",
+          "Estado Pieza": row.estadoPieza || "-",
+          "Estado Metro": row.estadoMetro || "-",
+          "Observación Visita": row.obsVisita || "-",
+          GeoVisita: row.geoVisita || "-",
           Foto: row.foto || "-",
           Firma: row.firma || "-",
-          "Imagen Aviso Deuda": "-",
-        };
+        }));
+  
+        // Crear el archivo Excel
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Datos Emisión");
+        XLSX.writeFile(workbook, "Datos_Emision.xlsx");
       } else {
-        return {
-          "Fecha Emision": row.fechaEmision || "-",
-          "Numero de Cliente": row.nroCliente || "-",
-          Titular: row.titular || "-",
-          Direccion: row.direccion || "-",
-          Localidad: row.localidad || "-",
-          "Fecha de Distribucion": row.fecha || "-",
-          Hora: row.hora || "-",
-          "Estado EMA": row.estadoPieza || "-",
-          "Estado Metrogas": row.estadoMetro || "-",
-          "Observacion de Visita": row.obsVisita || "-",
-          DNI: "-",
-          Nombre: "-",
-          Visita: row.geoVisita || "-",
-          Foto: row.foto || "-",
-          Firma: row.firma || "-",
-          "Imagen Aviso Deuda": "-",
-        };
+        console.error("No se encontraron datos para la emisión seleccionada.");
+        setAlertTitle("No se encontraron datos para la emisión seleccionada.");
+        setAlertOpen(true);
       }
-    });
-
-    // Creación y exportación del archivo Excel
-    const worksheet = XLSX.utils.json_to_sheet(formattedData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    XLSX.writeFile(workbook, "Consulta-fecha-cliente.xlsx");
+    } catch (error) {
+      console.error("Error al exportar datos a Excel:", error);
+    } finally {
+      SetLoading(false);
+    }
   };
+  
+  // ESTE ES EL exportarAExcel ANTES DE UTILIZAR EL ENDPOINT api/informe-emision-extendido
+  // const exportarAExcel = (data) => {
+  //   const regex = /[^/]+ \/ [^/]+ \/ [^/]+/;
+
+  //   const formattedData = data.map((row) => {
+  //     // Comprobación de coincidencia con regex
+  //     if (regex.test(row.obsVisita)) {
+  //       // esto es para splitear la obs de visita en dni nombre observacion
+  //       const splitBySlash = (str) => {
+  //         return str.split("/");
+  //       };
+
+  //       // Caso 1: Si cumple con el regex
+  //       return {
+  //         "Fecha Emision": row.fechaEmision || "-",
+  //         "Numero de Cliente": row.nroCliente || "-",
+  //         Titular: row.titular || "-",
+  //         Direccion: row.direccion || "-",
+  //         Localidad: row.localidad || "-",
+  //         "Fecha de Distribucion": row.fecha || "-",
+  //         Hora: row.hora || "-",
+  //         "Estado EMA": row.estadoPieza || "-",
+  //         "Estado Metrogas": row.estadoMetro || "-",
+  //         "Observacion de Visita": splitBySlash(row.obsVisita)[2] || "-",
+  //         DNI: splitBySlash(row.obsVisita)[0] || "-",
+  //         Nombre: splitBySlash(row.obsVisita)[1] || "-",
+  //         Visita: row.geoVisita || "-",
+  //         Foto: row.foto || "-",
+  //         Firma: row.firma || "-",
+  //         "Imagen Aviso Deuda": "-",
+  //       };
+  //     } else {
+  //       return {
+  //         "Fecha Emision": row.fechaEmision || "-",
+  //         "Numero de Cliente": row.nroCliente || "-",
+  //         Titular: row.titular || "-",
+  //         Direccion: row.direccion || "-",
+  //         Localidad: row.localidad || "-",
+  //         "Fecha de Distribucion": row.fecha || "-",
+  //         Hora: row.hora || "-",
+  //         "Estado EMA": row.estadoPieza || "-",
+  //         "Estado Metrogas": row.estadoMetro || "-",
+  //         "Observacion de Visita": row.obsVisita || "-",
+  //         DNI: "-",
+  //         Nombre: "-",
+  //         Visita: row.geoVisita || "-",
+  //         Foto: row.foto || "-",
+  //         Firma: row.firma || "-",
+  //         "Imagen Aviso Deuda": "-",
+  //       };
+  //     }
+  //   });
+
+  //   // Creación y exportación del archivo Excel
+  //   const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  //   const workbook = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+  //   XLSX.writeFile(workbook, "Consulta-fecha-cliente.xlsx");
+  // };
 
   return (
     <>
@@ -259,9 +319,18 @@ const InformesCliente = () => {
                     <SoftButton
                       variant="gradient"
                       color="info"
-                      onClick={() =>
-                        exportarAExcel(dataEmision, "Consulta Emision")
-                      }
+                      // onClick={() =>
+                      //   exportarAExcel(dataEmision, "Consulta Emision")
+                      // }
+                      onClick={() => {
+                        const idEmision = getValues("idEmision"); // Usar getValues para obtener el ID de emisión seleccionado
+                        console.log("ID de Emisión seleccionado:", idEmision);
+                        if (!idEmision) {
+                          console.error("Por favor, seleccione una emisión antes de exportar.");
+                          return;
+                        }
+                        exportarAExcel(idEmision);
+                      }}
                       type="submit"
                       style={{
                         border: "none",
@@ -271,6 +340,7 @@ const InformesCliente = () => {
                     >
                       Exportar a Excel
                     </SoftButton>
+                    <AlertDlg titulo={alertTitle} open={alertOpen} setOpen={setAlertOpen} />
                   </SoftBox>
                   <SoftBox paddingTop={3} px={3}>
                     {user.idGrupoCliente !== 4 ? (
