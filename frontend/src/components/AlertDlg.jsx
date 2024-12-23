@@ -43,6 +43,6 @@ export default function AlertDlg({titulo, open, setOpen}) {
 
 AlertDlg.propTypes = {
     titulo: PropTypes.string,
-    open: PropTypes.boolean,
+    open: PropTypes.bool,
     setOpen: PropTypes.func,
   };
