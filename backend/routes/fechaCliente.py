@@ -551,6 +551,8 @@ def informeEmisionExtendido():
         
         fechaEncontrada = buscar_por_id(dataQueryBusqueda, idEmision)
         
+        print(fechaEncontrada)
+        
         queryBase = 'SELECT * FROM "fechaCliente" fc'
         
         where_clauses = []
@@ -561,7 +563,7 @@ def informeEmisionExtendido():
             where_clauses.append('fc."fechaEmision" = :fechaEmision')
             qParams['fechaEmision'] = fechaEncontrada
             
-            where_clauses.append('fc."estadoMetro" != :estadoAnulado ')
+            where_clauses.append('fc."estadoPieza" != :estadoAnulado ')
             qParams['estadoAnulado'] = 'NR'
     
 
