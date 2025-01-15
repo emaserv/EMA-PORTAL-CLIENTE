@@ -305,6 +305,7 @@ def tablaInformacion():
                 'NV': row['NV'],
                 'UZP': row['UZP'],
                 'ZP_CR_2': row['ZP_CR_2'],
+                '6_DEV': row['6_DEV'],
             })
 
         if not datosPiezasPostales:
