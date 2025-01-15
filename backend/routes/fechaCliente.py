@@ -563,8 +563,8 @@ def informeEmisionExtendido():
             where_clauses.append('fc."fechaEmision" = :fechaEmision')
             qParams['fechaEmision'] = fechaEncontrada
             
-            where_clauses.append('fc."estadoPieza" != :estadoAnulado ')
-            qParams['estadoAnulado'] = 'NR'
+            #where_clauses.append('fc."estadoPieza" != :estadoAnulado ')
+            #qParams['estadoAnulado'] = 'NR'
     
 
         # Combinar cláusulas WHERE si existen
