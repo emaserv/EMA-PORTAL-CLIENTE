@@ -197,7 +197,7 @@ export default function InformacionMetroTable({ data, columns }) {
       disablePadding: false,
       label: "DEVOLUCION",
       labelComplete: "DEVOLUCION",
-    },
+    }
   ];
 
   function Completion({ value, color }) {
