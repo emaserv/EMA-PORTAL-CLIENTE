@@ -29,7 +29,7 @@ const InformesCliente = () => {
   const [dataEmision, setDataEmision] = useState([]);
   const [multiplesEmision, setMultiplesEmision] = useState([]);
   const [columnsEmision, setColumnsEmision] = useState([]);
-  const [loading, SetLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [mutex, setMutex] = useState(false);
 
   const [alertOpen, setAlertOpen] = useState(false);
@@ -68,14 +68,7 @@ const InformesCliente = () => {
   console.log(multiplesEmision);
 
   const onSubmit = async (data) => {
-    SetLoading(true);
-    try {
-      fetchData(data.idEmision);
-    } catch (error) {
-      //console.log("Error en el submit:", error);
-    } finally {
-      SetLoading(false);
-    }
+    fetchData(data.idEmision);
   };
 
   const fetchData = async (idEmision) => {
@@ -83,6 +76,8 @@ const InformesCliente = () => {
       setDataEmision([]);
       return;
     }
+
+    setLoading(true);
 
     try {
       // Primera solicitud: fecha-cliente
@@ -102,6 +97,7 @@ const InformesCliente = () => {
       console.error("Error en la solicitud cliente-emision:", error);
       setDataEmision([]);
     }
+    setLoading(false)
   };
 
   const exportarAExcel = async (idEmision) => {
@@ -109,9 +105,10 @@ const InformesCliente = () => {
       console.error("ID de Emisión no seleccionado.");
       return;
     }
-  
+
+    setLoading(true);
+    
     try {
-      SetLoading(true);
   
       const url = `${API_BACK}/api/informe-emision-extendido?idEmision=${idEmision}`;      
       const response = await axios.get(url);
@@ -152,69 +149,14 @@ const InformesCliente = () => {
     } catch (error) {
       console.error("Error al exportar datos a Excel:", error);
     } finally {
-      SetLoading(false);
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    console.log("Estado de loading:", loading);
+  }, [loading]);
   
-  // ESTE ES EL exportarAExcel ANTES DE UTILIZAR EL ENDPOINT api/informe-emision-extendido
-  // const exportarAExcel = (data) => {
-  //   const regex = /[^/]+ \/ [^/]+ \/ [^/]+/;
-
-  //   const formattedData = data.map((row) => {
-  //     // Comprobación de coincidencia con regex
-  //     if (regex.test(row.obsVisita)) {
-  //       // esto es para splitear la obs de visita en dni nombre observacion
-  //       const splitBySlash = (str) => {
-  //         return str.split("/");
-  //       };
-
-  //       // Caso 1: Si cumple con el regex
-  //       return {
-  //         "Fecha Emision": row.fechaEmision || "-",
-  //         "Numero de Cliente": row.nroCliente || "-",
-  //         Titular: row.titular || "-",
-  //         Direccion: row.direccion || "-",
-  //         Localidad: row.localidad || "-",
-  //         "Fecha de Distribucion": row.fecha || "-",
-  //         Hora: row.hora || "-",
-  //         "Estado EMA": row.estadoPieza || "-",
-  //         "Estado Metrogas": row.estadoMetro || "-",
-  //         "Observacion de Visita": splitBySlash(row.obsVisita)[2] || "-",
-  //         DNI: splitBySlash(row.obsVisita)[0] || "-",
-  //         Nombre: splitBySlash(row.obsVisita)[1] || "-",
-  //         Visita: row.geoVisita || "-",
-  //         Foto: row.foto || "-",
-  //         Firma: row.firma || "-",
-  //         "Imagen Aviso Deuda": "-",
-  //       };
-  //     } else {
-  //       return {
-  //         "Fecha Emision": row.fechaEmision || "-",
-  //         "Numero de Cliente": row.nroCliente || "-",
-  //         Titular: row.titular || "-",
-  //         Direccion: row.direccion || "-",
-  //         Localidad: row.localidad || "-",
-  //         "Fecha de Distribucion": row.fecha || "-",
-  //         Hora: row.hora || "-",
-  //         "Estado EMA": row.estadoPieza || "-",
-  //         "Estado Metrogas": row.estadoMetro || "-",
-  //         "Observacion de Visita": row.obsVisita || "-",
-  //         DNI: "-",
-  //         Nombre: "-",
-  //         Visita: row.geoVisita || "-",
-  //         Foto: row.foto || "-",
-  //         Firma: row.firma || "-",
-  //         "Imagen Aviso Deuda": "-",
-  //       };
-  //     }
-  //   });
-
-  //   // Creación y exportación del archivo Excel
-  //   const worksheet = XLSX.utils.json_to_sheet(formattedData);
-  //   const workbook = XLSX.utils.book_new();
-  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-  //   XLSX.writeFile(workbook, "Consulta-fecha-cliente.xlsx");
-  // };
 
   return (
     <>
