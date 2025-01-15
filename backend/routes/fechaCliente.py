@@ -279,6 +279,7 @@ def tablaInformacion():
                 "NV": "NR",
                 "UZP": "UZP",
                 "ZP_CR_2": "ZP CR",
+                "6_DEV": "6 DEV"
             },
             {
                 "Empresa": "METROGAS",
@@ -288,6 +289,7 @@ def tablaInformacion():
                 "NV": "NO RESPONDE LLAMADO",
                 "UZP": "BAJO PUERTA",
                 "ZP_CR_2": "BAJO PUERTA",
+                "6_DEV": "DEVOLUCION",
             },
         ]
         
@@ -500,7 +502,7 @@ def informeEmision():
             query = queryBase + where_clause
 
         # Convertir a TextClause después de armar la consulta completa
-        query = text(query + " ORDER BY 7 DESC")
+        query = text(query + " ORDER BY count DESC")
 
         # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
@@ -512,7 +514,7 @@ def informeEmision():
             
             datosPiezasPostales.append({
                 'id': row.id, 
-                'idEmision': row.idEmision,
+                #'idEmision': row.idEmision,
                 'fechaEmision': row.fechaEmision,
                 'localidad': row.localidad,
                 'estadoPieza': row.estadoPieza,
