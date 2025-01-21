@@ -203,7 +203,7 @@ const InformesCliente = () => {
                       <>
                         <DropdownList
                           width="70vw"
-                          list={multiplesEmision ? multiplesEmision : []}
+                          list={multiplesEmision ? multiplesEmision.reverse() : []}
                           placeholder="Seleccione su emisión"
                           campoAMostrar="nombre"
                           campoID="id"
@@ -301,7 +301,7 @@ const InformesCliente = () => {
         </SoftBox>
         {user && user.idGrupoCliente !== 4 ? (
           <SoftBox style={{ width: "90%" }} justifyContent="center">
-            <SoftBox justifyContent="center">
+            <SoftBox justifyContent="center" paddingBottom={3}>
               <Card>
                 <SoftBox px={3} paddingBottom={2} paddingTop={3}>
                   <InformacionMetroTable

@@ -10,17 +10,12 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
-import Toolbar from "@mui/material/Toolbar";
 import Paper from "@mui/material/Paper";
 import SoftBox from "components/SoftBox";
 import SoftTypography from "components/SoftTypography";
 import SoftProgress from "components/SoftProgress";
 import { HiChevronUp, HiChevronDown } from "react-icons/hi";
 import dayjs from "dayjs";
-import PhotoIcon from "@mui/icons-material/Photo";
-import MapIcon from "@mui/icons-material/Map";
-import Edit from "@mui/icons-material/Edit";
-import ArticleIcon from "@mui/icons-material/Article";
 import MobileFriendlyTooltip from "components/TooltipMobile";
 import axios from "axios";
 
@@ -32,7 +27,7 @@ const todayGMT3 = dayjs().subtract(3, "hour");
 
 export default function CalleAlturaTable({ data, columns }) {
   const [order, setOrder] = React.useState("asc");
-  const [orderBy, setOrderBy] = React.useState("cantidadDePiezas");
+  const [orderBy, setOrderBy] = React.useState("localidad");
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
@@ -113,34 +108,41 @@ export default function CalleAlturaTable({ data, columns }) {
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - data.length) : 0;
 
-  const descendingComparator = (a, b, orderBy) => {
-    const valueA = isNaN(parseFloat(a[orderBy]))
-      ? a[orderBy]
-      : parseFloat(a[orderBy]);
-    const valueB = isNaN(parseFloat(b[orderBy]))
-      ? b[orderBy]
-      : parseFloat(b[orderBy]);
+    const descendingComparator = (a, b, orderBy) => {
+      const valueA = a[orderBy];
+      const valueB = b[orderBy];
+    
+      if (typeof valueA === "string" && typeof valueB === "string") {
+        return valueB.localeCompare(valueA);
+      }
+      if (valueB < valueA) return -1;
+      if (valueB > valueA) return 1;
+      return 0;
+    };
+    
+    const getComparator = (order, orderBy) => {
+      return order === "desc"
+        ? (a, b) => descendingComparator(a, b, orderBy)
+        : (a, b) => -descendingComparator(a, b, orderBy);
+    };
 
-    if (valueB < valueA) return -1;
-    if (valueB > valueA) return 1;
-    return 0;
-  };
-
-  const getComparator = (order, orderBy) => {
-    return order === "desc"
-      ? (a, b) => descendingComparator(a, b, orderBy)
-      : (a, b) => -descendingComparator(a, b, orderBy);
-  };
-
-  const stableSort = (array, comparator) => {
-    const stabilizedThis = array.map((el, index) => [el, index]);
-    stabilizedThis.sort((a, b) => {
-      const order = comparator(a[0], b[0]);
-      if (order !== 0) return order;
-      return a[1] - b[1];
-    });
-    return stabilizedThis.map((el) => el[0]);
-  };
+    const stableSort = (array, comparator) => {
+      const stabilizedThis = array.map((el, index) => [el, index]);
+      stabilizedThis.sort((a, b) => {
+        const order = comparator(a[0], b[0]);
+        if (order !== 0) return order;
+        return a[1] - b[1];
+      });
+      return stabilizedThis.map((el) => el[0]);
+    };
+    
+    // Ordenar las filas visibles antes de paginarlas
+    const visibleRows = React.useMemo(() => {
+      return stableSort(
+        data.filter((item) => filterByDateRange(item, startDate, endDate)),
+        getComparator(order, orderBy)
+      ).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    }, [data, order, orderBy, page, rowsPerPage, startDate, endDate]);
   
   const totalPiezas = data.reduce((total, recorrido) => total + Number(recorrido.count), 0);
 
@@ -321,16 +323,6 @@ export default function CalleAlturaTable({ data, columns }) {
     return texto;
   };
     
-  const visibleRows = React.useMemo(
-    () =>
-      data
-        .filter((item) => filterByDateRange(item, startDate, endDate))
-        .sort((a, b) =>
-          order === "asc" ? a[orderBy] - b[orderBy] : b[orderBy] - a[orderBy]
-        )
-        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [data, order, orderBy, page, rowsPerPage, startDate, endDate]
-  );
 
 
   return (
