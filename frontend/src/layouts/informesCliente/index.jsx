@@ -117,7 +117,7 @@ const InformesCliente = () => {
       if (apiData.dataTabla) {
         // Formatear los datos para exportar
         const formattedData = apiData.dataTabla.map((row) => ({
-          ID: row.id || "-",
+          //ID: row.id || "-",
           "Fecha Emisión": row.fechaEmision || "-",
           "Número Cliente": row.nroCliente || "-",
           Titular: row.titular || "-",
