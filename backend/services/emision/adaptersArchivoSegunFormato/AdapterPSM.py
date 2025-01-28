@@ -116,8 +116,12 @@ def convertir_fecha(fecha_str):
             # Intentar convertir la fecha con el formato 'dd/mm/yyyy'
             fecha_obj = datetime.strptime(fecha_str, '%d/%m/%Y')
         except ValueError:
-            # Manejo de errores si el formato de entrada es incorrecto
-            raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy' o 'yyyy-mm-ddTHH:MM:SS.sss'.")
+            try:
+                # Intentar convertir la fecha con el formato 'dd/mm/yy'
+                fecha_obj = datetime.strptime(fecha_str, '%d/%m/%y')
+            except ValueError:
+                # Manejo de errores si el formato de entrada es incorrecto
+                raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy' o 'yyyy-mm-ddTHH:MM:SS.sss'. o 'dd/mm/yy'" )
 
     # Convertir el objeto datetime al formato 'yyyy-mm-dd'
     return fecha_obj.strftime('%Y-%m-%d')
