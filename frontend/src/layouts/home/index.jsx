@@ -143,7 +143,7 @@ const Home = () => {
                   </div>
                 </Grid>
 
-                {user.idGrupoCliente !== 4 ? (
+                {user.idGrupoCliente === 4 ? (
                 <Grid
                   sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                   item

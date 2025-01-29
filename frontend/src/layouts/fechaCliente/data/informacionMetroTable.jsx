@@ -191,6 +191,13 @@ export default function InformacionMetroTable({ data, columns }) {
       label: "BAJO PUERTA  ZONA PELIGROSA",
       labelComplete: "BAJO PUERTA  ZONA PELIGROSA",
     },
+    {
+      id: "6_DEV",
+      numeric: false,
+      disablePadding: false,
+      label: "DEVOLUCION",
+      labelComplete: "DEVOLUCION",
+    },
   ];
 
   function Completion({ value, color }) {
