@@ -4,7 +4,6 @@ import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
 import { Card, Divider } from "@mui/material";
 import SoftTypography from "components/SoftTypography";
 import SoftButton from "components/SoftButton";
-import SoftInputBase from "components/SoftInputBase";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "layouts/auth/AuthContext";
 import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
@@ -31,11 +30,8 @@ const InformesCliente = () => {
   const [columnsEmision, setColumnsEmision] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mutex, setMutex] = useState(false);
-
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertTitle, setAlertTitle] = useState("");
-
-  
 
   useEffect(() => {
     fetch(`${API_BACK}/api/tablaInformacion`, { mode: "cors" })
@@ -285,7 +281,7 @@ const InformesCliente = () => {
                     <AlertDlg titulo={alertTitle} open={alertOpen} setOpen={setAlertOpen} />
                   </SoftBox>
                   <SoftBox paddingTop={3} px={3}>
-                    {user.idGrupoCliente !== 4 ? (
+                    {user.idGrupoCliente === 4 ? (
                       <CalleAlturaTable
                         data={dataEmision}
                         columns={columnsEmision}
@@ -299,7 +295,7 @@ const InformesCliente = () => {
 
         
         </SoftBox>
-        {user && user.idGrupoCliente !== 4 ? (
+        {user && user.idGrupoCliente === 4 ? (
           <SoftBox style={{ width: "90%" }} justifyContent="center">
             <SoftBox justifyContent="center" paddingBottom={3}>
               <Card>

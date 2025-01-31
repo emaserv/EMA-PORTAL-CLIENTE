@@ -275,7 +275,7 @@ def tablaInformacion():
                 "Empresa": "EMA",
                 "ZP": "1° ZP",
                 "BP_CR": "BP CR",
-                "FAD": "FAD",
+                "FAD": "F AD",
                 "NV": "NR",
                 "UZP": "UZP",
                 "ZP_CR_2": "ZP CR",
