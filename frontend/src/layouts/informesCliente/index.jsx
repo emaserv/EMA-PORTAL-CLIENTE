@@ -281,7 +281,7 @@ const InformesCliente = () => {
                     <AlertDlg titulo={alertTitle} open={alertOpen} setOpen={setAlertOpen} />
                   </SoftBox>
                   <SoftBox paddingTop={3} px={3}>
-                    {user.idGrupoCliente === 4 ? (
+                    {user.idGrupoCliente === 4 || user.idGrupoCliente === 2 ? (
                       <CalleAlturaTable
                         data={dataEmision}
                         columns={columnsEmision}

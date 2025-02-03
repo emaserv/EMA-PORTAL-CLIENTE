@@ -124,7 +124,7 @@ const Home = () => {
                   </Grid>
                 ) : null}
 
-                {user.idGrupoCliente !== 2 || user.idGrupoCliente !== 4 ? (
+                {user.idGrupoCliente !== 2 && user.idGrupoCliente !== 4 ? (
                 <Grid
                   sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                   item

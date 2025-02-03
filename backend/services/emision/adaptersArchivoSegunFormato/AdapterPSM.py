@@ -16,9 +16,9 @@ class AdapterPSM:
             idGrupoCliente = obtenerIdGrupoCliente(entry['Cliente']), 
             nroCliente = entry['Número de Cuenta'] if entry['Número de Cuenta'] else None,
             titular = entry['Nombre del Titular'] if entry['Nombre del Titular'] else None, 
-            calle = obtenerPorPartes(entry['Dirección'], True),
-            altura = obtenerPorPartes(entry['Dirección'], False),
-            localidad = entry['Localidad'] if entry['Localidad'] != 'None' else None,
+            calle = obtenerPorPartes(str(entry['Dirección']), True),
+            altura = obtenerPorPartes(str(entry['Dirección']), False),
+            localidad = str(entry['Localidad']) if entry['Localidad'] != 'None' else None,
             planTurno = entry['plan'] if entry['plan'] else None,
             sucursal = entry['sucursal'] if entry['sucursal'] else None,
             radio = entry['radio'] if entry['radio'] else None,
@@ -48,8 +48,7 @@ class AdapterPSM:
     
 
 def chequeadorHora(hora):
-    print('HORAAAA', hora)
-    if hora != '-':
+    if hora and hora != '-':
         return hora
     else:
         return None
@@ -127,7 +126,6 @@ def convertir_fecha(fecha_str):
     return fecha_obj.strftime('%Y-%m-%d')
     
 def chequeadorFoto(linkFoto):
-    print(linkFoto)
     if linkFoto == 'https://s3.amazonaws.com/ocrbsas-userfiles-mobilehub-94990329/':
         return None
     else:
