@@ -6,7 +6,6 @@ import SoftTypography from "components/SoftTypography";
 import SoftButton from "components/SoftButton";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "layouts/auth/AuthContext";
-import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import InformacionMetroTable from "./data/informacionMetroTable";
@@ -14,6 +13,8 @@ import { API_BACK } from "../../config";
 import LoadingModal from "../../components/loadingModal";
 import DropdownList from "components/DropdownList";
 import AlertDlg from "components/AlertDlg";
+import CalleAlturaTableMetro from "./data/fechaClienteCalleAlturaTableMetro";
+import CalleAlturaTableNaturgy from "./data/fechaClienteCalleAlturaTableNaturgy";
 
 const InformesCliente = () => {
   const { user } = useAuth();
@@ -49,7 +50,7 @@ const InformesCliente = () => {
 
   useEffect(() => {
     if (mutex) {
-      fetch(`${API_BACK}/api/emisiones`, { mode: "cors" })
+      fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user.idGrupoCliente}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           if (apiData.multiplesEmision && apiData.columns) {
@@ -59,7 +60,7 @@ const InformesCliente = () => {
         })
         .catch((error) => {});
     }
-  }, [mutex]);
+  }, [mutex, user]);
 
   console.log(multiplesEmision);
 
@@ -77,7 +78,7 @@ const InformesCliente = () => {
 
     try {
       // Primera solicitud: fecha-cliente
-      const url1 = `${API_BACK}/api/informe-emision?idEmision=${idEmision}`; // La URL base debe configurarse en axios o agregarla completa aquí
+      const url1 = `${API_BACK}/api/informe-emision?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`; // La URL base debe configurarse en axios o agregarla completa aquí
 
       const response1 = await axios.get(url1);
       console.log("Response", response1.status);
@@ -281,8 +282,13 @@ const InformesCliente = () => {
                     <AlertDlg titulo={alertTitle} open={alertOpen} setOpen={setAlertOpen} />
                   </SoftBox>
                   <SoftBox paddingTop={3} px={3}>
-                    {user.idGrupoCliente === 4 || user.idGrupoCliente === 2 ? (
-                      <CalleAlturaTable
+                    {user.idGrupoCliente === 4 ? (
+                      <CalleAlturaTableMetro
+                        data={dataEmision}
+                        columns={columnsEmision}
+                      />
+                    ) :  user.idGrupoCliente === 2 ? (
+                      <CalleAlturaTableNaturgy
                         data={dataEmision}
                         columns={columnsEmision}
                       />

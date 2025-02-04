@@ -435,20 +435,24 @@ def tablaEmision():
 
 @fechaCliente.route('/api/emisiones', methods=['GET'])
 def get_emisiones():
+    idGrupoCliente = request.args.get('idGrupoCliente')
+
     try:
-        queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+        queryBase = None
+        
+        if int(idGrupoCliente) == 4:  # Convertir a string para comparación segura
+            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+        elif int(idGrupoCliente) == 2:
+            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icn GROUP BY "fechaEmision" ORDER BY 1')
+
+        if queryBase is None:
+            return jsonify({"message": "idGrupoCliente no válido"}), 400
 
         # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
             data_query = session.execute(queryBase)
 
-        datosPiezasPostales = []
-        
-        for row in data_query:
-            datosPiezasPostales.append({
-                'id': row.id,
-                'nombre': row.nombre
-            })
+        datosPiezasPostales = [{"id": row.id, "nombre": row.nombre} for row in data_query]
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204
@@ -460,6 +464,7 @@ def get_emisiones():
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
+
 def buscar_por_id(data, id_buscado):
     for item in data:
         if str(item['id']) == id_buscado:
@@ -470,9 +475,13 @@ def buscar_por_id(data, id_buscado):
 @fechaCliente.route('/api/informe-emision', methods=['GET'])
 def informeEmision():
     idEmision = request.args.get('idEmision')
+    idGrupoCliente = request.args.get('idGrupoCliente')
     
     try:
-        queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+        if int(idGrupoCliente)  == 4:
+            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+        elif int(idGrupoCliente)  == 2:
+            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icm GROUP BY "fechaEmision" ORDER BY 1')
         
         with DatabaseSession().get_session() as session:
             data_query_search = session.execute(queryBaseSearch)
@@ -487,14 +496,20 @@ def informeEmision():
         
         fechaEncontrada = buscar_por_id(dataQueryBusqueda, idEmision)
         
-        queryBase = 'SELECT * FROM "informeClienteMetrogas" icm'
+        if int(idGrupoCliente) == 4:
+            queryBase = 'SELECT * FROM "informeClienteMetrogas" icm'
+        elif int(idGrupoCliente) == 2:
+            queryBase = 'SELECT * FROM "informeClienteNaturgy" icn'
         
         where_clauses = []
         qParams = {}
 
         # Verificar y agregar los parámetros condicionalmente
-        if idEmision:
+        if idEmision and int(idGrupoCliente) == 4:
             where_clauses.append('icm."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEncontrada
+        elif idEmision and int(idGrupoCliente) == 2:
+            where_clauses.append('icn."fechaEmision" = :fechaEmision')
             qParams['fechaEmision'] = fechaEncontrada
 
         # Combinar cláusulas WHERE si existen
@@ -512,16 +527,25 @@ def informeEmision():
         datosPiezasPostales = []
         
         for row in data_query:
-            
-            datosPiezasPostales.append({
-                'id': row.id, 
-                #'idEmision': row.idEmision,
-                'fechaEmision': row.fechaEmision,
-                'localidad': row.localidad,
-                'estadoPieza': row.estadoPieza,
-                'estadoMetro': row.estadoMetro,
-                'count': str(row.count),
-            })
+            if int(idGrupoCliente) == 4:
+                datosPiezasPostales.append({
+                    'id': row.id, 
+                    #'idEmision': row.idEmision,
+                    'fechaEmision': row.fechaEmision,
+                    'localidad': row.localidad,
+                    'estadoPieza': row.estadoPieza,
+                    'estadoMetro': row.estadoMetro,
+                    'count': str(row.count),
+                })
+            elif int(idGrupoCliente) == 2:
+                datosPiezasPostales.append({
+                    'id': row.id, 
+                    #'idEmision': row.idEmision,
+                    'fechaEmision': row.fechaEmision,
+                    'condicion': row.foto,
+                    'estadoPieza': row.estadoPieza,
+                    'count': str(row.count),
+                })
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204

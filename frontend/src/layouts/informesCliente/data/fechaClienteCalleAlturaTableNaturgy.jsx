@@ -25,7 +25,7 @@ const toDate = (dayjsObject) =>
   new Date(dayjsObject.year(), dayjsObject.month(), dayjsObject.date());
 const todayGMT3 = dayjs().subtract(3, "hour");
 
-export default function CalleAlturaTable({ data, columns }) {
+export default function CalleAlturaTableNaturgy({ data, columns }) {
   const [order, setOrder] = React.useState("asc");
   const [orderBy, setOrderBy] = React.useState("localidad");
   const [selected, setSelected] = React.useState([]);
@@ -77,33 +77,6 @@ export default function CalleAlturaTable({ data, columns }) {
     setSelected([]);
   };
 
-  const handleClick = (event, id) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      newSelected = [...selected, id];
-    } else {
-      newSelected = selected.filter((selectedId) => selectedId !== id);
-    }
-
-    setSelected(newSelected);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const handleChangeDense = (event) => {
-    setDense(event.target.checked);
-  };
-
-  const isSelected = (id) => selected.indexOf(id) !== -1;
 
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - data.length) : 0;
@@ -155,11 +128,11 @@ export default function CalleAlturaTable({ data, columns }) {
       labelComplete: "Fecha de Emision",
     },
     {
-      id: "localidad",
+      id: "condicion",
       numeric: false,
       disablePadding: false,
-      label: "Localidad",
-      labelComplete: "Localidad",
+      label: "Condicion",
+      labelComplete: "Condicion",
     },
     {
       id: "estadoPieza",
@@ -167,13 +140,6 @@ export default function CalleAlturaTable({ data, columns }) {
       disablePadding: false,
       label: "Est E.",
       labelComplete: "Estado EMA",
-    },
-    {
-      id: "estadoMetro",
-      numeric: false,
-      disablePadding: false,
-      label: "Est M.",
-      labelComplete: "Estado Metrogas",
     },
     {
       id: "cant",
@@ -415,7 +381,7 @@ export default function CalleAlturaTable({ data, columns }) {
             marginRight: "10vh",
           }}
         >
-          
+          {/* 
           <TablePagination
             rowsPerPageOptions={[5, 15, 25, 50, 75, 100]}
             component="div"
@@ -429,14 +395,14 @@ export default function CalleAlturaTable({ data, columns }) {
               `${from}-${to} de ${count}`
             }
           />
-          
+          */}
         </div>
       </Paper>
     </Box>
   );
 }
 
-CalleAlturaTable.propTypes = {
+CalleAlturaTableNaturgy.propTypes = {
   data: PropTypes.array.isRequired,
   columns: PropTypes.array.isRequired,
   control: PropTypes.object.isRequired,
