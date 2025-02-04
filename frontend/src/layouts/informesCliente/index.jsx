@@ -107,31 +107,57 @@ const InformesCliente = () => {
     
     try {
   
-      const url = `${API_BACK}/api/informe-emision-extendido?idEmision=${idEmision}`;      
+      const url = `${API_BACK}/api/informe-emision-extendido?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`;      
       const response = await axios.get(url);
       const apiData = response.data;
   
       if (apiData.dataTabla) {
         // Formatear los datos para exportar
-        const formattedData = apiData.dataTabla.map((row) => ({
-          //ID: row.id || "-",
-          "Fecha Emisión": row.fechaEmision || "-",
-          "Número Cliente": row.nroCliente || "-",
-          Titular: row.titular || "-",
-          //Plan: row.plan || "-",
-          //Sucursal: row.sucursal || "-",
-          //Radio: row.radio || "-",
-          Dirección: row.direccion || "-",
-          Localidad: row.localidad || "-",
-          Fecha: row.fecha || "-",
-          Hora: row.hora || "-",
-          "Estado Pieza": row.estadoPieza || "-",
-          "Estado Metro": row.estadoMetro || "-",
-          "Observación Visita": row.obsVisita || "-",
-          GeoVisita: row.geoVisita || "-",
-          Foto: row.foto || "-",
-          Firma: row.firma || "-",
-        }));
+        const formattedData = (() => {
+          if (user.idGrupoCliente === 4) {
+            return apiData.dataTabla.map((row) => ({
+              //ID: row.id || "-",
+              "Fecha Emisión": row.fechaEmision || "-",
+              "Número Cliente": row.nroCliente || "-",
+              Titular: row.titular || "-",
+              //Plan: row.plan || "-",
+              //Sucursal: row.sucursal || "-",
+              //Radio: row.radio || "-",
+              Dirección: row.direccion || "-",
+              Localidad: row.localidad || "-",
+              Fecha: row.fecha || "-",
+              Hora: row.hora || "-",
+              "Estado Pieza": row.estadoPieza || "-",
+              "Estado Metro": row.estadoMetro || "-",
+              "Observación Visita": row.obsVisita || "-",
+              GeoVisita: row.geoVisita || "-",
+              Foto: row.foto || "-",
+              Firma: row.firma || "-",
+            }));
+          } else if (user.idGrupoCliente === 2) {
+            return apiData.dataTabla.map((row) => ({
+              //ID: row.id || "-",
+              "Fecha Emisión": row.fechaEmision || "-",
+              "Número Cliente": row.nroCliente || "-",
+              Titular: row.titular || "-",
+              //Plan: row.plan || "-",
+              //Sucursal: row.sucursal || "-",
+              //Radio: row.radio || "-",
+              Dirección: row.direccion || "-",
+              Localidad: row.localidad || "-",
+              Fecha: row.fecha || "-",
+              //Hora: row.hora || "-",
+              "Estado Pieza": row.estadoPieza || "-",
+              //"Estado Metro": row.estadoMetro || "-",
+              "Observación Visita": row.obsVisita || "-",
+              GeoVisita: row.geoVisita || "-",
+              Foto: row.foto || "-",
+              Firma: row.firma || "-",
+            }));
+          }
+          return []; // En caso de que no se cumplan las condiciones
+        })();
+        
   
         // Crear el archivo Excel
         const worksheet = XLSX.utils.json_to_sheet(formattedData);
