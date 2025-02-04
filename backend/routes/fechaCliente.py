@@ -561,9 +561,13 @@ def informeEmision():
 @fechaCliente.route('/api/informe-emision-extendido', methods=['GET'])
 def informeEmisionExtendido():
     idEmision = request.args.get('idEmision')
+    idGrupoCliente = request.args.get('idEmision')
     
     try:
-        queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+        if int(idGrupoCliente)  == 4:
+            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+        elif int(idGrupoCliente)  == 2:
+            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icm GROUP BY "fechaEmision" ORDER BY 1')
         
         with DatabaseSession().get_session() as session:
             data_query_search = session.execute(queryBaseSearch)
@@ -590,8 +594,8 @@ def informeEmisionExtendido():
             where_clauses.append('fc."fechaEmision" = :fechaEmision')
             qParams['fechaEmision'] = fechaEncontrada
             
-            #where_clauses.append('fc."estadoPieza" != :estadoAnulado ')
-            #qParams['estadoAnulado'] = 'NR'
+            where_clauses.append('fc."idGrupoCliente" != :idGrupoCliente ')
+            qParams['idGrupoCliente'] = int(idGrupoCliente)
     
 
         # Combinar cláusulas WHERE si existen
@@ -609,27 +613,42 @@ def informeEmisionExtendido():
         datosPiezasPostales = []
         
         for row in data_query:
-            
-            datosPiezasPostales.append({
-                'id': row.id,
-                'fechaEmision': format_date(row.fechaEmision),
-                'fechaVencimiento': row.fechaVencimientoMetro,
-                'nroCliente': row.nroCliente,
-                'titular': row.titular,
-                'plan': row.planTurno,
-                'sucursal': row.sucursal,
-                'radio': row.radio,
-                'direccion': row.direccion,
-                'localidad': row.localidad,
-                'fecha': format_date(row.fecha),
-                'hora': format_time(row.hora),
-                'estadoPieza': row.estadoPieza,
-                'estadoMetro': row.estadoMetro,
-                'obsVisita': row.obsVisita,
-                'geoVisita': row.geoVisita,
-                'foto': row.foto,
-                'firma': row.firma
-            })
+            if int(idGrupoCliente) == 4:
+                datosPiezasPostales.append({
+                    'id': row.id,
+                    'fechaEmision': format_date(row.fechaEmision),
+                    'fechaVencimiento': row.fechaVencimientoMetro,
+                    'nroCliente': row.nroCliente,
+                    'titular': row.titular,
+                    'plan': row.planTurno,
+                    'sucursal': row.sucursal,
+                    'radio': row.radio,
+                    'direccion': row.direccion,
+                    'localidad': row.localidad,
+                    'fecha': format_date(row.fecha),
+                    'hora': format_time(row.hora),
+                    'estadoPieza': row.estadoPieza,
+                    'estadoMetro': row.estadoMetro,
+                    'obsVisita': row.obsVisita,
+                    'geoVisita': row.geoVisita,
+                    'foto': row.foto,
+                    'firma': row.firma
+                })
+            elif int(idGrupoCliente) == 2:
+                datosPiezasPostales.append({
+                    'id': row.id,
+                    'fechaEmision': format_date(row.fechaEmision),
+                    'nroCliente': row.nroCliente,
+                    'titular': row.titular,
+                    'direccion': row.direccion,
+                    'localidad': row.localidad,
+                    'fecha': format_date(row.fecha),
+                    'estadoPieza': row.estadoPieza,
+                    'obsVisita': row.obsVisita,
+                    'geoVisita': row.geoVisita,
+                    'foto': row.foto,
+                    'firma': row.firma
+                })
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204
