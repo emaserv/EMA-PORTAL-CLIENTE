@@ -561,13 +561,13 @@ def informeEmision():
 @fechaCliente.route('/api/informe-emision-extendido', methods=['GET'])
 def informeEmisionExtendido():
     idEmision = request.args.get('idEmision')
-    idGrupoCliente = request.args.get('idEmision')
+    idGrupoCliente = request.args.get('idGrupoCliente')    
     
     try:
-        if int(idGrupoCliente)  == 4:
+        if int(idGrupoCliente) == 4:
             queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
-        elif int(idGrupoCliente)  == 2:
-            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icm GROUP BY "fechaEmision" ORDER BY 1')
+        elif int(idGrupoCliente) == 2:
+            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icn GROUP BY "fechaEmision" ORDER BY 1')
         
         with DatabaseSession().get_session() as session:
             data_query_search = session.execute(queryBaseSearch)
@@ -594,7 +594,7 @@ def informeEmisionExtendido():
             where_clauses.append('fc."fechaEmision" = :fechaEmision')
             qParams['fechaEmision'] = fechaEncontrada
             
-            where_clauses.append('fc."idGrupoCliente" != :idGrupoCliente ')
+            where_clauses.append('fc."idGrupoCliente" = :idGrupoCliente')
             qParams['idGrupoCliente'] = int(idGrupoCliente)
     
 

@@ -150,9 +150,9 @@ const InformesCliente = () => {
               "Estado Pieza": row.estadoPieza || "-",
               //"Estado Metro": row.estadoMetro || "-",
               "Observación Visita": row.obsVisita || "-",
-              GeoVisita: row.geoVisita || "-",
-              Foto: row.foto || "-",
-              Firma: row.firma || "-",
+              //GeoVisita: row.geoVisita || "-",
+              Acuse: row.foto || "-",
+              //Firma: row.firma || "-",
             }));
           }
           return []; // En caso de que no se cumplan las condiciones
