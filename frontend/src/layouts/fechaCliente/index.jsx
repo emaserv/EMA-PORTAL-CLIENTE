@@ -92,7 +92,7 @@ const FechaCliente = () => {
 
     try {
       // Primera solicitud: fecha-cliente
-      const url1 = `${API_BACK}/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí
+      const url1 = `${API_BACK}/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí      
       const params1 = {
         cliente: cliente || "",
         grupoCliente: user.idGrupoCliente || "",
@@ -144,16 +144,6 @@ const FechaCliente = () => {
       console.error("Error en la solicitud geoMapaItems:", error);
       setPuntosMapa([]);
     }
-  };
-
-  const convertirFecha = (fechaStr) => {
-    const partes = fechaStr.split("/");
-    if (partes.length === 3) {
-      // Ajusta el año para el formato de 2 dígitos
-      const año = partes[2].length === 2 ? `20${partes[2]}` : partes[2];
-      return new Date(`${año}-${partes[1]}-${partes[0]}`);
-    }
-    return new Date(); // Retorna una fecha inválida si el formato no es el esperado
   };
 
   const filtrarDatos = (data, cliente, fechaDesde, fechaHasta) => {
@@ -377,7 +367,7 @@ const FechaCliente = () => {
           justifyContent="center"
         >
           {user &&
-          (user.idGrupoCliente === 2 || user.idGrupoCliente === null) &&
+          (user.idGrupoCliente === 2 || user.idGrupoCliente === 1 || user.idGrupoCliente === null) &&
           puntosMapa ? (
             <SoftBox paddingBottom={3} justifyContent="center">
               <Card>

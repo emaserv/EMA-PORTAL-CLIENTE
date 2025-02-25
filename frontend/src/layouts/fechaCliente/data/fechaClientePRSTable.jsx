@@ -455,6 +455,9 @@ export default function PRSTable({ data, columns }) {
                         column !== "direccion" &&
                         column !== "foto" &&
                         column !== "estadoMetro" &&
+                        column !== "fechaVencimiento" &&
+                        column !== "importe" &&
+                        column !== "acuseDeDeuda" &&
                         column !== "legajo" && (
                           <TableCell
                             key={`${row.id}-${column}`}
