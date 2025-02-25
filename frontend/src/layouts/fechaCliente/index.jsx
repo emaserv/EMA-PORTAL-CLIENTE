@@ -368,7 +368,7 @@ const FechaCliente = () => {
         >
           {user &&
           (user.idGrupoCliente === 2 || user.idGrupoCliente === 1 || user.idGrupoCliente === null) &&
-          puntosMapa ? (
+          puntosMapa.length() > 0 ? (
             <SoftBox paddingBottom={3} justifyContent="center">
               <Card>
                 <SoftBox p={3}>

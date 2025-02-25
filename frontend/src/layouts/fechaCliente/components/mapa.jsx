@@ -1,6 +1,6 @@
 import { React, useEffect, useState } from 'react';
 import PropTypes from "prop-types";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -41,12 +41,6 @@ function MyMap({ arrayPuntos }) {
     }
   }, [arrayPuntos]);
 
-
-  const polylineOptions = {
-    color: 'blue', // Color de la línea
-    weight: 5, // Grosor de la línea
-  };
-
   return (
     <MapContainer zoom={16} style={{ height: '300px', width: '100%' }}>
       <TileLayer
@@ -63,7 +57,7 @@ function MyMap({ arrayPuntos }) {
           <Popup>
             Coordenada {index + 1}: {pos[0]}, {pos[1]}
           </Popup>
-        </Marker>
+        </Marker>   
       ))}
 
       {puntos.length > 0 ? (
