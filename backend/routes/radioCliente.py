@@ -383,9 +383,9 @@ def get_dai_data():
             } for row in data_query
         ]
 
-        #  if not dataGeoCamino:
+        if not dataGeoCamino:
             # Envía un JSON vacío en lugar de una respuesta 204
-          #    return jsonify({"dataGeoCamino": [], "columns": []}), 200
+            return jsonify({"dataGeoCamino": [], "columns": []}), 200
 
         keys = list(dataGeoCamino[0].keys())
 

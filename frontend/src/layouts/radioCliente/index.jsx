@@ -56,7 +56,12 @@ const RadioCliente = () => {
   const [geoJsonData2, setGeoJsonData2] = useState([])
 
   
-  const onSubmit = (data) => {
+  const onSubmit = (data) => {  
+    setCaminoMapa([]);
+    setPuntosMapa([]);
+    setGeoJsonData([]);
+    setGeoJsonData2([]);
+
     setLoading(true);
 
     const fechaDesde = data.fechaDesde ? DataConverter(data.fechaDesde) : null;
@@ -468,17 +473,20 @@ async function processCoordinates(data) {
     let arrayCoordenadas = [];
 
     for (let i = 0; i < data.length; i++) {
-      // Genera valores aleatorios de longitud y latitud
-      const latitud = parseFloat(data[i].latitud);
-      const longitud = parseFloat(data[i].longitud);
-      arrayCoordenadas.push([latitud, longitud]);
-    }
-    console.log("AAAA", arrayCoordenadas)
+        // Aseguramos que los valores sean números válidos
+        const latitud = parseFloat(data[i]?.latitud);
+        const longitud = parseFloat(data[i]?.longitud);
 
-    //console.log("PRINT ARRAY COORD", arrayCoordenadas);
+        if (!isNaN(latitud) && !isNaN(longitud)) {
+            arrayCoordenadas.push([latitud, longitud]);
+        } else {
+            console.warn(`Coordenada inválida en índice ${i}: latitud=${data[i]?.latitud}, longitud=${data[i]?.longitud}`);
+        }
+    }
+
+    console.log("Coordenadas procesadas:", arrayCoordenadas);
     return arrayCoordenadas;
   };
-
 
   function calcularDistanciaEnKm(lat1, lon1, lat2, lon2) {
     const R = 6371; // Radio de la Tierra en km
