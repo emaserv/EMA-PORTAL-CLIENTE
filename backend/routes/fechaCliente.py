@@ -137,7 +137,7 @@ def tablaFC():
             datosPiezasPostales.append({
                 'id': row.id,
                 'fechaEmision': format_date(row.fechaEmision),
-                'fechaVencimiento': fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Vencimiento"] if grupoCliente == 4 else None,
+                'fechaVencimiento': fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Vencimiento"] if grupoCliente == '4' else None,
                 'grupoCliente': row.grupoCliente,
                 'nroCliente': row.nroCliente,
                 'titular': row.titular,
@@ -148,14 +148,14 @@ def tablaFC():
                 'localidad': row.localidad,
                 'fecha': format_date(row.fecha),
                 'hora': format_time(row.hora), 
-                'importe': str("${:,.2f}".format(fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Importe"])) if grupoCliente == 4 else None,
+                'importe': str("${:,.2f}".format(fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Importe"])) if grupoCliente == '4' else None,
                 'estadoPieza': row.estadoPieza,
                 'estadoMetro': row.estadoMetro,
                 'obsVisita': row.obsVisita,
                 'geoVisita': row.geoVisita,
                 'foto': row.foto,
                 'firma': row.firma,
-                'acuseDeDeuda': fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Url"] if grupoCliente == 4 else None
+                'acuseDeDeuda': fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Url"] if grupoCliente == '4' else None
             })
             
         if not datosPiezasPostales:

@@ -96,7 +96,7 @@ const fetchGeoJsonData = async (sucursal, plan, radio) => {
     const formattedSucursal = formatToTwoDigits(sucursal);
     const formattedRadio = formatToTwoDigits(radio);
 
-    const url = new URL(`${API_BACK}/api/geoJson/consultarGeoJson`);
+    const url = new URL(`/api/geoJson/consultarGeoJson`, window.location.origin);
     const params = { sucursal: formattedSucursal, plan: formattedPlan, radio: formattedRadio };
     
     Object.entries(params).forEach(([key, value]) => {
@@ -135,7 +135,7 @@ const fetchGeoMapaItems = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
   try {
     setLoading(true);
     // Create the base URL object
-    const url = new URL(`${API_BACK}/api/radio/geoMapaItems`);
+    const url = new URL(`/api/radio/geoMapaItems`, window.location.origin);
 
     // Define parameters with default values if not provided
     const params = {
@@ -183,7 +183,7 @@ const fetchRadioCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
   try {
     setLoading(true);
     const response2 = await fetch(
-      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
+      `/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
     );
 
     const apiData2 = await response2.json();
@@ -206,7 +206,7 @@ const fetchRadioCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
 // Función para realizar la tercera solicitud: geoMapaCamino
 const fetchGeoMapaCamino = async () => {
   try {
-    const url = new URL(`${API_BACK}/api/geo-dai`);
+    const url = new URL(`/api/geo-dai`, window.location.origin);
 
     const params = {
       legajo: legajo,
