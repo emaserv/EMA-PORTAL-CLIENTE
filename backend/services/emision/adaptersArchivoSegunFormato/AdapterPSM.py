@@ -13,15 +13,15 @@ class AdapterPSM:
 
         itemEmision = ItemEmision(
             idEmision = idEmision,
-            idGrupoCliente = obtenerIdGrupoCliente(entry['Cliente']), 
+            idGrupoCliente = obtenerIdGrupoCliente(entry['Cliente']),
             nroCliente = entry['Número de Cuenta'] if entry['Número de Cuenta'] else None,
-            titular = entry['Nombre del Titular'] if entry['Nombre del Titular'] else None, 
+            titular = entry['Nombre del Titular'] if entry['Nombre del Titular'] else None,
             calle = obtenerPorPartes(str(entry['Dirección']), True),
             altura = obtenerPorPartes(str(entry['Dirección']), False),
             localidad = str(entry['Localidad']) if entry['Localidad'] != 'None' else None,
-            planTurno = entry['plan'] if entry['plan'] else None,
-            sucursal = entry['sucursal'] if entry['sucursal'] else None,
-            radio = entry['radio'] if entry['radio'] else None,
+            planTurno = entry['Plan'] if entry['Plan'] else None,
+            sucursal = entry['Sucursal'] if entry['Sucursal'] else None,
+            radio = entry['Radio'] if entry['Radio'] else None,
             lote = entry['Lote'] if entry['Lote'] else None,
             recorridoH = entry['Recorrido H'] if entry['Recorrido H'] else None,
             ruta = entry['Ruta'] if entry['Ruta'] else None,
@@ -39,6 +39,7 @@ class AdapterPSM:
             fechaIngreso = convertir_fecha(entry['Fecha Ingreso']),
             fechaEmision = convertir_fecha(entry['Fecha Emision']),
             fechaCertificacion = convertir_fecha(entry['Fecha Certificacion']),
+            fechaAsignacion = convertir_fecha(entry['Fecha Asignacion']),
             tipoDePieza = entry['Tipo de Servicio'] if entry['Tipo de Servicio'] else None, 
             codigoBarras = entry['Codigo de Barras'] if entry['Codigo de Barras'] else None
         )
