@@ -73,7 +73,7 @@ const FirmasCliente = () => {
 const fetchFirmaCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
   try {
     const response2 = await fetch(
-      `/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
+      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
     );
 
     const apiData2 = await response2.json();

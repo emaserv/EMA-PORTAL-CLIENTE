@@ -269,6 +269,8 @@ def nroClienteFC():
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @fechaCliente.route('/api/tablaInformacion', methods=['GET'])
 def tablaInformacion():
+    grupoCliente = request.args.get("grupoCliente")
+    
     try:
         # Datos de ejemplo en la consulta
         data_query = [
@@ -283,7 +285,7 @@ def tablaInformacion():
                 "6_DEV": "6 DEV"
             },
             {
-                "Empresa": "METROGAS",
+                "Empresa": "METROGAS" if grupoCliente == "4" else "EDESUR",
                 "ZP": "BAJO PUERTA",
                 "BP_CR": "BAJO PUERTA",
                 "FAD": "BAJO FIRMA",

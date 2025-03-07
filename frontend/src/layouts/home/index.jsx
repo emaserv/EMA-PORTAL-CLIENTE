@@ -65,7 +65,7 @@ const Home = () => {
         //console.log(`${key}:`, value);
       }
 
-      const response = await axios.post(`/api/upload`, formData);
+      const response = await axios.post(`${API_BACK}/api/upload`, formData);
       //console.log("response", response)
 
       if(response.status === 200){
@@ -104,7 +104,7 @@ const Home = () => {
                 marginLeft="7rem"
                 marginRight="-15rem"
               >
-                {user.idGrupoCliente === null ? (
+                {user && user.idGrupoCliente === null ? (
                   <Grid
                     sx={{ textAlign: "left" }} // Centering the text
                     item
@@ -124,7 +124,7 @@ const Home = () => {
                   </Grid>
                 ) : null}
 
-                {user.idGrupoCliente !== 2 ? (
+                {user && user.idGrupoCliente !== 2 ? (
                 <Grid
                   sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                   item
@@ -145,7 +145,7 @@ const Home = () => {
                 </Grid>)
                 : null}
 
-                {user.idGrupoCliente === 4 || user.idGrupoCliente === 2 ? (
+                {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 2) ? (
                 <Grid
                   sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                   item
@@ -166,7 +166,7 @@ const Home = () => {
                 </Grid>)
                 : null}
 
-                {user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2 ? (
+                {user && (user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2) ? (
                   <Grid
                     sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                     item
@@ -187,7 +187,7 @@ const Home = () => {
                   </Grid>
                 ) : null}
 
-                {user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2 ? (
+                {user && (user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2) ? (
                 <Grid
                     sx={{ textAlign: "left", marginTop: "1rem" }} // Centrado del texto
                     item

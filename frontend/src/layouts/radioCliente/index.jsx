@@ -12,10 +12,11 @@ import { useAuth } from "layouts/auth/AuthContext";
 import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
 import styled from "styled-components";
-import {API_BACK} from '../../config'
-import LoadingModal from '../../components/loadingModal';
+import { API_BACK } from "../../config";
+import InformacionMetroTable from "./data/informacionMetroTable";
+import LoadingModal from "../../components/loadingModal";
 
-import L from 'leaflet';
+import L from "leaflet";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -24,7 +25,6 @@ const DataConverter = (fechaDeSincronizacion) => {
   const day = String(parsedDate.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
-
 
 const RadioCliente = () => {
   const { user } = useAuth();
@@ -49,18 +49,36 @@ const RadioCliente = () => {
   const [datosFiltrados, setDatosFiltrados] = useState([]);
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
   const [loading, setLoading] = useState(false); // Estado para manejar el loading
-  const [legajo, setLegajo] = useState(null)
-  const [hini, setHini] = useState(null)
-  const [hfin, setHfin] = useState(null)
-  const [geoJsonData, setGeoJsonData] = useState([])
-  const [geoJsonData2, setGeoJsonData2] = useState([])
+  const [legajo, setLegajo] = useState(null);
+  const [hini, setHini] = useState(null);
+  const [hfin, setHfin] = useState(null);
+  const [geoJsonData, setGeoJsonData] = useState([]);
+  const [geoJsonData2, setGeoJsonData2] = useState([]);
+  const [dataInfo, setDataInfo] = useState([]);
+  const [columnsInfo, setColumnsInfo] = useState([]);
 
-  
-  const onSubmit = (data) => {  
+  useEffect(() => {
+    fetch(
+      `${API_BACK}/api/tablaInformacion?grupoCliente=${user.idGrupoCliente}`,
+      { mode: "cors" }
+    )
+      .then((response) => response.json())
+      .then((apiData) => {
+        if (apiData.dataTabla && apiData.columns) {
+          setDataInfo(apiData.dataTabla);
+          setColumnsInfo(apiData.columns);
+        } else {
+        }
+      })
+      .catch((error) => {});
+  }, []);
+
+  const onSubmit = (data) => {
     setCaminoMapa([]);
     setPuntosMapa([]);
     setGeoJsonData([]);
     setGeoJsonData2([]);
+    setCaminoMapaFiltrado([]);
 
     setLoading(true);
 
@@ -82,40 +100,46 @@ const RadioCliente = () => {
     );
   };
 
+  // Función para formatear un valor a dos dígitos
+  const formatToTwoDigits = (value) => {
+    return value && value.length === 1 ? `0${value}` : value;
+  };
 
-// Función para formatear un valor a dos dígitos
-const formatToTwoDigits = (value) => {
-  return value && value.length === 1 ? `0${value}` : value;
-};
+  // Función para realizar la solicitud a la API de geoJson
+  const fetchGeoJsonData = async (sucursal, plan, radio) => {
+    try {
+      setLoading(true);
+      const formattedPlan = formatToTwoDigits(plan);
+      const formattedSucursal = formatToTwoDigits(sucursal);
+      const formattedRadio = formatToTwoDigits(radio);
 
-// Función para realizar la solicitud a la API de geoJson
-const fetchGeoJsonData = async (sucursal, plan, radio) => {
-  try {
-    setLoading(true);
-    const formattedPlan = formatToTwoDigits(plan);
-    const formattedSucursal = formatToTwoDigits(sucursal);
-    const formattedRadio = formatToTwoDigits(radio);
+      const url = new URL(
+        `${API_BACK}/api/geoJson/consultarGeoJson`,
+        window.location.origin
+      );
+      const params = {
+        sucursal: formattedSucursal,
+        plan: formattedPlan,
+        radio: formattedRadio,
+      };
 
-    const url = new URL(`/api/geoJson/consultarGeoJson`, window.location.origin);
-    const params = { sucursal: formattedSucursal, plan: formattedPlan, radio: formattedRadio };
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) {
-        url.searchParams.append(key, value);
-      }
-    });
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) {
+          url.searchParams.append(key, value);
+        }
+      });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok && data.geoData) {
-        console.log("radio", data.geoData)
+      if (response.ok && data.geoData) {
+        console.log("radio", data.geoData);
         setGeoJsonData2(data.geoData);
       } else {
         console.error("No se encontraron datos para esta combinación.");
@@ -126,136 +150,166 @@ const fetchGeoJsonData = async (sucursal, plan, radio) => {
     } finally {
       setLoading(false);
     }
-};
-
+  };
 
   // Función para realizar la primera solicitud: geoMapaItems
-// Función para realizar la primera solicitud: geoMapaItems
-const fetchGeoMapaItems = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
-  try {
-    setLoading(true);
-    // Create the base URL object
-    const url = new URL(`/api/radio/geoMapaItems`, window.location.origin);
+  // Función para realizar la primera solicitud: geoMapaItems
+  const fetchGeoMapaItems = async (
+    plan,
+    sucursal,
+    radio,
+    fechaDesde,
+    fechaHasta
+  ) => {
+    try {
+      setLoading(true);
+      // Create the base URL object
+      const url = new URL(
+        `${API_BACK}/api/radio/geoMapaItems`,
+        window.location.origin
+      );
 
-    // Define parameters with default values if not provided
-    const params = {
-      plan: plan || "",
-      sucursal: sucursal || "",
-      radio: radio || "",
-      grupoCliente: user.idGrupoCliente || "",
-      fechaDesde: fechaDesde || "",
-      fechaHasta: fechaHasta || "",
-    };
+      // Define parameters with default values if not provided
+      const params = {
+        plan: plan || "",
+        sucursal: sucursal || "",
+        radio: radio || "",
+        grupoCliente: user.idGrupoCliente || "",
+        fechaDesde: fechaDesde || "",
+        fechaHasta: fechaHasta || "",
+      };
 
-    // Append each non-empty parameter to the URL
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) {
-        url.searchParams.append(key, value);
+      // Append each non-empty parameter to the URL
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) {
+          url.searchParams.append(key, value);
+        }
+      });
+
+      // Fetch data from the API with the constructed URL
+      const response = await fetch(url);
+      const apiData1 = await response.json();
+
+      // Check for data and update the state accordingly
+      if (apiData1.dataTabla) {
+        setPuntosMapa(apiData1.dataTabla);
+        setColumns(apiData1.columns);
+        filtrarPuntosMapa(
+          apiData1.dataTabla,
+          plan,
+          sucursal,
+          radio,
+          fechaDesde,
+          fechaHasta
+        );
+      } else {
+        console.error("No se recibieron datos de geoMapaItems API");
+        setPuntosMapa([]);
       }
-    });
 
-    // Fetch data from the API with the constructed URL
-    const response = await fetch(url);
-    const apiData1 = await response.json();
-
-    // Check for data and update the state accordingly
-    if (apiData1.dataTabla) {
-      setPuntosMapa(apiData1.dataTabla);
-      setColumns(apiData1.columns);
-      filtrarPuntosMapa(apiData1.dataTabla, plan, sucursal, radio, fechaDesde, fechaHasta);
-    } else {
-      console.error("No se recibieron datos de geoMapaItems API");
-      setPuntosMapa([]);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error en fetchGeoMapaItems:", error);
+      setLoading(false);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    setLoading(false);
-  } catch (error) {
-    console.error("Error en fetchGeoMapaItems:", error);
-    setLoading(false);
-  } finally {
-    setLoading(false);
-  }
-};
+  // Función para realizar la segunda solicitud: radio-cliente
+  const fetchRadioCliente = async (
+    plan,
+    sucursal,
+    radio,
+    fechaDesde,
+    fechaHasta
+  ) => {
+    try {
+      setLoading(true);
+      const response2 = await fetch(
+        `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
+          sucursal || ""
+        }&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${
+          fechaDesde || ""
+        }&fechaHasta=${fechaHasta || ""}`
+      );
 
+      const apiData2 = await response2.json();
+      if (apiData2.dataTabla) {
+        setAllData(apiData2.dataTabla);
+        setColumns(apiData2.columns);
+        filtrarDatos(
+          apiData2.dataTabla,
+          plan,
+          sucursal,
+          radio,
+          fechaDesde,
+          fechaHasta
+        );
+      } else if (response2.status === 404) {
+        console.error("No se recibieron datos de radio-cliente API");
+        cambiarEstadoPopUp1(true);
+        setAllData([]);
+      }
+    } catch (error) {
+      console.error("Error en fetchRadioCliente:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-// Función para realizar la segunda solicitud: radio-cliente
-const fetchRadioCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
-  try {
-    setLoading(true);
-    const response2 = await fetch(
-      `/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
-    );
+  // Función para realizar la tercera solicitud: geoMapaCamino
+  const fetchGeoMapaCamino = async () => {
+    try {
+      const url = new URL(`${API_BACK}/api/geo-dai`, window.location.origin);
 
-    const apiData2 = await response2.json();
-    if (apiData2.dataTabla) {
-      setAllData(apiData2.dataTabla);
-      setColumns(apiData2.columns);
-      filtrarDatos(apiData2.dataTabla, plan, sucursal, radio, fechaDesde, fechaHasta);
-    } else if (response2.status === 404) {
-      console.error("No se recibieron datos de radio-cliente API");
-      cambiarEstadoPopUp1(true);
+      const params = {
+        legajo: legajo,
+        hini: hini.toISOString(),
+        hfin: hfin.toISOString(),
+      };
+
+      console.log("HOLAA", hini.toISOString());
+      console.log("HOLAA", hfin.toISOString());
+
+      Object.keys(params).forEach((key) => {
+        if (params[key]) {
+          url.searchParams.append(key, params[key]);
+        }
+      });
+
+      const response3 = await fetch(url);
+      const apiData3 = await response3.json();
+
+      if (apiData3.dataGeoCamino) {
+        const results = await processCoordinates(apiData3.dataGeoCamino);
+        console.log(results);
+        setGeoJsonData(results);
+        setColumnsCamino(apiData3.columns);
+      } else {
+        console.error("No se recibieron datos de geoCamino API");
+        setGeoJsonData([]);
+      }
+    } catch (error) {
+      console.error("Error en fetchGeoMapaCamino:", error);
+    }
+  };
+
+  const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
+    if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta) {
       setAllData([]);
-    }
-  } catch (error) {
-    console.error("Error en fetchRadioCliente:", error);
-  } finally {
-    setLoading(false);
-  }
-};
-
-// Función para realizar la tercera solicitud: geoMapaCamino
-const fetchGeoMapaCamino = async () => {
-  try {
-    const url = new URL(`/api/geo-dai`, window.location.origin);
-
-    const params = {
-      legajo: legajo,
-      hini: hini.toISOString(),
-      hfin: hfin.toISOString()
-    };
-
-    console.log("HOLAA",hini.toISOString())
-    console.log("HOLAA",hfin.toISOString())
-
-    Object.keys(params).forEach((key) => {
-      if (params[key]) {
-        url.searchParams.append(key, params[key]);
-      }
-    });
-
-    const response3 = await fetch(url);
-    const apiData3 = await response3.json();
-
-    if (apiData3.dataGeoCamino) {
-      const results = await processCoordinates(apiData3.dataGeoCamino);
-      console.log(results);
-      setGeoJsonData(results);
-      setColumnsCamino(apiData3.columns);
-    } else {
-      console.error("No se recibieron datos de geoCamino API");
+      setPuntosMapa([]);
+      setCaminoMapa([]);
+      setDatosFiltrados([]);
       setGeoJsonData([]);
+      return;
     }
-  } catch (error) {
-    console.error("Error en fetchGeoMapaCamino:", error);
-  }
-};
 
-
-const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
-  if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta) {
-    setAllData([]);
-    setPuntosMapa([]);
-    setCaminoMapa([]);
-    setDatosFiltrados([]);
-    setGeoJsonData([]);
-    return;
-  }
-
-  // Llamadas a las tres funciones
-  await fetchGeoMapaItems(plan, sucursal, radio, fechaDesde, fechaHasta);
-  await fetchRadioCliente(plan, sucursal, radio, fechaDesde, fechaHasta);
-  await fetchGeoJsonData(sucursal, plan, radio);
-};
+    // Llamadas a las tres funciones
+    await fetchGeoMapaItems(plan, sucursal, radio, fechaDesde, fechaHasta);
+    await fetchRadioCliente(plan, sucursal, radio, fechaDesde, fechaHasta);
+    await fetchGeoJsonData(sucursal, plan, radio);
+  };
 
   const filtrarDatos = (
     data,
@@ -328,25 +382,26 @@ const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
       );
     });
 
-    const caminoAchicado = await processCoordinates(caminoFiltrado)
+    const caminoAchicado = await processCoordinates(caminoFiltrado);
     console.log("caminoFiltrado", caminoAchicado);
 
     setCaminoMapaFiltrado(caminoAchicado);
     //console.log("caminoFiltrado", caminoMapaFiltrado);
   };
 
-
   function haversineDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Radio de la Tierra en metros
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a = Math.sin(dLat / 2) ** 2 + 
-              Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
-              Math.sin(dLon / 2) ** 2;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
-  
+
   // Función para filtrar las coordenadas
   function filterClosePoints(data, threshold = 50) {
     return data.filter((currentPoint, index) => {
@@ -368,61 +423,64 @@ const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
   }
 
   // Función para dividir el array en chunks
-function chunkArray(array, chunkSize) {
-  const chunks = [];
-  for (let i = 0; i < array.length; i += chunkSize) {
-    chunks.push(array.slice(i, i + chunkSize));
+  function chunkArray(array, chunkSize) {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
   }
-  return chunks;
-}
 
+  // Función para obtener la ruta desde la API de OSRM
+  async function getRouteFromAPI(chunk) {
+    const coordString = chunk
+      .map((coord) => `${coord.longitud},${coord.latitud}`)
+      .join(";");
+    const routeURL = `https://router.project-osrm.org/route/v1/foot/${coordString}?geometries=geojson`;
 
-// Función para obtener la ruta desde la API de OSRM
-async function getRouteFromAPI(chunk) {
-  const coordString = chunk.map(coord => `${coord.longitud},${coord.latitud}`).join(';');
-  const routeURL = `https://router.project-osrm.org/route/v1/foot/${coordString}?geometries=geojson`;
+    console.log(routeURL); // Para depuración
 
-  console.log(routeURL); // Para depuración
+    const response = await fetch(routeURL);
+    const data = await response.json();
 
-  const response = await fetch(routeURL);
-  const data = await response.json();
-
-  if (data.routes && data.routes.length > 0) {
-    return data.routes[0].geometry; // Retornar la geometría de la ruta
-  } else {
-    console.error('No se encontraron rutas para este conjunto de coordenadas.');
-    return null;
-  }
-}
-
-// Función principal que procesa las coordenadas
-async function processCoordinates(data) {
-  const filteredData = filterClosePoints(data);
-  //console.log(filteredData.length)
-  //const reFilteredData =  filtrarPorDistanciaMultiple(puntosMapa, filteredData);
-  //console.log(reFilteredData.length)
-  const chunks = chunkArray(filteredData, 25);
-  const results = [];
-
-  for (const chunk of chunks) {
-    const routeGeometry = await getRouteFromAPI(chunk);
-
-    if (routeGeometry) {
-      // Crear una línea con la geometría de la ruta y añadirla al mapa
-      const geojson = L.geoJSON(routeGeometry, {
-        style: {
-          color: "#ff0000",
-          weight: 9,
-          opacity: 0.4
-        }
-      })
-
-      results.push(routeGeometry); // Guardar las coordenadas procesadas
+    if (data.routes && data.routes.length > 0) {
+      return data.routes[0].geometry; // Retornar la geometría de la ruta
+    } else {
+      console.error(
+        "No se encontraron rutas para este conjunto de coordenadas."
+      );
+      return null;
     }
   }
 
-  return results;
-}
+  // Función principal que procesa las coordenadas
+  async function processCoordinates(data) {
+    const filteredData = filterClosePoints(data);
+    //console.log(filteredData.length)
+    //const reFilteredData =  filtrarPorDistanciaMultiple(puntosMapa, filteredData);
+    //console.log(reFilteredData.length)
+    const chunks = chunkArray(filteredData, 25);
+    const results = [];
+
+    for (const chunk of chunks) {
+      const routeGeometry = await getRouteFromAPI(chunk);
+
+      if (routeGeometry) {
+        // Crear una línea con la geometría de la ruta y añadirla al mapa
+        const geojson = L.geoJSON(routeGeometry, {
+          style: {
+            color: "#ff0000",
+            weight: 9,
+            opacity: 0.4,
+          },
+        });
+
+        results.push(routeGeometry); // Guardar las coordenadas procesadas
+      }
+    }
+
+    return results;
+  }
 
   const filtrarPuntosMapa = (
     data,
@@ -447,22 +505,22 @@ async function processCoordinates(data) {
     //console.log("puntosFiltrados", puntosFiltrados);
     if (data.length > 0) {
       // Convertir el campo de fecha y hora al formato ISO
-      const fechas = data.map(item => {
-        const formattedDate = `${item.fecha} ${item.hora}`;// Asumiendo que la hora ya está en formato HH:mm:ss
+      const fechas = data.map((item) => {
+        const formattedDate = `${item.fecha} ${item.hora}`; // Asumiendo que la hora ya está en formato HH:mm:ss
         return new Date(formattedDate);
       });
-    
+
       // Obtener la mínima y máxima fecha usando Math.min y Math.max
       const fechaMin = new Date(Math.min(...fechas));
       const fechaMax = new Date(Math.max(...fechas));
-    
+
       console.log("HOLAA", fechaMin, fechaMax);
       // Guardar los resultados en el estado
       setHini(fechaMin);
       setHfin(fechaMax);
     }
 
-    setLegajo(data[0].legajo)
+    setLegajo(data[0].legajo);
 
     setPuntosMapaFiltrados(puntosFiltrados);
     //console.log("puntosFiltrados", puntosMapaFiltrados);
@@ -473,15 +531,17 @@ async function processCoordinates(data) {
     let arrayCoordenadas = [];
 
     for (let i = 0; i < data.length; i++) {
-        // Aseguramos que los valores sean números válidos
-        const latitud = parseFloat(data[i]?.latitud);
-        const longitud = parseFloat(data[i]?.longitud);
+      // Aseguramos que los valores sean números válidos
+      const latitud = parseFloat(data[i]?.latitud);
+      const longitud = parseFloat(data[i]?.longitud);
 
-        if (!isNaN(latitud) && !isNaN(longitud)) {
-            arrayCoordenadas.push([latitud, longitud]);
-        } else {
-            console.warn(`Coordenada inválida en índice ${i}: latitud=${data[i]?.latitud}, longitud=${data[i]?.longitud}`);
-        }
+      if (!isNaN(latitud) && !isNaN(longitud)) {
+        arrayCoordenadas.push([latitud, longitud]);
+      } else {
+        console.warn(
+          `Coordenada inválida en índice ${i}: latitud=${data[i]?.latitud}, longitud=${data[i]?.longitud}`
+        );
+      }
     }
 
     console.log("Coordenadas procesadas:", arrayCoordenadas);
@@ -494,33 +554,35 @@ async function processCoordinates(data) {
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
-  
+
   // Función principal para filtrar las coordenadas del array grande basado en el array de referencia
   function filtrarPorDistanciaMultiple(arrayReferencia, arrayCoordenadas) {
-
     return arrayCoordenadas.filter((coord) => {
       // Verifica si la coordenada está dentro del radio de alguna coordenada en el array de referencia
       return arrayReferencia.some((ref) => {
-        const distancia = calcularDistanciaEnKm(ref.latitud, ref.longitud, coord.latitud, coord.longitud);
-        
+        const distancia = calcularDistanciaEnKm(
+          ref.latitud,
+          ref.longitud,
+          coord.latitud,
+          coord.longitud
+        );
+
         return distancia <= 1.5;
       });
     });
   }
 
-  useEffect(()=>{
-
-    if (!legajo)
-      return;
-    else
-      fetchGeoMapaCamino();
-
-  },[legajo])
+  useEffect(() => {
+    if (!legajo) return;
+    else fetchGeoMapaCamino();
+  }, [legajo]);
 
   return (
     <>
@@ -645,9 +707,9 @@ async function processCoordinates(data) {
                   pt={2}
                   px={3}
                 >
-                  <SoftButton 
-                    variant="gradient" 
-                    color="info" 
+                  <SoftButton
+                    variant="gradient"
+                    color="info"
                     type="submit" // Asegúrate de incluir el tipo "submit" aquí
                   >
                     Filtrar
@@ -688,6 +750,25 @@ async function processCoordinates(data) {
             </Card>
           </SoftBox>
         </SoftBox>
+
+        {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 1) ? (
+          <SoftBox
+            paddingBottom={3}
+            style={{ width: "90%" }}
+            justifyContent="center"
+          >
+            <SoftBox justifyContent="center">
+              <Card>
+                <SoftBox p={3}>
+                  <InformacionMetroTable
+                    data={dataInfo}
+                    columns={columnsInfo}
+                  />
+                </SoftBox>
+              </Card>
+            </SoftBox>
+          </SoftBox>
+        ) : null}
       </SoftBox>
 
       <PopUp
@@ -701,7 +782,7 @@ async function processCoordinates(data) {
         width={"40vw"}
         height={"15vh"}
         background={"#085397"}
-        paddingTopEncabezado={'20px'}
+        paddingTopEncabezado={"20px"}
       >
         <Contenido>
           {/* Contenido del PopUp */}
@@ -709,7 +790,7 @@ async function processCoordinates(data) {
             <SoftTypography
               varint="button"
               fontWeight="medium"
-              color="dark" 
+              color="dark"
               px={3}
               py={2}
               style={{
@@ -719,7 +800,8 @@ async function processCoordinates(data) {
                 alignItems: "center",
               }}
             >
-              No encotramos informacion para esta combinacion de plan, sucursal y radio.
+              No encotramos informacion para esta combinacion de plan, sucursal
+              y radio.
             </SoftTypography>
           </SoftBox>
         </Contenido>
