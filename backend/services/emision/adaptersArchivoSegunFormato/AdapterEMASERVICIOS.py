@@ -7,9 +7,6 @@ from datetime import datetime
 
 class AdapterEMASERVICIOS:
     def leerItemEmision(entry, idEmision):
-        print("WASAAAAAAAAAAAAAA", entry['Cliente'])
-        print("WASAAAAAAAAAAAAAA1", entry['Fecha Distribucion'])
-        print("WASAAAAAAAAAAAAAA2", entry['Emision'])
 
         if entry['Cliente'] != '-':
             itemEmision = ItemEmision(

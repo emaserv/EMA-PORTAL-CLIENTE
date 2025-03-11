@@ -30,6 +30,7 @@ class ItemEmision(db.Model):
     fechaIngreso = db.Column(db.Text)
     fechaEmision = db.Column(db.Text)
     fechaCertificacion = db.Column(db.Text)
+    fechaAsignacion = db.Column(db.Text)
     tipoDePieza = db.Column(db.Text)
     codigoBarras = db.Column(db.Text)
     geoCliente = db.Column(db.Text)

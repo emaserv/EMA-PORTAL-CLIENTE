@@ -23,7 +23,7 @@ class AdapterPSM:
             sucursal = entry['Sucursal'] if entry['Sucursal'] else None,
             radio = entry['Radio'] if entry['Radio'] else None,
             lote = entry['Lote'] if entry['Lote'] else None,
-            recorridoH = entry['Recorrido H'] if entry['Recorrido H'] else None,
+            recorridoH = entry['Recorrido H'] if entry['Recorrido H'] else None,    
             ruta = entry['Ruta'] if entry['Ruta'] else None,
             estadoPieza = entry['Estado'] if entry['Estado'] else None,
             legajo = entry['Legajo'] if entry['Legajo'] else None,
