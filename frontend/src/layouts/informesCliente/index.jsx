@@ -50,7 +50,7 @@ const InformesCliente = () => {
 
   useEffect(() => {
     if (mutex) {
-      fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user.idGrupoCliente}`, { mode: "cors" })
+      fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           if (apiData.multiplesEmision && apiData.columns) {

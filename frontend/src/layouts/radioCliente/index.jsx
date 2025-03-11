@@ -59,7 +59,7 @@ const RadioCliente = () => {
 
   useEffect(() => {
     fetch(
-      `${API_BACK}/api/tablaInformacion?grupoCliente=${user.idGrupoCliente}`,
+      `${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
       { mode: "cors" }
     )
       .then((response) => response.json())
@@ -73,12 +73,12 @@ const RadioCliente = () => {
       .catch((error) => {});
   }, []);
 
-  const onSubmit = (data) => {
-    setCaminoMapa([]);
-    setPuntosMapa([]);
-    setGeoJsonData([]);
-    setGeoJsonData2([]);
-    setCaminoMapaFiltrado([]);
+  const onSubmit = async (data) => {
+      setCaminoMapa([]);
+      setPuntosMapa([]);
+      setGeoJsonData([]);
+      setGeoJsonData2([]);
+      setCaminoMapaFiltrado([]);
 
     setLoading(true);
 
@@ -91,7 +91,7 @@ const RadioCliente = () => {
     setFiltroFechaDesde(fechaDesde);
     setFiltroFechaHasta(fechaHasta);
 
-    fetchData(
+    await fetchData(
       data.plan || null,
       data.sucursal || null,
       data.radio || null,
@@ -174,7 +174,7 @@ const RadioCliente = () => {
         plan: plan || "",
         sucursal: sucursal || "",
         radio: radio || "",
-        grupoCliente: user.idGrupoCliente || "",
+        grupoCliente: user ? user.idGrupoCliente : null || "",
         fechaDesde: fechaDesde || "",
         fechaHasta: fechaHasta || "",
       };
@@ -229,7 +229,7 @@ const RadioCliente = () => {
       const response2 = await fetch(
         `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
           sucursal || ""
-        }&radio=${radio || ""}&grupoCliente=${user.idGrupoCliente}&fechaDesde=${
+        }&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${
           fechaDesde || ""
         }&fechaHasta=${fechaHasta || ""}`
       );
@@ -306,9 +306,9 @@ const RadioCliente = () => {
     }
 
     // Llamadas a las tres funciones
+    await fetchGeoJsonData(sucursal, plan, radio);
     await fetchGeoMapaItems(plan, sucursal, radio, fechaDesde, fechaHasta);
     await fetchRadioCliente(plan, sucursal, radio, fechaDesde, fechaHasta);
-    await fetchGeoJsonData(sucursal, plan, radio);
   };
 
   const filtrarDatos = (
@@ -520,6 +520,7 @@ const RadioCliente = () => {
       setHfin(fechaMax);
     }
 
+    alert(data[0].legajo)
     setLegajo(data[0].legajo);
 
     setPuntosMapaFiltrados(puntosFiltrados);
@@ -527,6 +528,8 @@ const RadioCliente = () => {
   };
 
   const armarArrayCoordenadas = (data) => {
+    console.log("datita", data)
+
     //console.log("aaa", data);
     let arrayCoordenadas = [];
 
@@ -581,7 +584,8 @@ const RadioCliente = () => {
 
   useEffect(() => {
     if (!legajo) return;
-    else fetchGeoMapaCamino();
+    fetchGeoMapaCamino();
+    setLegajo(null)
   }, [legajo]);
 
   return (

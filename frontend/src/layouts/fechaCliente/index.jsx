@@ -272,6 +272,35 @@ const FechaCliente = () => {
                 alignItems="center"
                 flexDirection={{ xs: "column", md: "row" }} // Responsive layout
               >
+                <SoftBox
+                  display="flex"
+                  flexDirection="column"
+                  marginTop={{ xs: 2, md: -2 }}
+                  marginLeft={{ md: 3 }}
+                >
+                  <SoftTypography
+                    component="label"
+                    variant="caption"
+                    marginTop={2}
+                    marginBottom={0}
+                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
+                  >
+                    Emision
+                  </SoftTypography>
+                  <SoftBox
+                    display="flex"
+                    alignItems="center"
+                    flexDirection={{ xs: "column", md: "row" }}
+                  >
+                    <Controller
+                      name="fechaDesde"
+                      control={control}
+                      render={({ field }) => <DatePickerValue field={field} />}
+                    />
+                  </SoftBox>
+                </SoftBox>
+
+
                 <SoftBox>
                   <SoftTypography
                     component="label"
