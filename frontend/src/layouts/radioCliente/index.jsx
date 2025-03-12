@@ -520,7 +520,6 @@ const RadioCliente = () => {
       setHfin(fechaMax);
     }
 
-    alert(data[0].legajo)
     setLegajo(data[0].legajo);
 
     setPuntosMapaFiltrados(puntosFiltrados);
