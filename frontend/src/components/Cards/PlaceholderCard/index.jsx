@@ -30,7 +30,7 @@ function PlaceholderCard({ icon, title, hasBorder, outlined }) {
       raised
       sx={({ borders: { borderWidth, borderColor } }) => ({
         height: "100%",
-        backgroundColor: outlined && "transparent",
+        backgroundColor: outlined && "#nnn",
         boxShadow: outlined && "none",
         border: hasBorder || outlined ? `${borderWidth[1]} solid ${borderColor}` : "none",
       })}

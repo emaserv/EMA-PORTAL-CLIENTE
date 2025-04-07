@@ -51,7 +51,8 @@ const SignIn = () => {
 
   return (
     <CoverLayout
-      title={"Bienvenido a" + "              " + "Portal Clientes"}
+      title={"Bienvenido a Portal Clientes"}
+      color={"info"}
       description="Ingrese sus credenciales para iniciar sesión"
       image={logoEma}
       top="5rem"

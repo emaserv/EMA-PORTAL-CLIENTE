@@ -18,6 +18,7 @@ import axios from "axios";
 import InformacionMetroTable from "./data/informacionMetroTable";
 import { API_BACK } from "../../config";
 import LoadingModal from "../../components/loadingModal";
+import DropdownList from "components/DropdownList";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -46,6 +47,8 @@ const FechaCliente = () => {
   const [dataInfo, setDataInfo] = useState([]);
   const [columnsInfo, setColumnsInfo] = useState([]);
   const [loading, SetLoading] = useState(false);
+  const [mutex, setMutex] = useState(false);
+  const [multiplesEmision, setMultiplesEmision] = useState([])
 
   useEffect(() => {
     fetch(`${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
@@ -54,13 +57,30 @@ const FechaCliente = () => {
         if (apiData.dataTabla && apiData.columns) {
           setDataInfo(apiData.dataTabla);
           setColumnsInfo(apiData.columns);
+          setMutex(true);
         } else {
         }
       })
       .catch((error) => {});
   }, []);
 
+  useEffect(() => {
+      if (mutex) {
+        fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+          .then((response) => response.json())
+          .then((apiData) => {
+            if (apiData.multiplesEmision && apiData.columns) {
+              setMultiplesEmision(apiData.multiplesEmision);
+            } else {
+            }
+          })
+          .catch((error) => {});
+      }
+    }, [mutex, user]);
+
   const onSubmit = async (data) => {
+    console.log(data)
+
     SetLoading(true);
     try {
       const fechaDesde = data.fechaDesde
@@ -282,7 +302,6 @@ const FechaCliente = () => {
                     component="label"
                     variant="caption"
                     marginTop={2}
-                    marginBottom={0}
                     fontSize={{ xs: "0.75rem", sm: "1rem" }}
                   >
                     Emision
@@ -291,11 +310,37 @@ const FechaCliente = () => {
                     display="flex"
                     alignItems="center"
                     flexDirection={{ xs: "column", md: "row" }}
+                    marginTop={1}
                   >
                     <Controller
-                      name="fechaDesde"
+                      name="idEmision"
                       control={control}
-                      render={({ field }) => <DatePickerValue field={field} />}
+                      rules={{ required: "Campo obligatorio" }}
+                      render={({ field }) => (
+                        <>
+                          <DropdownList
+                            width="10vw"
+                            list={multiplesEmision ? multiplesEmision.reverse() : []}
+                            placeholder="Seleccione su emisión"
+                            campoAMostrar="nombre"
+                            campoID="id"
+                            inputRef={field.ref}
+                            value={field.value}
+                            onChange={(selectedValue) =>
+                              field.onChange(selectedValue)
+                            }
+                          />
+                          {errors.idEmision && (
+                            <SoftTypography
+                              color="error"
+                              fontSize="1rem"
+                              marginTop={1}
+                            >
+                              {errors.idEmision.message}
+                            </SoftTypography>
+                          )}
+                        </>
+                      )}
                     />
                   </SoftBox>
                 </SoftBox>
@@ -351,7 +396,7 @@ const FechaCliente = () => {
                     marginBottom={0}
                     fontSize={{ xs: "0.75rem", sm: "1rem" }}
                   >
-                    Fecha
+                    Fecha de Distribucion/Rendicion
                   </SoftTypography>
                   <SoftBox
                     display="flex"

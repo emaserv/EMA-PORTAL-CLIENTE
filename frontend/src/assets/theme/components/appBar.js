@@ -15,7 +15,7 @@ Coded by www.creative-tim.com
 
 const appBar = {
   defaultProps: {
-    color: "transparent",
+    color: "#nnn",
   },
 
   styleOverrides: {

@@ -34,7 +34,7 @@ const SoftBox = forwardRef(
 // Setting default values for the props of SoftBox
 SoftBox.defaultProps = {
   variant: "contained",
-  bgColor: "transparent",
+  bgColor: "#nnn",
   color: "dark",
   opacity: 1,
   borderRadius: "none",

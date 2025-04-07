@@ -584,7 +584,7 @@ const RadioCliente = () => {
   useEffect(() => {
     if (!legajo) return;
     fetchGeoMapaCamino();
-    setLegajo(null)
+    setLegajo(null);
   }, [legajo]);
 
   return (

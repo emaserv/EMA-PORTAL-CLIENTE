@@ -62,8 +62,6 @@ const InformesCliente = () => {
     }
   }, [mutex, user]);
 
-  console.log(multiplesEmision);
-
   const onSubmit = async (data) => {
     fetchData(data.idEmision);
   };

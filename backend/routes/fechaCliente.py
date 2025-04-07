@@ -447,6 +447,8 @@ def get_emisiones():
             queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
         elif int(idGrupoCliente) == 2:
             queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icn GROUP BY "fechaEmision" ORDER BY 1')
+        elif int(idGrupoCliente) == 1:
+            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 1 GROUP BY "fechaEmision" ORDER BY 1')
 
         if queryBase is None:
             return jsonify({"message": "idGrupoCliente no válido"}), 400
