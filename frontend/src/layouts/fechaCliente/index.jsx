@@ -34,6 +34,7 @@ const FechaCliente = () => {
     handleSubmit,
     control,
     formState: { errors },
+    getValues,
   } = useForm();
   const [allData, setAllData] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -41,6 +42,7 @@ const FechaCliente = () => {
   const [puntosMapa, setPuntosMapa] = useState([]);
   const [filtroFechaDesde, setFiltroFechaDesde] = useState(null);
   const [filtroFechaHasta, setFiltroFechaHasta] = useState(null);
+  const [filtroEmision, setFiltroEmision] = useState(null);
   const [filtroCliente, setFiltroCliente] = useState(null);
   const [datosFiltrados, setDatosFiltrados] = useState([]);
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
@@ -49,6 +51,7 @@ const FechaCliente = () => {
   const [loading, SetLoading] = useState(false);
   const [mutex, setMutex] = useState(false);
   const [multiplesEmision, setMultiplesEmision] = useState([])
+  
 
   useEffect(() => {
     fetch(`${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
@@ -90,11 +93,18 @@ const FechaCliente = () => {
         ? DataConverter(data.fechaHasta)
         : null;
 
+      const idEmisionSeleccionada = data.idEmision;
+      const emisionSeleccionada = multiplesEmision.find(
+        (emision) => emision.id === idEmisionSeleccionada
+      );
+      const nombreEmision = emisionSeleccionada ? emisionSeleccionada.nombre : "";
+
       setFiltroCliente(data.numCliente || null);
       setFiltroFechaDesde(fechaDesde);
       setFiltroFechaHasta(fechaHasta);
+      setFiltroEmision(nombreEmision);
 
-      await fetchData(data.numCliente || null, fechaDesde, fechaHasta);
+      await fetchData(data.numCliente || null, fechaDesde, fechaHasta, nombreEmision);
     } catch (error) {
       //console.log("Error en el submit:", error);
     } finally {
@@ -102,8 +112,8 @@ const FechaCliente = () => {
     }
   };
 
-  const fetchData = async (cliente, fechaDesde, fechaHasta) => {
-    if (!cliente && !fechaDesde && !fechaHasta) {
+  const fetchData = async (cliente, fechaDesde, fechaHasta, idEmision) => {
+    if (!cliente && !fechaDesde && !fechaHasta && !idEmision) {
       setAllData([]);
       setPuntosMapa([]);
       setDatosFiltrados([]);
@@ -118,6 +128,7 @@ const FechaCliente = () => {
         grupoCliente: user ? user.idGrupoCliente : null|| "",
         fechaDesde: fechaDesde || "",
         fechaHasta: fechaHasta || "",
+        fechaEmision: idEmision || "",
       };
 
       const response1 = await axios.get(url1, { params: params1 });
@@ -292,59 +303,6 @@ const FechaCliente = () => {
                 alignItems="center"
                 flexDirection={{ xs: "column", md: "row" }} // Responsive layout
               >
-                <SoftBox
-                  display="flex"
-                  flexDirection="column"
-                  marginTop={{ xs: 2, md: -2 }}
-                  marginLeft={{ md: 3 }}
-                >
-                  <SoftTypography
-                    component="label"
-                    variant="caption"
-                    marginTop={2}
-                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
-                  >
-                    Emision
-                  </SoftTypography>
-                  <SoftBox
-                    display="flex"
-                    alignItems="center"
-                    flexDirection={{ xs: "column", md: "row" }}
-                    marginTop={1}
-                  >
-                    <Controller
-                      name="idEmision"
-                      control={control}
-                      rules={{ required: "Campo obligatorio" }}
-                      render={({ field }) => (
-                        <>
-                          <DropdownList
-                            width="10vw"
-                            list={multiplesEmision ? multiplesEmision.reverse() : []}
-                            placeholder="Seleccione su emisión"
-                            campoAMostrar="nombre"
-                            campoID="id"
-                            inputRef={field.ref}
-                            value={field.value}
-                            onChange={(selectedValue) =>
-                              field.onChange(selectedValue)
-                            }
-                          />
-                          {errors.idEmision && (
-                            <SoftTypography
-                              color="error"
-                              fontSize="1rem"
-                              marginTop={1}
-                            >
-                              {errors.idEmision.message}
-                            </SoftTypography>
-                          )}
-                        </>
-                      )}
-                    />
-                  </SoftBox>
-                </SoftBox>
-
 
                 <SoftBox>
                   <SoftTypography
@@ -383,39 +341,97 @@ const FechaCliente = () => {
                   />
                 </SoftBox>
 
-                <SoftBox
+                {user &&
+                (user.idGrupoCliente === 1) ? (
+                  <SoftBox
                   display="flex"
                   flexDirection="column"
                   marginTop={{ xs: 2, md: -2 }}
                   marginLeft={{ md: 3 }}
-                >
-                  <SoftTypography
-                    component="label"
-                    variant="caption"
-                    marginTop={2}
-                    marginBottom={0}
-                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
                   >
-                    Fecha de Distribucion/Rendicion
-                  </SoftTypography>
+                    <SoftTypography
+                      component="label"
+                      variant="caption"
+                      marginTop={2}
+                      fontSize={{ xs: "0.75rem", sm: "1rem" }}
+                    >
+                      Emision
+                    </SoftTypography>
+                    <SoftBox
+                      display="flex"
+                      alignItems="center"
+                      flexDirection={{ xs: "column", md: "row" }}
+                      marginTop={1}
+                    >
+                      <Controller
+                        name="idEmision"
+                        control={control}
+                        render={({ field }) => (
+                          <>
+                            <DropdownList
+                              width="10vw"
+                              list={multiplesEmision ? multiplesEmision.reverse() : []}
+                              placeholder="Seleccione su emisión"
+                              campoAMostrar="nombre"
+                              campoID="id"
+                              inputRef={field.ref}
+                              value={field.value}
+                              onChange={(selectedValue) =>
+                                field.onChange(selectedValue)
+                              }
+                            />
+                            {errors.idEmision && (
+                              <SoftTypography
+                                color="error"
+                                fontSize="1rem"
+                                marginTop={1}
+                              >
+                                {errors.idEmision.message}
+                              </SoftTypography>
+                            )}
+                          </>
+                        )}
+                      />
+                    </SoftBox>
+                  </SoftBox>
+                ) : null}
+                
+                {user &&
+                (user.idGrupoCliente !== 1) ? (
                   <SoftBox
                     display="flex"
-                    alignItems="center"
-                    flexDirection={{ xs: "column", md: "row" }}
+                    flexDirection="column"
+                    marginTop={{ xs: 2, md: -2 }}
+                    marginLeft={{ md: 3 }}
                   >
-                    <Controller
-                      name="fechaDesde"
-                      control={control}
-                      render={({ field }) => <DatePickerValue field={field} />}
-                    />
-                    <SoftTypography> - </SoftTypography>
-                    <Controller
-                      name="fechaHasta"
-                      control={control}
-                      render={({ field }) => <DatePickerValue field={field} />}
-                    />
+                    <SoftTypography
+                      component="label"
+                      variant="caption"
+                      marginTop={2}
+                      marginBottom={0}
+                      fontSize={{ xs: "0.75rem", sm: "1rem" }}
+                    >
+                      Fecha de Distribucion/Rendicion
+                    </SoftTypography>
+                    <SoftBox
+                      display="flex"
+                      alignItems="center"
+                      flexDirection={{ xs: "column", md: "row" }}
+                    >
+                      <Controller
+                        name="fechaDesde"
+                        control={control}
+                        render={({ field }) => <DatePickerValue field={field} />}
+                      />
+                      <SoftTypography> - </SoftTypography>
+                      <Controller
+                        name="fechaHasta"
+                        control={control}
+                        render={({ field }) => <DatePickerValue field={field} />}
+                      />
+                    </SoftBox>
                   </SoftBox>
-                </SoftBox>
+                ) : null}
 
                 <SoftBox
                   display="flex"

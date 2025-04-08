@@ -76,7 +76,7 @@ function TransparentBlogCard({ image, title, description, action }) {
   return (
     <Card
       sx={{
-        background: "#nnn",
+        background: "transparent",
         boxShadow: "none",
         overflow: "visible",
       }}

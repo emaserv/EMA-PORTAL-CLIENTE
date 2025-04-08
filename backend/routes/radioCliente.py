@@ -49,6 +49,7 @@ def format_date(date_str):
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route('/api/radio-cliente', methods=['GET'])
 def tablaRC():
+    fechaEmision = request.args.get('fechaEmision')
     plan = request.args.get('plan')
     sucursal = request.args.get('sucursal')
     radio = request.args.get('radio')
@@ -77,6 +78,10 @@ def tablaRC():
         if radio != '':
             where_clauses.append('rc."radio" = :radio')
             qParams['radio'] = radio
+
+        if fechaEmision != '':
+            where_clauses.append('rc."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEmision
 
         # Verifica si se proporcionan ambos parámetros de fecha para usar BETWEEN
         if fechaDesde != '' and fechaHasta != '':

@@ -349,7 +349,7 @@ const Home = () => {
                 type="submit"
                 value="Cargar Archivo"
                 style={{
-                  background: "#nnn",
+                  background: "transparent",
                   border: "none",
                   fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
                   fontSize: "0.875rem",

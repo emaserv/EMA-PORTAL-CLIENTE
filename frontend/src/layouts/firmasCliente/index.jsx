@@ -14,6 +14,8 @@ import PopUp from "components/PopUp";
 import styled from "styled-components";
 import {API_BACK} from '../../config'
 import LoadingModal from '../../components/loadingModal';
+import DropdownList from "components/DropdownList";
+
 
 import L from 'leaflet';
 
@@ -46,16 +48,38 @@ const FirmasCliente = () => {
   const [hini, setHini] = useState(null)
   const [hfin, setHfin] = useState(null)
   const [isLoading, setIsLoading] = useState(false);
+  const [filtroEmision, setFiltroEmision] = useState(null);
+  const [multiplesEmision, setMultiplesEmision] = useState([])
+  const [mutex, setMutex] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user.idGrupoCliente}`, { mode: "cors" })
+        .then((response) => response.json())
+        .then((apiData) => {
+          if (apiData.multiplesEmision && apiData.columns) {
+            setMultiplesEmision(apiData.multiplesEmision);
+          }
+        })
+        .catch((error) => {});
+    }
+  }, [user]);
    
   const onSubmit = async (data) => {
     const fechaDesde = data.fechaDesde ? DataConverter(data.fechaDesde) : null;
     const fechaHasta = data.fechaHasta ? DataConverter(data.fechaHasta) : null;
+    const idEmisionSeleccionada = data.idEmision;
+    const emisionSeleccionada = multiplesEmision.find(
+      (emision) => emision.id === idEmisionSeleccionada
+    );
+    const nombreEmision = emisionSeleccionada ? emisionSeleccionada.nombre : "";
 
     setFiltroPlan(data.plan || null);
     setFiltroSucursal(data.sucursal || null);
     setFiltroRadio(data.radio || null);
     setFiltroFechaDesde(fechaDesde);
     setFiltroFechaHasta(fechaHasta);
+    setFiltroEmision(nombreEmision);
 
     setIsLoading(true);
 
@@ -64,16 +88,17 @@ const FirmasCliente = () => {
       data.sucursal || null,
       data.radio || null,
       fechaDesde,
-      fechaHasta
+      fechaHasta,
+      nombreEmision
     );
   };
 
 
 // Función para realizar la segunda solicitud: radio-cliente
-const fetchFirmaCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
+const fetchFirmaCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta, idEmision) => {
   try {
     const response2 = await fetch(
-      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}`
+      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}&fechaEmision=${idEmision || ""}`
     );
 
     const apiData2 = await response2.json();
@@ -92,8 +117,8 @@ const fetchFirmaCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta) 
 };
 
 
-const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
-  if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta) {
+const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta, idEmision) => {
+  if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta && !idEmision) {
     setAllData([]);
     setDatosFiltrados([]);
     setIsLoading(false);
@@ -163,33 +188,6 @@ const filtrarDatos = (data, plan, sucursal, radio, fechaDesde, fechaHasta) => {
                 justifyContent="space-between"
                 alignItems="center"
               >
-
-                <SoftBox>
-                  <SoftTypography marginTop={-2}>Fecha Emision</SoftTypography>
-                  <Controller
-                    name="fechaEmision"
-                    control={control}
-                    //rules={{ required: "Campo obligatorio" }}
-                    render={({ field }) => (
-                      <>
-                        <SoftInputBase
-                          field={field}
-                          placeholder="Insertar Emision"
-                          error={!!errors.fechaEmision} // Muestra borde rojo si hay error
-                        />
-                        {errors.fechaEmision && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.fechaEmision.message}
-                          </SoftTypography>
-                        )}
-                      </>
-                    )}
-                  />
-                </SoftBox>
 
                 <SoftBox>
                   <SoftTypography marginTop={-2}>Plan</SoftTypography>
@@ -271,20 +269,75 @@ const filtrarDatos = (data, plan, sucursal, radio, fechaDesde, fechaHasta) => {
                     )}
                   />
                 </SoftBox>
+                
+                {user &&
+                (user.idGrupoCliente !== 1) ? (
+                  <SoftBox display="flex" flexDirection="column" marginTop={-2}>
+                    <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
+                    <SoftBox display="flex" alignItems="center">
+                      <Controller
+                        name="fechaDesde"
+                        control={control}
+                        render={({ field }) => <DatePickerValue field={field} />}
+                      />
+                      <SoftTypography> - </SoftTypography>
+                      <Controller
+                        name="fechaHasta"
+                        control={control}
+                        render={({ field }) => <DatePickerValue field={field} />}
+                      />
+                    </SoftBox>
+                  </SoftBox>
+                ) : null}
 
-                <SoftBox display="flex" flexDirection="column" marginTop={-2}>
-                  <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
-                  <SoftBox display="flex" alignItems="center">
+                <SoftBox
+                  display="flex"
+                  flexDirection="column"
+                  marginTop={{ xs: 2, md: -2 }}
+                  marginLeft={{ md: 3 }}
+                >
+                  <SoftTypography
+                    component="label"
+                    variant="caption"
+                    marginTop={2}
+                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
+                  >
+                    Emision
+                  </SoftTypography>
+                  <SoftBox
+                    display="flex"
+                    alignItems="center"
+                    flexDirection={{ xs: "column", md: "row" }}
+                    marginTop={1}
+                  >
                     <Controller
-                      name="fechaDesde"
+                      name="idEmision"
                       control={control}
-                      render={({ field }) => <DatePickerValue field={field} />}
-                    />
-                    <SoftTypography> - </SoftTypography>
-                    <Controller
-                      name="fechaHasta"
-                      control={control}
-                      render={({ field }) => <DatePickerValue field={field} />}
+                      render={({ field }) => (
+                        <>
+                          <DropdownList
+                            width="10vw"
+                            list={multiplesEmision ? multiplesEmision.reverse() : []}
+                            placeholder="Seleccione su emisión"
+                            campoAMostrar="nombre"
+                            campoID="id"
+                            inputRef={field.ref}
+                            value={field.value}
+                            onChange={(selectedValue) =>
+                              field.onChange(selectedValue)
+                            }
+                          />
+                          {errors.idEmision && (
+                            <SoftTypography
+                              color="error"
+                              fontSize="1rem"
+                              marginTop={1}
+                            >
+                              {errors.idEmision.message}
+                            </SoftTypography>
+                          )}
+                        </>
+                      )}
                     />
                   </SoftBox>
                 </SoftBox>

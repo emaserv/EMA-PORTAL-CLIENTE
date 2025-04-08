@@ -15,8 +15,10 @@ import styled from "styled-components";
 import { API_BACK } from "../../config";
 import InformacionMetroTable from "./data/informacionMetroTable";
 import LoadingModal from "../../components/loadingModal";
+import DropdownList from "components/DropdownList";
 
 import L from "leaflet";
+
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -56,6 +58,12 @@ const RadioCliente = () => {
   const [geoJsonData2, setGeoJsonData2] = useState([]);
   const [dataInfo, setDataInfo] = useState([]);
   const [columnsInfo, setColumnsInfo] = useState([]);
+  const [filtroEmision, setFiltroEmision] = useState(null);
+  const [multiplesEmision, setMultiplesEmision] = useState([])
+  const [mutex, setMutex] = useState(false);
+
+  
+
 
   useEffect(() => {
     fetch(
@@ -67,11 +75,26 @@ const RadioCliente = () => {
         if (apiData.dataTabla && apiData.columns) {
           setDataInfo(apiData.dataTabla);
           setColumnsInfo(apiData.columns);
+          setMutex(true);
         } else {
         }
       })
       .catch((error) => {});
   }, []);
+
+  useEffect(() => {
+      if (mutex) {
+        fetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+          .then((response) => response.json())
+          .then((apiData) => {
+            if (apiData.multiplesEmision && apiData.columns) {
+              setMultiplesEmision(apiData.multiplesEmision);
+            } else {
+            }
+          })
+          .catch((error) => {});
+      }
+    }, [mutex, user]);
 
   const onSubmit = async (data) => {
       setCaminoMapa([]);
@@ -84,19 +107,26 @@ const RadioCliente = () => {
 
     const fechaDesde = data.fechaDesde ? DataConverter(data.fechaDesde) : null;
     const fechaHasta = data.fechaHasta ? DataConverter(data.fechaHasta) : null;
+    const idEmisionSeleccionada = data.idEmision;
+    const emisionSeleccionada = multiplesEmision.find(
+      (emision) => emision.id === idEmisionSeleccionada
+    );
+    const nombreEmision = emisionSeleccionada ? emisionSeleccionada.nombre : "";
 
     setFiltroPlan(data.plan || null);
     setFiltroSucursal(data.sucursal || null);
     setFiltroRadio(data.radio || null);
     setFiltroFechaDesde(fechaDesde);
     setFiltroFechaHasta(fechaHasta);
+    setFiltroEmision(nombreEmision);
 
     await fetchData(
       data.plan || null,
       data.sucursal || null,
       data.radio || null,
       fechaDesde,
-      fechaHasta
+      fechaHasta,
+      nombreEmision
     );
   };
 
@@ -159,7 +189,8 @@ const RadioCliente = () => {
     sucursal,
     radio,
     fechaDesde,
-    fechaHasta
+    fechaHasta,
+    idEmision
   ) => {
     try {
       setLoading(true);
@@ -177,6 +208,7 @@ const RadioCliente = () => {
         grupoCliente: user ? user.idGrupoCliente : null || "",
         fechaDesde: fechaDesde || "",
         fechaHasta: fechaHasta || "",
+        fechaEmision: idEmision || "",
       };
 
       // Append each non-empty parameter to the URL
@@ -222,7 +254,8 @@ const RadioCliente = () => {
     sucursal,
     radio,
     fechaDesde,
-    fechaHasta
+    fechaHasta,
+    idEmision
   ) => {
     try {
       setLoading(true);
@@ -231,7 +264,7 @@ const RadioCliente = () => {
           sucursal || ""
         }&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${
           fechaDesde || ""
-        }&fechaHasta=${fechaHasta || ""}`
+        }&fechaHasta=${fechaHasta || ""}&fechaEmision=${idEmision || ""}`
       );
 
       const apiData2 = await response2.json();
@@ -295,8 +328,8 @@ const RadioCliente = () => {
     }
   };
 
-  const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta) => {
-    if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta) {
+  const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta, idEmision) => {
+    if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta && !idEmision) {
       setAllData([]);
       setPuntosMapa([]);
       setCaminoMapa([]);
@@ -605,6 +638,7 @@ const RadioCliente = () => {
                 justifyContent="space-between"
                 alignItems="center"
               >
+
                 <SoftBox>
                   <SoftTypography marginTop={-2}>Plan</SoftTypography>
                   <Controller
@@ -685,20 +719,75 @@ const RadioCliente = () => {
                     )}
                   />
                 </SoftBox>
+                
+                {user &&
+                (user.idGrupoCliente !== 1) ? (
+                  <SoftBox display="flex" flexDirection="column" marginTop={-2}>
+                    <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
+                    <SoftBox display="flex" alignItems="center">
+                      <Controller
+                        name="fechaDesde"
+                        control={control}
+                        render={({ field }) => <DatePickerValue field={field} />}
+                      />
+                      <SoftTypography> - </SoftTypography>
+                      <Controller
+                        name="fechaHasta"
+                        control={control}
+                        render={({ field }) => <DatePickerValue field={field} />}
+                      />
+                    </SoftBox>
+                  </SoftBox>
+                ) : null}
 
-                <SoftBox display="flex" flexDirection="column" marginTop={-2}>
-                  <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
-                  <SoftBox display="flex" alignItems="center">
+                <SoftBox
+                  display="flex"
+                  flexDirection="column"
+                  marginTop={{ xs: 2, md: -2 }}
+                  marginLeft={{ md: 3 }}
+                >
+                  <SoftTypography
+                    component="label"
+                    variant="caption"
+                    marginTop={2}
+                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
+                  >
+                    Emision
+                  </SoftTypography>
+                  <SoftBox
+                    display="flex"
+                    alignItems="center"
+                    flexDirection={{ xs: "column", md: "row" }}
+                    marginTop={1}
+                  >
                     <Controller
-                      name="fechaDesde"
+                      name="idEmision"
                       control={control}
-                      render={({ field }) => <DatePickerValue field={field} />}
-                    />
-                    <SoftTypography> - </SoftTypography>
-                    <Controller
-                      name="fechaHasta"
-                      control={control}
-                      render={({ field }) => <DatePickerValue field={field} />}
+                      render={({ field }) => (
+                        <>
+                          <DropdownList
+                            width="10vw"
+                            list={multiplesEmision ? multiplesEmision.reverse() : []}
+                            placeholder="Seleccione su emisión"
+                            campoAMostrar="nombre"
+                            campoID="id"
+                            inputRef={field.ref}
+                            value={field.value}
+                            onChange={(selectedValue) =>
+                              field.onChange(selectedValue)
+                            }
+                          />
+                          {errors.idEmision && (
+                            <SoftTypography
+                              color="error"
+                              fontSize="1rem"
+                              marginTop={1}
+                            >
+                              {errors.idEmision.message}
+                            </SoftTypography>
+                          )}
+                        </>
+                      )}
                     />
                   </SoftBox>
                 </SoftBox>

@@ -56,7 +56,7 @@ function DefaultProjectCard({ image, label, title, description, action, authors 
       sx={{
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#nnn",
+        backgroundColor: "transparent",
         boxShadow: "none",
         overflow: "visible",
       }}

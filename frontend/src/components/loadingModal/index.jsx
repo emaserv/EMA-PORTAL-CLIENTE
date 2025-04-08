@@ -12,7 +12,7 @@ const spinnerStyles = {
   margin: '8px',
   borderRadius: '50%',
   border: '6px solid #fff',
-  borderColor: '#fff #nnn #fff #nnn',
+  borderColor: '#fff transparent #fff transparent',
   animation: 'spinner 1.2s linear infinite',
 };
 
@@ -41,7 +41,7 @@ const LoadingModal = ({ isOpen }) => {
           transform: 'translate(-50%, -50%)',
           textAlign: 'center',
           border: 'none',
-          background: '#nnn',
+          background: 'transparent',
         },
         overlay: {
           backgroundColor: 'rgba(0, 0, 0, 0.75)',

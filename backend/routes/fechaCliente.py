@@ -81,6 +81,7 @@ def fetch_data(nroCliente, fechaEmision):
 
 @fechaCliente.route('/api/fecha-cliente', methods=['GET'])
 def tablaFC():
+    fechaEmision = request.args.get('fechaEmision')
     numeroCliente = request.args.get('cliente')
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
@@ -111,6 +112,10 @@ def tablaFC():
         elif fechaHasta:
             where_clauses.append('fc."fecha" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
+
+        if fechaEmision and fechaEmision != 'null':
+            where_clauses.append('fc."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEmision
 
         # Combinar cláusulas WHERE si existen
         if where_clauses:
@@ -146,7 +151,7 @@ def tablaFC():
                 'radio': row.radio,
                 'direccion': row.direccion,
                 'localidad': row.localidad,
-                'fecha': format_date(row.fecha),
+                'fecha': format_date(row.fechaCertificacion),
                 'hora': format_time(row.hora), 
                 'importe': str("${:,.2f}".format(fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision))["Importe"])) if grupoCliente == '4' else None,
                 'estadoPieza': row.estadoPieza,
@@ -449,6 +454,36 @@ def get_emisiones():
             queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icn GROUP BY "fechaEmision" ORDER BY 1')
         elif int(idGrupoCliente) == 1:
             queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 1 GROUP BY "fechaEmision" ORDER BY 1')
+
+        if queryBase is None:
+            return jsonify({"message": "idGrupoCliente no válido"}), 400
+
+        # Ejecutar la consulta
+        with DatabaseSession().get_session() as session:
+            data_query = session.execute(queryBase)
+
+        datosPiezasPostales = [{"id": row.id, "nombre": row.nombre} for row in data_query]
+
+        if not datosPiezasPostales:
+            return jsonify({"message": "Recursos no encontrados"}), 204
+
+        keys = list(datosPiezasPostales[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "multiplesEmision": datosPiezasPostales}), 200
+
+    except Exception as e:
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+    
+
+@fechaCliente.route('/api/emisiones/radioClienteEdesur', methods=['GET'])
+def get_emisionesEdesur():
+    idGrupoCliente = request.args.get('idGrupoCliente')
+
+    try:
+        queryBase = None
+
+        if int(idGrupoCliente) == 1:
+            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "radioCliente" ie WHERE "idGrupoCliente" = 1 GROUP BY "fechaEmision" ORDER BY 1')
 
         if queryBase is None:
             return jsonify({"message": "idGrupoCliente no válido"}), 400
