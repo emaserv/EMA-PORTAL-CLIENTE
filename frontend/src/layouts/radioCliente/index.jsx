@@ -67,7 +67,7 @@ const RadioCliente = () => {
 
   useEffect(() => {
     fetch(
-      `${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
+      `/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
       { mode: "cors" }
     )
       .then((response) => response.json())
@@ -84,7 +84,7 @@ const RadioCliente = () => {
 
   useEffect(() => {
       if (mutex) {
-        fetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+        fetch(`/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
           .then((response) => response.json())
           .then((apiData) => {
             if (apiData.multiplesEmision && apiData.columns) {
@@ -144,7 +144,7 @@ const RadioCliente = () => {
       const formattedRadio = formatToTwoDigits(radio);
 
       const url = new URL(
-        `${API_BACK}/api/geoJson/consultarGeoJson`,
+        `/api/geoJson/consultarGeoJson`,
         window.location.origin
       );
       const params = {
@@ -196,7 +196,7 @@ const RadioCliente = () => {
       setLoading(true);
       // Create the base URL object
       const url = new URL(
-        `${API_BACK}/api/radio/geoMapaItems`,
+        `/api/radio/geoMapaItems`,
         window.location.origin
       );
 
@@ -260,7 +260,7 @@ const RadioCliente = () => {
     try {
       setLoading(true);
       const response2 = await fetch(
-        `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
+        `/api/radio-cliente?plan=${plan || ""}&sucursal=${
           sucursal || ""
         }&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${
           fechaDesde || ""
@@ -294,7 +294,7 @@ const RadioCliente = () => {
   // Función para realizar la tercera solicitud: geoMapaCamino
   const fetchGeoMapaCamino = async () => {
     try {
-      const url = new URL(`${API_BACK}/api/geo-dai`, window.location.origin);
+      const url = new URL(`/api/geo-dai`, window.location.origin);
 
       const params = {
         legajo: legajo,

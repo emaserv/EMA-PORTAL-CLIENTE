@@ -531,7 +531,7 @@ export default function PRSTable({ data, columns }) {
                           rel="noopener noreferrer"
                           style={{
                             textDecoration: "none",
-                            color: row.firma !== "-" ? "#4682B4" : "#D3D3D3",
+                            color: row.firma ? "#4682B4" : "#D3D3D3",
                             pointerEvents: row.firma ? "auto" : "none", // Deshabilita el click si es '-'
                             cursor:
                               row.firma !== "-" ? "pointer" : "not-allowed",

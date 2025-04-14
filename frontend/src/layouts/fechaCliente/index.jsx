@@ -54,7 +54,7 @@ const FechaCliente = () => {
   
 
   useEffect(() => {
-    fetch(`${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+    fetch(`/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
       .then((response) => response.json())
       .then((apiData) => {
         if (apiData.dataTabla && apiData.columns) {
@@ -69,7 +69,7 @@ const FechaCliente = () => {
 
   useEffect(() => {
       if (mutex) {
-        fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+        fetch(`/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
           .then((response) => response.json())
           .then((apiData) => {
             if (apiData.multiplesEmision && apiData.columns) {
@@ -122,7 +122,7 @@ const FechaCliente = () => {
 
     try {
       // Primera solicitud: fecha-cliente
-      const url1 = `${API_BACK}/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí      
+      const url1 = `/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí      
       const params1 = {
         cliente: cliente || "",
         grupoCliente: user ? user.idGrupoCliente : null|| "",
@@ -151,7 +151,7 @@ const FechaCliente = () => {
 
     try {
       // Segunda solicitud: geoMapaItems
-      const url2 = `${API_BACK}/api/fecha/geoMapaItems`;
+      const url2 = `/api/fecha/geoMapaItems`;
       const params2 = {
         cliente: cliente || "",
         grupoCliente: user ? user.idGrupoCliente : null || "",
@@ -184,11 +184,11 @@ const FechaCliente = () => {
       //console.log("WASA2", fechaHasta);
       //console.log("WASA3", item.fecha);
 
-      const fechaParts = item.fecha.split("/"); // Divide la fecha en día, mes y año
-      const dia = fechaParts[0];
-      const mes = fechaParts[1];
-      const año = `20${fechaParts[2]}`; // Asume que 'yy' está en el rango 2000-2099
-      const itemFecha = `${año}-${mes}-${dia}`; // Reorganiza a 'yyyy-mm-dd'// Formato YYYY-MM-DD
+      const fechaParts = item.fecha ? item.fecha.split("/") : null; // Divide la fecha en día, mes y año
+      const dia = fechaParts ? fechaParts[0] : null;
+      const mes = fechaParts ? fechaParts[1] : null;
+      const año = fechaParts ? `20${fechaParts[2]}`: null; // Asume que 'yy' está en el rango 2000-2099
+      const itemFecha = fechaParts ? `${año}-${mes}-${dia}`: null; // Reorganiza a 'yyyy-mm-dd'// Formato YYYY-MM-DD
       //console.log("WASA33", itemFecha);
 
       //console.log("item", item);

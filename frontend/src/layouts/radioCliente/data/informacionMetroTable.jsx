@@ -159,8 +159,8 @@ export default function InformacionMetroTable({ data, columns }) {
       id: "FAD",
       numeric: false,
       disablePadding: false,
-      label: "FIRMADO (AD)",
-      labelComplete: "FIRMADO COMUNICACION",
+      label: "FIRMADO",
+      labelComplete: "FIRMADO",
     },
     {
       id: "NV",
