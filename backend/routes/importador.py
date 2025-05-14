@@ -116,7 +116,7 @@ def XSLXtoJSONconverter(file, idFormato):
    # if idFormato == 2:
    #     excel_data = pd.read_excel(file, skiprows=1)
    # else:
-    excel_data = pd.read_excel(file)
+    excel_data = pd.read_excel(file, dtype=str)
 
     data_json = excel_data.to_json(orient="records", date_format='iso')
     data = json.loads(data_json)

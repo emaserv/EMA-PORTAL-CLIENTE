@@ -31,12 +31,14 @@ from routes.fechaCliente import fechaCliente
 from routes.radioCliente import radioCliente
 from routes.importador import importador
 from routes.geoJson import geoJson
+from routes.acuses import acuses
 
 app.register_blueprint(auth)
 app.register_blueprint(fechaCliente)
 app.register_blueprint(radioCliente)
 app.register_blueprint(importador)
 app.register_blueprint(geoJson)
+app.register_blueprint(acuses)
 
 from services.adaptersRest.AdapterUsuario import AdapterUsuario
 from services.adaptersRest.AdapterGrupoCliente import AdapterGrupoCliente

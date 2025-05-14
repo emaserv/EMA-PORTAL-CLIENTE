@@ -41,7 +41,13 @@ class AdapterPSM:
             fechaCertificacion = convertir_fecha(entry['Fecha Certificacion']),
             fechaAsignacion = convertir_fecha(entry['Fecha Asignacion']),
             tipoDePieza = entry['Tipo de Servicio'] if entry['Tipo de Servicio'] else None, 
-            codigoBarras = entry['Codigo de Barras'] if entry['Codigo de Barras'] else None
+            codigoBarras = entry['Codigo de Barras'] if entry['Codigo de Barras'] else None,
+            vencimiento = convertir_fecha(entry['Vencimiento']),
+            importe = entry['Importe'] if entry['Importe'] else None,
+            comprobante = entry['Comprobante'] if entry['Comprobante'] else None,
+            medidor = entry['Medidor'] if entry['Medidor'] else None,
+            entreCalles = entry['Entre Calles'] if entry['Entre Calles'] else None,
+            codigoPostal = entry['Codigo Postal'] if entry['Codigo Postal'] else None,
         )
         print('pase el primero')
 
