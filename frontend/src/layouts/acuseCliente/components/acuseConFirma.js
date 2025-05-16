@@ -54,17 +54,17 @@ const AcuseReciboConFirma = ({ data, onRendered }) => {
       
       <Box
         ref={ref}
-       sx={{
-    position: "absolute",
-    top: "-9999px",
-    left: "-9999px",
-    width: "1000px",
-    bgcolor: "#fff",
-    p: 3,
-    boxShadow: 3,
-    borderRadius: 2,
-    zIndex: -1, // aseguramos que esté al fondo
-  }}
+        sx={{
+          position: "absolute",
+          top: "-9999px",
+          left: "-9999px",
+          width: "1000px",
+          bgcolor: "#fff",
+          p: 3,
+          boxShadow: 3,
+          borderRadius: 2,
+          zIndex: -1, // aseguramos que esté al fondo
+        }}
       >
         {/* Header */}
         <Grid container justifyContent="space-between" alignItems="center">
