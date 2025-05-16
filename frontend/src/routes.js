@@ -27,7 +27,7 @@ import Home from "./layouts/home";
 import RutaCliente from "./layouts/radioCliente";
 import ConsultaFirmas from "./layouts/firmasCliente"
 import InformesCliente from "layouts/informesCliente";
-
+import AcuseCliente from "layouts/acuseCliente";
 
 const routes = [
   {
@@ -74,6 +74,14 @@ const routes = [
     key: "consulta-emision",
     route: "/consulta-emision",
     component: <InformesCliente />,
+    noCollapse: true,
+  },
+  {
+    type: "collapse",
+    name: "Acuse Cliente",
+    key: "acuse-cliente",
+    route: "/acuse-cliente",
+    component: <AcuseCliente />,
     noCollapse: true,
   },
 ];
