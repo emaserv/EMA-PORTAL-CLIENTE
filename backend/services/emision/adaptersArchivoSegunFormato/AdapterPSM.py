@@ -113,23 +113,25 @@ def convertir_fecha(fecha_str):
 
     if fecha_str is None:
         return None
-    
+
     try:
-        # Intentar convertir la fecha con el formato ISO 'yyyy-mm-ddTHH:MM:SS.sss'
+        # yyyy-mm-ddTHH:MM:SS.sss
         fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M:%S.%f')
     except ValueError:
         try:
-            # Intentar convertir la fecha con el formato 'dd/mm/yyyy'
-            fecha_obj = datetime.strptime(fecha_str, '%d/%m/%Y')
+            # yyyy-mm-dd HH:MM:SS (el que rompe)
+            fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d %H:%M:%S')
         except ValueError:
             try:
-                # Intentar convertir la fecha con el formato 'dd/mm/yy'
-                fecha_obj = datetime.strptime(fecha_str, '%d/%m/%y')
+                # dd/mm/yyyy
+                fecha_obj = datetime.strptime(fecha_str, '%d/%m/%Y')
             except ValueError:
-                # Manejo de errores si el formato de entrada es incorrecto
-                raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy' o 'yyyy-mm-ddTHH:MM:SS.sss'. o 'dd/mm/yy'" )
+                try:
+                    # dd/mm/yy
+                    fecha_obj = datetime.strptime(fecha_str, '%d/%m/%y')
+                except ValueError:
+                    raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy', 'yyyy-mm-ddTHH:MM:SS.sss', 'yyyy-mm-dd HH:MM:SS' o 'dd/mm/yy'")
 
-    # Convertir el objeto datetime al formato 'yyyy-mm-dd'
     return fecha_obj.strftime('%Y-%m-%d')
     
 def chequeadorFoto(linkFoto):

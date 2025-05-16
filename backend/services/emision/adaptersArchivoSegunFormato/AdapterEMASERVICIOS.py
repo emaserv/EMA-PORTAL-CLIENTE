@@ -77,30 +77,26 @@ def obtenerIdGrupoCliente(nombreGrupoCliente):
 def convertir_fecha(fecha_str):
     if fecha_str == '-':
         return None
-    
+
     try:
-        # Convertir la fecha del formato 'dd/mm/yyyy' a un objeto datetime
-        print(fecha_str)
-
+        # dd/mm/yyyy
         fecha_obj = datetime.strptime(str(fecha_str), '%d/%m/%Y')
-
-        # Convertir el objeto datetime al formato 'yyyy-mm-dd'
         return fecha_obj.strftime('%Y-%m-%d')
     except ValueError:
         try:
-            # Convertir la fecha del formato 'yymmdd' a un objeto datetime
+            # yymmdd
             fecha_nueva = '20' + str(fecha_str)
-
             fecha_obj = datetime.strptime(fecha_nueva, '%Y%m%d')
-
             return fecha_obj.strftime('%Y-%m-%d')
         except ValueError:
             try:
-                # Convertir la fecha del formato 'yyyy-mm-ddTh:m:s' a un objeto datetime
+                # yyyy-mm-ddThh:mm:ss.sss
                 fecha_obj = datetime.strptime(str(fecha_str), "%Y-%m-%dT%H:%M:%S.%f")
-
-                # Formatear la fecha al formato deseado yyyy-mm-dd
                 return fecha_obj.strftime('%Y-%m-%d')
             except ValueError:
-                # Manejo de errores si el formato de entrada es incorrecto
-                raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy' o 'yymmdd'.")
+                try:
+                    # yyyy-mm-dd hh:mm:ss  ← ESTA es la que necesitás agregar
+                    fecha_obj = datetime.strptime(str(fecha_str), "%Y-%m-%d %H:%M:%S")
+                    return fecha_obj.strftime('%Y-%m-%d')
+                except ValueError:
+                    raise ValueError("El formato de la fecha debe ser 'dd/mm/yyyy', 'yymmdd', o 'yyyy-mm-dd hh:mm:ss'.")
