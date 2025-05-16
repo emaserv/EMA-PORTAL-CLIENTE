@@ -27,6 +27,7 @@ const generarZIPDeAcuses = async (dataArray, nombreLote) => {
     contenedor.style.left = "0";
     contenedor.style.width = "1000px";
     contenedor.style.zIndex = "-1";
+    contenedor.style.backgroundColor = "#fff";
     document.body.appendChild(contenedor);
 
     const canvasReady = new Promise((resolve) => {
@@ -40,10 +41,11 @@ const generarZIPDeAcuses = async (dataArray, nombreLote) => {
               useCORS: true,
               backgroundColor: "#fff",
               scrollY: 0,
+              scale: 1.2,
             });
 
            const blob = await new Promise((resolveBlob) =>
-            canvas.toBlob(resolveBlob, "image/jpeg", 0.6)
+            canvas.toBlob(resolveBlob, "image/jpeg", 0.5) // 👉 calidad de 0.7 sobre 1.0
             );
 
 
