@@ -1,0 +1,158 @@
+// ✅ AcuseCliente.jsx (versión sin onRenderComplete ni renderQueue)
+
+import { React, useEffect, useState } from "react";
+import SoftBox from "components/SoftBox";
+import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
+import { Card } from "@mui/material";
+import SoftTypography from "components/SoftTypography";
+import SoftButton from "components/SoftButton";
+import { useForm, Controller } from "react-hook-form";
+import { useAuth } from "layouts/auth/AuthContext";
+import { API_BACK } from "../../config";
+import LoadingModal from "../../components/loadingModal";
+import DropdownList from "components/DropdownList";
+import AcuseReciboConFirma from "./components/acuseConFirma";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import html2canvas from "html2canvas";
+import ReactDOM from "react-dom/client"
+
+const generarZIPDeAcuses = async (dataArray, nombreLote) => {
+  const zip = new JSZip();
+
+  for (const item of dataArray) {
+    const contenedor = document.createElement("div");
+    contenedor.style.position = "fixed";
+    contenedor.style.top = "-9999px";
+    contenedor.style.left = "0";
+    contenedor.style.width = "1000px";
+    contenedor.style.zIndex = "-1";
+    document.body.appendChild(contenedor);
+
+    const canvasReady = new Promise((resolve) => {
+      const root = ReactDOM.createRoot(contenedor);
+
+      root.render(
+        <AcuseReciboConFirma
+          data={item}
+          onRendered={async (refElement) => {
+            const canvas = await html2canvas(refElement, {
+              useCORS: true,
+              backgroundColor: "#fff",
+              scrollY: 0,
+            });
+
+           const blob = await new Promise((resolveBlob) =>
+            canvas.toBlob(resolveBlob, "image/jpeg", 0.6)
+            );
+
+
+            if (blob) {
+              zip.file(`_${item.codigoBarras}.jpg`, blob);
+            } else {
+              console.warn("Fallo al generar blob");
+            }
+
+            root.unmount();
+            document.body.removeChild(contenedor);
+            resolve();
+          }}
+        />
+      );
+    });
+
+    await canvasReady;
+  }
+
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  saveAs(zipBlob, `${nombreLote}.zip`);
+};
+
+
+const AcuseCliente = () => {
+  const { handleSubmit, control } = useForm();
+  const [lotes, setLotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLotes = async () => {
+      try {
+        const response = await fetch(`${API_BACK}/api/acuses/loteDropDwn`);
+        const data = await response.ok ? await response.json() : [];
+
+        setLotes(
+          data
+            .filter((item) => item !== null)
+            .map((nombre, index) => ({ id: index, nombre }))
+        );
+      } catch (error) {
+        console.error("Error al obtener lotes:", error);
+        setLotes([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLotes();
+  }, []);
+
+  const onDescargarAcuses = async (formData) => {
+    if (!formData.loteSeleccionado) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(formData.loteSeleccionado)}`);
+      const data = await response.json();
+
+      if (data.acusesData?.length) {
+        await generarZIPDeAcuses(data.acusesData, formData.loteSeleccionado);
+      } else {
+        alert("No se encontraron acuses.");
+      }
+    } catch (err) {
+      console.error("Error al obtener acuses:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <LoadingModal isOpen={loading} />
+      <SoftBox display="flex" flexDirection="column" alignItems="center">
+        <SoftBox width="100%">
+          <ResponsiveAppBar />
+        </SoftBox>
+
+        <Card sx={{ mt: 12, width: { xs: "90%", md: "60%" }, p: 4, boxShadow: 4, borderRadius: 3 }}>
+          <SoftTypography variant="h5" fontWeight="bold" mb={3}>
+            Selección de Lote
+          </SoftTypography>
+
+          <SoftBox display="flex" flexDirection={{ xs: "column", sm: "row" }} gap={2} alignItems="center">
+            <SoftBox flex={1}>
+              <Controller
+                name="loteSeleccionado"
+                control={control}
+                render={({ field }) => (
+                  <DropdownList
+                    width="30vw"
+                    list={lotes}
+                    campoAMostrar="nombre"
+                    campoID="nombre"
+                    placeholder="Seleccione un Lote"
+                    {...field}
+                  />
+                )}
+              />
+            </SoftBox>
+
+            <SoftButton variant="gradient" color="info" onClick={handleSubmit(onDescargarAcuses)}>
+              DESCARGAR ACUSES
+            </SoftButton>
+          </SoftBox>
+        </Card>
+      </SoftBox>
+    </>
+  );
+};
+
+export default AcuseCliente;
