@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
 import json
 from flask import Blueprint, jsonify, request
 from sqlalchemy import text, cast, Text
@@ -25,6 +27,29 @@ def getLoteDropDwn():
 
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+    
+@lru_cache(maxsize=1024)
+def cached_encode_url_image_to_base64(url):
+    try:
+        if url and url.startswith("http"):
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                return base64.b64encode(response.content).decode('utf-8')
+    except Exception as e:
+        print(f"Error al descargar o codificar la imagen: {e}")
+    return None
+
+def encode_multiple_images_parallel(urls):
+    results = {}
+    unique_urls = set(url for url in urls if url)
+    
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_url = {executor.submit(cached_encode_url_image_to_base64, url): url for url in unique_urls}
+        for future in as_completed(future_to_url):
+            url = future_to_url[future]
+            results[url] = future.result()
+    
+    return results
 
 @acuses.route('/api/acuses/getAcuses', methods=['GET'])
 def getAcuses():
@@ -115,8 +140,13 @@ def getAcuses():
                     print(f"Error al descargar o codificar la imagen: {e}")
                 return None
 
+            all_image_urls = []
+            all_signature_urls = []
 
             for item in resultados:
+                if item.foto: all_image_urls.append(item.foto)
+                if item.firma: all_image_urls.append(item.firma)
+                encoded_data = encode_multiple_images_parallel(all_image_urls + all_signature_urls)
                 obs = parse_obs_visita(item.obsVisita)
                 estado = item.estadoPieza
                 descripcion = (
@@ -173,13 +203,12 @@ def getAcuses():
                     "referencia2": obs["referencia2"],
                     "referencia3": obs["referencia3"],
                     "descripcion": descripcion,
-                    "foto": encode_url_image_to_base64(item.foto),
-                    "firma": encode_url_image_to_base64(item.firma),
+                    "foto": encoded_data.get(item.foto),
+                    "firma": encoded_data.get(item.firma),
                     "geo": item.geoVisita,
                     "segundaVisita": segunda_visita,
                     "tipoEntrega": tipo_entrega,
                 })
-
         return jsonify({"message": "Conexión y consulta exitosas", "acusesData": acusesData})
 
     except Exception as e:
