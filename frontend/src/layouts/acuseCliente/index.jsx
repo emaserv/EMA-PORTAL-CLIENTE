@@ -97,24 +97,39 @@ const AcuseCliente = () => {
     fetchLotes();
   }, []);
 
-  const onDescargarAcuses = async (formData) => {
-    if (!formData.loteSeleccionado) return;
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(formData.loteSeleccionado)}`);
-      const data = await response.json();
+    const onDescargarAcuses = async (formData) => {
+        if (!formData.loteSeleccionado) return;
+        setLoading(true);
 
-      if (data.acusesData?.length) {
-        await generarZIPDeAcuses(data.acusesData, formData.loteSeleccionado);
-      } else {
-        alert("No se encontraron acuses.");
-      }
-    } catch (err) {
-      console.error("Error al obtener acuses:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        try {
+            const lote = formData.loteSeleccionado;
+
+            // Todos los acuses
+            const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
+            const data = await response.json();
+            const allAcuses = data.acusesData || [];
+
+            if (allAcuses.length === 0) {
+            alert("No se encontraron acuses.");
+            return;
+            }
+
+            // Divide en bloques de 500
+            const chunkSize = 500;
+            for (let i = 0; i < allAcuses.length; i += chunkSize) {
+            const slice = allAcuses.slice(i, i + chunkSize);
+            const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
+            await generarZIPDeAcuses(slice, nombreZip);
+            }
+
+        } catch (err) {
+            console.error("Error al obtener acuses:", err);
+            alert("Ocurrió un error al descargar los acuses.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
   return (
     <>
