@@ -4,6 +4,8 @@ from sqlalchemy import text, cast, Text
 from db.masterRepo import DatabaseSession
 from models.emision.ItemEmision import ItemEmision
 import re
+import base64
+import requests
 
 acuses = Blueprint('acuses', __name__)
 
@@ -103,6 +105,17 @@ def getAcuses():
             
             acusesData = []
 
+            def encode_url_image_to_base64(url):
+                try:
+                    if url and url.startswith("http"):
+                        response = requests.get(url)
+                        if response.status_code == 200:
+                            return base64.b64encode(response.content).decode('utf-8')
+                except Exception as e:
+                    print(f"Error al descargar o codificar la imagen: {e}")
+                return None
+
+
             for item in resultados:
                 obs = parse_obs_visita(item.obsVisita)
                 estado = item.estadoPieza
@@ -160,8 +173,8 @@ def getAcuses():
                     "referencia2": obs["referencia2"],
                     "referencia3": obs["referencia3"],
                     "descripcion": descripcion,
-                    "foto": item.foto,
-                    "firma": item.firma,
+                    "foto": encode_url_image_to_base64(item.foto),
+                    "firma": encode_url_image_to_base64(item.firma),
                     "geo": item.geoVisita,
                     "segundaVisita": segunda_visita,
                     "tipoEntrega": tipo_entrega,
