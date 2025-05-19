@@ -15,22 +15,23 @@ import AcuseReciboConFirma from "./components/acuseConFirma";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import html2canvas from "html2canvas";
-import ReactDOM from "react-dom/client"
+import ReactDOM from "react-dom/client";
 
 const generarZIPDeAcuses = async (dataArray, nombreLote) => {
   const zip = new JSZip();
+  const concurrencyLimit = 7;
 
-  for (const item of dataArray) {
-    const contenedor = document.createElement("div");
-    contenedor.style.position = "fixed";
-    contenedor.style.top = "-9999px";
-    contenedor.style.left = "0";
-    contenedor.style.width = "1000px";
-    contenedor.style.zIndex = "-1";
-    contenedor.style.backgroundColor = "#fff";
-    document.body.appendChild(contenedor);
+  const procesarAcuse = (item) => {
+    return new Promise((resolve) => {
+      const contenedor = document.createElement("div");
+      contenedor.style.position = "fixed";
+      contenedor.style.top = "-9999px";
+      contenedor.style.left = "0";
+      contenedor.style.width = "1000px";
+      contenedor.style.zIndex = "-1";
+      contenedor.style.backgroundColor = "#fff";
+      document.body.appendChild(contenedor);
 
-    const canvasReady = new Promise((resolve) => {
       const root = ReactDOM.createRoot(contenedor);
 
       root.render(
@@ -44,10 +45,9 @@ const generarZIPDeAcuses = async (dataArray, nombreLote) => {
               scale: 1.2,
             });
 
-           const blob = await new Promise((resolveBlob) =>
-            canvas.toBlob(resolveBlob, "image/jpeg", 0.5) // 👉 calidad de 0.7 sobre 1.0
+            const blob = await new Promise((res) =>
+              canvas.toBlob(res, "image/jpeg", 0.5)
             );
-
 
             if (blob) {
               zip.file(`_${item.codigoBarras}.jpg`, blob);
@@ -62,9 +62,26 @@ const generarZIPDeAcuses = async (dataArray, nombreLote) => {
         />
       );
     });
+  };
 
-    await canvasReady;
-  }
+  const ejecutarEnLotes = async (array, limit) => {
+    let index = 0;
+    const resultados = [];
+
+    const ejecutarLote = async () => {
+      while (index < array.length) {
+        const currentIndex = index++;
+        await procesarAcuse(array[currentIndex]);
+      }
+    };
+
+    const workers = Array.from({ length: limit }, ejecutarLote);
+    await Promise.all(workers);
+
+    return resultados;
+  };
+
+  await ejecutarEnLotes(dataArray, concurrencyLimit);
 
   const zipBlob = await zip.generateAsync({ type: "blob" });
   saveAs(zipBlob, `${nombreLote}.zip`);
@@ -80,7 +97,7 @@ const AcuseCliente = () => {
     const fetchLotes = async () => {
       try {
         const response = await fetch(`${API_BACK}/api/acuses/loteDropDwn`);
-        const data = await response.ok ? await response.json() : [];
+        const data = (await response.ok) ? await response.json() : [];
 
         setLotes(
           data
@@ -97,39 +114,85 @@ const AcuseCliente = () => {
     fetchLotes();
   }, []);
 
-    const onDescargarAcuses = async (formData) => {
-        if (!formData.loteSeleccionado) return;
-        setLoading(true);
+  const onDescargarAcuses = async (formData) => {
+    if (!formData.loteSeleccionado) return;
+    setLoading(true);
 
-        try {
-            const lote = formData.loteSeleccionado;
+    try {
+      const lote = formData.loteSeleccionado;
 
-            // Todos los acuses
-            const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
-            const data = await response.json();
-            const allAcuses = data.acusesData || [];
+      // Todos los acuses
+      const response = await fetch(
+        `${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`, { timeout: 500000 }
+      );
+      const data = await response.json();
+      const allAcuses = data.acusesData || [];
 
-            if (allAcuses.length === 0) {
-            alert("No se encontraron acuses.");
-            return;
-            }
+      if (allAcuses.length === 0) {
+        alert("No se encontraron acuses.");
+        return;
+      }
 
-            // Divide en bloques de 500
-            const chunkSize = 500;
-            for (let i = 0; i < allAcuses.length; i += chunkSize) {
-            const slice = allAcuses.slice(i, i + chunkSize);
-            const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
-            await generarZIPDeAcuses(slice, nombreZip);
-            }
+      // Divide en bloques de 500
+      const chunkSize = 500;
+      for (let i = 0; i < allAcuses.length; i += chunkSize) {
+        const slice = allAcuses.slice(i, i + chunkSize);
+        const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
+        await generarZIPDeAcuses(slice, nombreZip);
+      }
+    } catch (err) {
+      console.error("Error al obtener acuses:", err);
+      alert("Ocurrió un error al descargar los acuses.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        } catch (err) {
-            console.error("Error al obtener acuses:", err);
-            alert("Ocurrió un error al descargar los acuses.");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const onDescargarAcuses2 = async (formData) => {
+    if (!formData.loteSeleccionado) return;
+  setLoading(true);
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 1000000); // 10 minutes
+
+  try {
+    const lote = formData.loteSeleccionado;
+
+    const response = await fetch(
+      `${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`,
+      {
+        signal: controller.signal,
+      }
+    );
+
+    clearTimeout(timeoutId); // clear the timeout if fetch succeeds
+
+    const data = await response.json();
+    const allAcuses = data.acusesData || [];
+
+    if (allAcuses.length === 0) {
+      alert("No se encontraron acuses.");
+      return;
+    }
+
+    const chunkSize = 500;
+    for (let i = 0; i < allAcuses.length; i += chunkSize) {
+      const slice = allAcuses.slice(i, i + chunkSize);
+      const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
+      await generarZIPDeAcuses(slice, nombreZip);
+    }
+  } catch (err) {
+    if (err.name === "AbortError") {
+      console.error("La solicitud fue abortada por timeout.");
+      alert("La descarga tardó demasiado y fue cancelada.");
+    } else {
+      console.error("Error al obtener acuses:", err);
+      alert("Ocurrió un error al descargar los acuses.");
+    }
+  } finally {
+    setLoading(false);
+  }
+  };
 
   return (
     <>
@@ -139,12 +202,25 @@ const AcuseCliente = () => {
           <ResponsiveAppBar />
         </SoftBox>
 
-        <Card sx={{ mt: 12, width: { xs: "90%", md: "60%" }, p: 4, boxShadow: 4, borderRadius: 3 }}>
+        <Card
+          sx={{
+            mt: 12,
+            width: { xs: "90%", md: "60%" },
+            p: 4,
+            boxShadow: 4,
+            borderRadius: 3,
+          }}
+        >
           <SoftTypography variant="h5" fontWeight="bold" mb={3}>
             Selección de Lote
           </SoftTypography>
 
-          <SoftBox display="flex" flexDirection={{ xs: "column", sm: "row" }} gap={2} alignItems="center">
+          <SoftBox
+            display="flex"
+            flexDirection={{ xs: "column", sm: "row" }}
+            gap={2}
+            alignItems="center"
+          >
             <SoftBox flex={1}>
               <Controller
                 name="loteSeleccionado"
@@ -162,7 +238,11 @@ const AcuseCliente = () => {
               />
             </SoftBox>
 
-            <SoftButton variant="gradient" color="info" onClick={handleSubmit(onDescargarAcuses)}>
+            <SoftButton
+              variant="gradient"
+              color="info"
+              onClick={handleSubmit(onDescargarAcuses2)}
+            >
               DESCARGAR ACUSES
             </SoftButton>
           </SoftBox>
