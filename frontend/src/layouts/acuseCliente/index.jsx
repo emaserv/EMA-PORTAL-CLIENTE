@@ -91,7 +91,7 @@ const AcuseCliente = () => {
   useEffect(() => {
     const fetchLotes = async () => {
       try {
-        const response = await fetch(`${API_BACK}/api/acuses/loteDropDwn`);
+        const response = await fetch(`/api/acuses/loteDropDwn`);
         const data = (await response.ok) ? await response.json() : [];
 
         setLotes(
@@ -109,39 +109,159 @@ const AcuseCliente = () => {
     fetchLotes();
   }, []);
 
-    const onDescargarAcuses = async (formData) => {
-        if (!formData.loteSeleccionado) return;
-        setLoading(true);
+  // const onDescargarAcuses = async (formData) => {
+  //   if (!formData.loteSeleccionado) return;
+  //   setLoading(true);
+
+  //   try {
+  //     const lote = formData.loteSeleccionado;
+
+  //     // Todos los acuses
+  //     const response = await fetch(
+  //       `${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`, { timeout: 500000 }
+  //     );
+  //     const data = await response.json();
+  //     const allAcuses = data.acusesData || [];
+
+  //     if (allAcuses.length === 0) {
+  //       alert("No se encontraron acuses.");
+  //       return;
+  //     }
+
+  //     // Divide en bloques de 500
+  //     const chunkSize = 500;
+  //     for (let i = 0; i < allAcuses.length; i += chunkSize) {
+  //       const slice = allAcuses.slice(i, i + chunkSize);
+  //       const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
+  //       await generarZIPDeAcuses(slice, nombreZip);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error al obtener acuses:", err);
+  //     alert("Ocurrió un error al descargar los acuses.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const onDescargarAcuses2 = async (formData) => {
+    if (!formData.loteSeleccionado) return;
+    setLoading(true);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1000000); // 10 minutes
 
     try {
       const lote = formData.loteSeleccionado;
 
-            // Todos los acuses
-            const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
-            const data = await response.json();
-            const allAcuses = data.acusesData || [];
+      const response = await fetch(
+        `/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`,
+        {
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId); // clear the timeout if fetch succeeds
+
+      const data = await response.json();
+      const allAcuses = data.acusesData || [];
 
       if (allAcuses.length === 0) {
         alert("No se encontraron acuses.");
         return;
       }
 
-            // Divide en bloques de 500
-            const chunkSize = 500;
-            for (let i = 0; i < allAcuses.length; i += chunkSize) {
-            const slice = allAcuses.slice(i, i + chunkSize);
-            const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
-            await generarZIPDeAcuses(slice, nombreZip);
-            }
+      const chunkSize = 500;
+      const total = allAcuses.length;
+      for (let i = 0; i < allAcuses.length; i += chunkSize) {
+        const slice = allAcuses.slice(i, i + chunkSize);
+        const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
+        await generarZIPDeAcuses(slice, nombreZip, setProgreso, i, total);
+      }
+    } catch (err) {
+      if (err.name === "AbortError") {
+        console.error("La solicitud fue abortada por timeout.");
+        alert("La descarga tardó demasiado y fue cancelada.");
+      } else {
+        console.error("Error al obtener acuses:", err);
+        alert("Ocurrió un error al descargar los acuses.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        } catch (err) {
-            console.error("Error al obtener acuses:", err);
-            alert("Ocurrió un error al descargar los acuses.");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const onDescargarJSON = async (formData) => {
+    if (!formData.loteSeleccionado) return;
+    setLoading(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1000000); // 10 minutos
+
+    try {
+      const lote = formData.loteSeleccionado;
+
+      const response = await fetch(
+        `/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`,
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId); // evita que se dispare si todo salió bien
+
+      if (!response.ok) throw new Error("Error de red o respuesta no OK");
+
+      const data = await response.json();
+      const allAcuses = data.acusesData || [];
+
+      if (!Array.isArray(allAcuses) || allAcuses.length === 0) {
+        alert("No se encontraron acuses.");
+        return;
+      }
+
+      const blobJSON = new Blob([JSON.stringify(allAcuses)], {
+        type: "application/json",
+      });
+      saveAs(blobJSON, `${lote}_acuses.json`);
+    } catch (err) {
+      if (err.name === "AbortError") {
+        console.error("La solicitud fue abortada por timeout.");
+        alert("La descarga tardó demasiado y fue cancelada.");
+      } else {
+        console.error("Error al descargar JSON:", err);
+        alert("Ocurrió un error al descargar el JSON.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const onCargarJSONLocal = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      const text = await file.text();
+      const acuses = JSON.parse(text);
+
+      if (!Array.isArray(acuses) || acuses.length === 0) {
+        alert("El archivo JSON no contiene datos válidos.");
+        return;
+      }
+
+      const chunkSize = 500;
+      for (let i = 0; i < acuses.length; i += chunkSize) {
+        const slice = acuses.slice(i, i + chunkSize);
+        const nombreZip = `acuses_json_parte_${i / chunkSize + 1}`;
+        await generarZIPDeAcuses(slice, nombreZip);
+      }
+    } catch (err) {
+      console.error("Error al procesar el JSON:", err);
+      alert("Error al procesar el archivo JSON.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
