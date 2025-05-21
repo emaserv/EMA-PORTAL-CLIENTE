@@ -17,12 +17,17 @@ import { saveAs } from "file-saver";
 import html2canvas from "html2canvas";
 import ReactDOM from "react-dom/client";
 
-const generarZIPDeAcuses = async (dataArray, nombreLote) => {
-  const zip = new JSZip();
-  const concurrencyLimit = 7;
 
-  const procesarAcuse = (item) => {
-    return new Promise((resolve) => {
+const generarZIPDeAcuses = async (dataArray, nombreLote, setProgreso, baseIndex = 0, total = dataArray.length) => {
+  const zip = new JSZip();
+  const concurrencyLimit = 1;
+
+  const procesarAcuse = (item, index) => {
+    return new Promise(async (resolve) => {
+      const currentIndex = baseIndex + index;
+      setProgreso(`Generando acuse ${currentIndex + 1} de ${total}`);
+      await new Promise((res) => setTimeout(res, 50));
+
       const contenedor = document.createElement("div");
       contenedor.style.position = "fixed";
       contenedor.style.top = "-9999px";
@@ -51,10 +56,10 @@ const generarZIPDeAcuses = async (dataArray, nombreLote) => {
 
             if (blob) {
               zip.file(`_${item.codigoBarras}.jpg`, blob);
-            } else {
-              console.warn("Fallo al generar blob");
             }
 
+            canvas.width = 0;
+            canvas.height = 0;
             root.unmount();
             document.body.removeChild(contenedor);
             resolve();
@@ -64,34 +69,24 @@ const generarZIPDeAcuses = async (dataArray, nombreLote) => {
     });
   };
 
-  const ejecutarEnLotes = async (array, limit) => {
-    let index = 0;
-    const resultados = [];
-
-    const ejecutarLote = async () => {
-      while (index < array.length) {
-        const currentIndex = index++;
-        await procesarAcuse(array[currentIndex]);
-      }
-    };
-
-    const workers = Array.from({ length: limit }, ejecutarLote);
-    await Promise.all(workers);
-
-    return resultados;
-  };
-
-  await ejecutarEnLotes(dataArray, concurrencyLimit);
+  for (let i = 0; i < dataArray.length; i++) {
+    await procesarAcuse(dataArray[i], i);
+  }
 
   const zipBlob = await zip.generateAsync({ type: "blob" });
   saveAs(zipBlob, `${nombreLote}.zip`);
 };
 
 
+
+
+
+
 const AcuseCliente = () => {
   const { handleSubmit, control } = useForm();
   const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [progreso, setProgreso] = useState("");
 
   useEffect(() => {
     const fetchLotes = async () => {
@@ -114,88 +109,54 @@ const AcuseCliente = () => {
     fetchLotes();
   }, []);
 
-  const onDescargarAcuses = async (formData) => {
-    if (!formData.loteSeleccionado) return;
-    setLoading(true);
+    const onDescargarAcuses = async (formData) => {
+        if (!formData.loteSeleccionado) return;
+        setLoading(true);
 
     try {
       const lote = formData.loteSeleccionado;
 
-      // Todos los acuses
-      const response = await fetch(
-        `${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`, { timeout: 500000 }
-      );
-      const data = await response.json();
-      const allAcuses = data.acusesData || [];
+            // Todos los acuses
+            const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
+            const data = await response.json();
+            const allAcuses = data.acusesData || [];
 
       if (allAcuses.length === 0) {
         alert("No se encontraron acuses.");
         return;
       }
 
-      // Divide en bloques de 500
-      const chunkSize = 500;
-      for (let i = 0; i < allAcuses.length; i += chunkSize) {
-        const slice = allAcuses.slice(i, i + chunkSize);
-        const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
-        await generarZIPDeAcuses(slice, nombreZip);
-      }
-    } catch (err) {
-      console.error("Error al obtener acuses:", err);
-      alert("Ocurrió un error al descargar los acuses.");
-    } finally {
-      setLoading(false);
-    }
-  };
+            // Divide en bloques de 500
+            const chunkSize = 500;
+            for (let i = 0; i < allAcuses.length; i += chunkSize) {
+            const slice = allAcuses.slice(i, i + chunkSize);
+            const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
+            await generarZIPDeAcuses(slice, nombreZip);
+            }
 
-  const onDescargarAcuses2 = async (formData) => {
-    if (!formData.loteSeleccionado) return;
-  setLoading(true);
+        } catch (err) {
+            console.error("Error al obtener acuses:", err);
+            alert("Ocurrió un error al descargar los acuses.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 1000000); // 10 minutes
-
-  try {
-    const lote = formData.loteSeleccionado;
-
-    const response = await fetch(
-      `${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`,
-      {
-        signal: controller.signal,
-      }
-    );
-
-    clearTimeout(timeoutId); // clear the timeout if fetch succeeds
-
-    const data = await response.json();
-    const allAcuses = data.acusesData || [];
-
-    if (allAcuses.length === 0) {
-      alert("No se encontraron acuses.");
-      return;
-    }
-
-    const chunkSize = 500;
-    for (let i = 0; i < allAcuses.length; i += chunkSize) {
-      const slice = allAcuses.slice(i, i + chunkSize);
-      const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
-      await generarZIPDeAcuses(slice, nombreZip);
-    }
-  } catch (err) {
-    if (err.name === "AbortError") {
-      console.error("La solicitud fue abortada por timeout.");
-      alert("La descarga tardó demasiado y fue cancelada.");
-    } else {
-      console.error("Error al obtener acuses:", err);
-      alert("Ocurrió un error al descargar los acuses.");
-    }
-  } finally {
-    setLoading(false);
-  }
-  };
 
   return (
     <>
+      {loading && (
+        <SoftBox
+          position="fixed"
+          top="calc(50% + 60px)"
+          left="50%"
+          style={{ transform: "translate(-50%, -50%)", zIndex: 999999999 }}
+        >
+          <SoftTypography variant="h1" color="black" fontWeight="bold">
+            {progreso}
+          </SoftTypography>
+        </SoftBox>
+      )}
       <LoadingModal isOpen={loading} />
       <SoftBox display="flex" flexDirection="column" alignItems="center">
         <SoftBox width="100%">
@@ -245,6 +206,29 @@ const AcuseCliente = () => {
             >
               DESCARGAR ACUSES
             </SoftButton>
+
+            {/* <SoftButton
+              variant="outlined"
+              color="secondary"
+              onClick={handleSubmit(onDescargarJSON)}
+            >
+              DESCARGAR JSON
+            </SoftButton>
+
+            <SoftBox mt={1}>
+              <label htmlFor="jsonUpload">
+                <SoftButton variant="outlined" color="success" component="span">
+                  CARGAR JSON LOCAL
+                </SoftButton>
+              </label>
+              <input
+                id="jsonUpload"
+                type="file"
+                accept=".json"
+                style={{ display: "none" }}
+                onChange={onCargarJSONLocal}
+              />
+            </SoftBox> */}
           </SoftBox>
         </Card>
       </SoftBox>
