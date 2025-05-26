@@ -16,17 +16,25 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import html2canvas from "html2canvas";
 import ReactDOM from "react-dom/client";
+import TablaAcusesCliente from "./data/tablaAcusesCliente";
+import SoftInputBase from "components/SoftInputBase";
 
 
-const generarZIPDeAcuses = async (dataArray, nombreLote, setProgreso, baseIndex = 0, total = dataArray.length) => {
+const generarZIPDeAcuses = async (
+  dataArray,
+  nombreLote,
+  setProgreso,
+  baseIndex = 0,
+  total = dataArray.length
+) => {
   const zip = new JSZip();
-  const concurrencyLimit = 1;
+  const concurrencyLimit = 6; // Ajustá esto según el rendimiento
 
   const procesarAcuse = (item, index) => {
     return new Promise(async (resolve) => {
       const currentIndex = baseIndex + index;
       setProgreso(`Generando acuse ${currentIndex + 1} de ${total}`);
-      await new Promise((res) => setTimeout(res, 50));
+      await new Promise((res) => setTimeout(res, 10)); // Dejá pequeño delay para permitir re-render
 
       const contenedor = document.createElement("div");
       contenedor.style.position = "fixed";
@@ -69,17 +77,26 @@ const generarZIPDeAcuses = async (dataArray, nombreLote, setProgreso, baseIndex 
     });
   };
 
-  for (let i = 0; i < dataArray.length; i++) {
-    await procesarAcuse(dataArray[i], i);
-  }
+  // ✅ Ejecutar en paralelo con límite
+  const ejecutarEnLotes = async (array, limit) => {
+    let index = 0;
+
+    const ejecutarLote = async () => {
+      while (index < array.length) {
+        const currentIndex = index++;
+        await procesarAcuse(array[currentIndex], currentIndex);
+      }
+    };
+
+    const workers = Array.from({ length: limit }, ejecutarLote);
+    await Promise.all(workers);
+  };
+
+  await ejecutarEnLotes(dataArray, concurrencyLimit);
 
   const zipBlob = await zip.generateAsync({ type: "blob" });
   saveAs(zipBlob, `${nombreLote}.zip`);
 };
-
-
-
-
 
 
 const AcuseCliente = () => {
@@ -87,6 +104,8 @@ const AcuseCliente = () => {
   const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [progreso, setProgreso] = useState("");
+  const [dataCliente, setDataCliente] = useState([]);
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
 
   useEffect(() => {
     const fetchLotes = async () => {
@@ -108,40 +127,6 @@ const AcuseCliente = () => {
     };
     fetchLotes();
   }, []);
-
-  // const onDescargarAcuses = async (formData) => {
-  //   if (!formData.loteSeleccionado) return;
-  //   setLoading(true);
-
-  //   try {
-  //     const lote = formData.loteSeleccionado;
-
-  //     // Todos los acuses
-  //     const response = await fetch(
-  //       `${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`, { timeout: 500000 }
-  //     );
-  //     const data = await response.json();
-  //     const allAcuses = data.acusesData || [];
-
-  //     if (allAcuses.length === 0) {
-  //       alert("No se encontraron acuses.");
-  //       return;
-  //     }
-
-  //     // Divide en bloques de 500
-  //     const chunkSize = 500;
-  //     for (let i = 0; i < allAcuses.length; i += chunkSize) {
-  //       const slice = allAcuses.slice(i, i + chunkSize);
-  //       const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
-  //       await generarZIPDeAcuses(slice, nombreZip);
-  //     }
-  //   } catch (err) {
-  //     console.error("Error al obtener acuses:", err);
-  //     alert("Ocurrió un error al descargar los acuses.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const onDescargarAcuses2 = async (formData) => {
     if (!formData.loteSeleccionado) return;
@@ -263,6 +248,27 @@ const AcuseCliente = () => {
     }
   };
 
+  const onFiltrarPorCliente = async (formData) => {
+    if (!formData.numCliente) return;
+    setBuscandoCliente(true);
+    setProgreso("Buscando acuses del cliente...");
+    try {
+      const response = await fetch(
+        `${API_BACK}/api/acuses/getAcuses?nroCliente=${formData.numCliente}`
+      );
+      const data = await response.json();
+      console.log("RESPONSE CRUDO", data.acusesData);
+      setDataCliente(data.acusesData || []);
+    } catch (err) {
+      console.error("Error al buscar por cliente:", err);
+      alert("Error al buscar acuses del cliente");
+    } finally {
+      setBuscandoCliente(false);
+      setProgreso("");
+    }
+  };
+
+
   return (
     <>
       {loading && (
@@ -272,7 +278,7 @@ const AcuseCliente = () => {
           left="50%"
           style={{ transform: "translate(-50%, -50%)", zIndex: 999999999 }}
         >
-          <SoftTypography variant="h1" color="black" fontWeight="bold">
+          <SoftTypography variant="h2" color="black" fontWeight="bold">
             {progreso}
           </SoftTypography>
         </SoftBox>
@@ -283,77 +289,118 @@ const AcuseCliente = () => {
           <ResponsiveAppBar />
         </SoftBox>
 
-        <Card
-          sx={{
-            mt: 12,
-            width: { xs: "90%", md: "60%" },
-            p: 4,
-            boxShadow: 4,
-            borderRadius: 3,
-          }}
-        >
-          <SoftTypography variant="h5" fontWeight="bold" mb={3}>
-            Selección de Lote
-          </SoftTypography>
-
-          <SoftBox
-            display="flex"
-            flexDirection={{ xs: "column", sm: "row" }}
-            gap={2}
-            alignItems="center"
+        <SoftBox display="flex" justifyContent="center" flexWrap="wrap" gap={2} mt={6} width="100%">
+          {/* Card Selección de Lote */}
+          <Card
+            sx={{
+              width: { xs: "100%", md: "48%" },
+              p: 4,
+              mt: '4rem',
+              boxShadow: 4,
+              borderRadius: 3,
+            }}
           >
-            <SoftBox flex={1}>
-              <Controller
-                name="loteSeleccionado"
-                control={control}
-                render={({ field }) => (
-                  <DropdownList
-                    width="30vw"
-                    list={lotes}
-                    campoAMostrar="nombre"
-                    campoID="nombre"
-                    placeholder="Seleccione un Lote"
-                    {...field}
-                  />
-                )}
-              />
+            <SoftTypography variant="h5" fontWeight="bold" mb={3}>
+              Acuse por Lote
+            </SoftTypography>
+            <SoftBox
+              display="flex"
+              flexDirection={{ xs: "column", sm: "row" }}
+              gap={2}
+              alignItems="center"
+            >
+              <SoftBox flex={1}>
+                <SoftTypography component="label" variant="caption">
+                    Lote:
+                  </SoftTypography>
+                <Controller
+                  name="loteSeleccionado"
+                  control={control}
+                  render={({ field }) => (
+                    <DropdownList
+                      width="30vw"
+                      list={lotes}
+                      campoAMostrar="nombre"
+                      campoID="nombre"
+                      placeholder="Seleccione un Lote"
+                      {...field}
+                    />
+                  )}
+                />
+              </SoftBox>
+              <SoftButton
+                sx={{
+                    mt: '2rem',
+            }}
+              
+                variant="gradient"
+                color="info"
+                onClick={handleSubmit(onDescargarAcuses2)}
+              >
+                DESCARGAR ACUSES
+              </SoftButton>
             </SoftBox>
+          </Card>
 
-            <SoftButton
-              variant="gradient"
-              color="info"
-              onClick={handleSubmit(onDescargarAcuses2)}
-            >
-              DESCARGAR ACUSES
-            </SoftButton>
+          {/* Card Acuse por N° Cliente */}
+          <Card
+            sx={{
+              width: { xs: "100%", md: "48%" },
+              p: 4,
+              mt: '4rem',
+              boxShadow: 4,
+              borderRadius: 3,
+            }}
+          >
+            <SoftTypography variant="h5" fontWeight="bold" mb={3}>
+              Acuse por N° Cliente
+            </SoftTypography>
+            <form onSubmit={handleSubmit(onFiltrarPorCliente)}>
+              <SoftBox
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                flexDirection={{ xs: "column", md: "row" }}
+                gap={2}
+              >
+                <SoftBox flex={1}>
+                  <SoftTypography component="label" variant="caption">
+                    N° de Cliente
+                  </SoftTypography>
+                  <Controller
+                    name="numCliente"
+                    control={control}
+                    render={({ field }) => (
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de cliente"
+                        autoComplete="off"
+                      />
+                    )}
+                  />
+                </SoftBox>
+                <SoftBox pt={{ xs: 2, md: 3 }}>
+                  <SoftButton variant="gradient" color="info" type="submit">
+                    Filtrar
+                  </SoftButton>
+                </SoftBox>
+              </SoftBox>
+            </form>
+          </Card>
+        </SoftBox>
 
-            {/* <SoftButton
-              variant="outlined"
-              color="secondary"
-              onClick={handleSubmit(onDescargarJSON)}
-            >
-              DESCARGAR JSON
-            </SoftButton>
 
-            <SoftBox mt={1}>
-              <label htmlFor="jsonUpload">
-                <SoftButton variant="outlined" color="success" component="span">
-                  CARGAR JSON LOCAL
-                </SoftButton>
-              </label>
-              <input
-                id="jsonUpload"
-                type="file"
-                accept=".json"
-                style={{ display: "none" }}
-                onChange={onCargarJSONLocal}
-              />
-            </SoftBox> */}
-          </SoftBox>
-        </Card>
+        {/* Tabla resultado búsqueda */}
+        {dataCliente.length > 0 && (
+          <SoftBox width="98%" mt={0}>
+            <TablaAcusesCliente data={dataCliente} />
+          </SoftBox>    
+           )}
       </SoftBox>
     </>
   );
 };
+
+
 
 export default AcuseCliente;
