@@ -8,7 +8,7 @@ import hashlib
 auth = Blueprint('auth', __name__)
 
 def get_column_names(model):
-    return [column.name for column in model.__table__.columns]
+    return [column.name for column in model._table_.columns]
 
 def get_sha256_hash(input_string: str) -> str:
     # Crea un objeto hash SHA-256
