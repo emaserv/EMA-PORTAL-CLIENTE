@@ -101,35 +101,33 @@ def getAcuses():
         lote = request.args.get('lote')
         nroCliente = request.args.get('nroCliente')
 
-        if not lote:
-            return jsonify({"message": "El parámetro 'lote' es obligatorio."}), 400
+        if not lote and not nroCliente:
+            return jsonify({"message": "Debe enviar al menos 'lote' o 'nroCliente'."}), 400
 
         estados_validos = ['DV', 'DR', 'DM', 'F AD', 'F ZP AD', '1° ZP', 'BP CR', 'ZPBP', 'UZP']
 
         with DatabaseSession().get_session() as session:
-            query = session.query(ItemEmision).filter(
-                ItemEmision.lote == lote,
-                ItemEmision.estadoPieza.in_(estados_validos)
-            )
+            query = session.query(ItemEmision).filter(ItemEmision.estadoPieza.in_(estados_validos))
 
+            if lote:
+                query = query.filter(ItemEmision.lote == lote)
             if nroCliente:
                 query = query.filter(ItemEmision.nroCliente == nroCliente)
 
             resultados = query.all()
-
-            # Busco posibles registros con estado NR por cliente y lote
             nroClientes = list(set(item.nroCliente for item in resultados))
-            nr_query = session.query(ItemEmision).filter(
-                ItemEmision.lote == lote,
-                ItemEmision.estadoPieza == 'NR',
-                ItemEmision.nroCliente.in_(nroClientes)
-            )
-            registros_nr = nr_query.all()
+            if lote or nroCliente:
+                nr_query = session.query(ItemEmision).filter(
+                    ItemEmision.estadoPieza == 'NR',
+                    ItemEmision.nroCliente.in_(nroClientes)
+                )
+                if lote:
+                    nr_query = nr_query.filter(ItemEmision.lote == lote)
 
-            # Indexar por nroCliente para acceder más fácil
-            nr_por_cliente = {
-                item.nroCliente: item for item in registros_nr
-            }
+                registros_nr = nr_query.all()
+                nr_por_cliente = {item.nroCliente: item for item in registros_nr}
+            else:
+                nr_por_cliente = {}
 
             def parse_obs_visita(obs):
                 datos = {
@@ -140,11 +138,9 @@ def getAcuses():
                     "referencia2": None,
                     "referencia3": None
                 }
-
                 if not obs:
                     return datos
 
-                # Expresiones regulares para cada dato
                 dni_match = re.search(r"DNI:\s*(\d+)", obs)
                 nombre_match = re.search(r"NOMBRE Y APELLIDO:\s*([^,]+)", obs)
                 vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs)
@@ -158,7 +154,6 @@ def getAcuses():
                         return f"{ref_text} {color_text}" if color_text else ref_text
                     return None
 
-                # Guardamos los datos extraídos
                 if dni_match:
                     datos["dni"] = dni_match.group(1)
                 if nombre_match:
@@ -171,28 +166,17 @@ def getAcuses():
                 datos["referencia3"] = ref_con_color(3)
 
                 return datos
-            
-            # Función para procesar en lotes
+
             def process_in_batches(data, batch_size=500):
                 for i in range(0, len(data), batch_size):
-                    batch = data[i:i + batch_size]
-                    yield batch
+                    yield data[i:i + batch_size]
 
             acusesData = []
 
-            all_image_urls = []
-            all_signature_urls = []
-
-            # Procesamos los resultados en lotes de 100
             for batch in process_in_batches(resultados, 500):
-                # Pre-procesar URLs del batch actual
-                batch_image_urls = []
-                batch_signature_urls = []
-                for item in batch:
-                    if item.foto: batch_image_urls.append(item.foto)
-                    if item.firma: batch_signature_urls.append(item.firma)
-                
-                # Codificar imágenes del batch en paralelo
+                batch_image_urls = [item.foto for item in batch if item.foto]
+                batch_signature_urls = [item.firma for item in batch if item.firma]
+
                 encoded_data = encode_multiple_images_parallel(batch_image_urls + batch_signature_urls)
 
                 for item in batch:
@@ -201,34 +185,28 @@ def getAcuses():
                     descripcion = (
                         "Otros" if estado == "DV" else
                         "Rehusado" if estado == "DR" else
-                        "Se mudó" if estado == "DM" else
-                        None
+                        "Se mudó" if estado == "DM" else None
                     )
-
                     tipo_entrega = (
                         "Bajo Puerta" if estado in ["1° ZP", "BP CR", "ZPBP", "UZP"] else
                         "Firmada" if estado in ["F AD", "F ZP AD"] else
                         "Otros" if estado == "DV" else
                         "Rehusado" if estado == "DR" else
-                        "Se mudó" if estado == "DM" else
-                        None
+                        "Se mudó" if estado == "DM" else None
                     )
 
-                    segunda_visita = {}
-                    fecha = item.fechaDistrib
-                    hora = item.horaDistrib
+                    fecha1 = item.fechaDistrib
+                    hora1 = item.horaDistrib
+                    fecha2 = None
+                    hora2 = None
 
                     if estado in ['1° ZP', 'BP CR', 'ZPBP', 'UZP']:
-                        segunda_visita = {
-                            "fecha2": item.fechaDistrib,
-                            "hora2": item.horaDistrib
-                        }
-
-                        # Si hay un NR con mismo cliente y lote, reemplazar fecha y hora principales
+                        fecha2 = item.fechaDistrib
+                        hora2 = item.horaDistrib
                         nr_item = nr_por_cliente.get(item.nroCliente)
                         if nr_item:
-                            fecha = nr_item.fechaDistrib
-                            hora = nr_item.horaDistrib
+                            fecha1 = nr_item.fechaDistrib
+                            hora1 = nr_item.horaDistrib
 
                     acusesData.append({
                         "importe": item.importe,
@@ -242,8 +220,8 @@ def getAcuses():
                         "entreCalle": item.entreCalles,
                         "codigoPostal": f"{item.codigoPostal or ''} - {item.localidad or ''}".strip(),
                         "codigoBarras": item.codigoBarras,
-                        "fecha": fecha,
-                        "hora": hora,
+                        "fecha": fecha1,
+                        "hora": hora1,
                         "distribuidor": f"{item.legajo or ''} - {item.distribuidor or ''}".strip(),
                         "dni": obs["dni"],
                         "aclaracion": obs["aclaracion"],
@@ -255,11 +233,14 @@ def getAcuses():
                         "foto": encoded_data.get(item.foto),
                         "firma": encoded_data.get(item.firma),
                         "geo": item.geoVisita,
-                        "segundaVisita": segunda_visita,
+                        "segundaVisita": {
+                            "fecha2": fecha2,
+                            "hora2": hora2
+                        } if fecha2 and hora2 else {},
                         "tipoEntrega": tipo_entrega,
                     })
-                    total=len(acusesData)
-        return jsonify({"message": "Conexión y consulta exitosas", "acusesData": acusesData, "totalAcuses":total})
+
+        return jsonify({"message": "Conexión y consulta exitosas", "acusesData": acusesData, "totalAcuses": len(acusesData)})
 
     except Exception as e:
         print(e)
