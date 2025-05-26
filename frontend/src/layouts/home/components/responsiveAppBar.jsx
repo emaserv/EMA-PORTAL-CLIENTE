@@ -12,6 +12,7 @@ import MenuItem from '@mui/material/MenuItem';
 import SoftBox from 'components/SoftBox';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import brand from "assets/images/Portal-Cliente-Images/Logo-ema.png";
+import LogoNaturgy from "assets/images/Portal-Cliente-Images/logo-naturgy.png";
 import SoftTypography from 'components/SoftTypography';
 import { useAuth } from 'layouts/auth/AuthContext';
 
@@ -81,7 +82,10 @@ function ResponsiveAppBar() {
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, marginRight: '-7rem' }}>
                 {user ? <SoftTypography marginRight='1rem'> {user.nombre} {user.apellido}</SoftTypography> : <Link to="/authentication/sign-in"> <SoftTypography marginRight='1rem'>No estás logueado</SoftTypography> </Link>}
-                <Avatar alt="" src="/static/images/avatar/2.jpg" />
+                <Avatar
+                  alt="User"
+                  src={user?.userName === "naturgy@ema" ? LogoNaturgy : "/static/images/avatar/2.jpg"}
+                />
               </IconButton>
             </Tooltip>
             <Menu
