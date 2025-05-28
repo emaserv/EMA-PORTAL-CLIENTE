@@ -25,7 +25,7 @@ const SignIn = () => {
     formData.append('data', JSON.stringify(data));
 
     try {
-      const response = await axios.post(`${API_BACK}/api/login`, formData);
+      const response = await axios.post(`/api/login`, formData);
       if (response.status === 200) {
         const userData = response.data; // Supongamos que response.data tiene la estructura { usuarios: [...] }
         //console.log("Datos completos:", userData.data, userData.data[0]);
