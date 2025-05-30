@@ -16,25 +16,32 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import html2canvas from "html2canvas";
 import ReactDOM from "react-dom/client";
-import TablaAcusesCliente from "./data/tablaAcusesCliente";
+import TablaAcusesCliente from "./data/tablaAcusesCliente.jsx";
 import SoftInputBase from "components/SoftInputBase";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import DownloadIcon from '@mui/icons-material/Download';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+
+
 
 
 const generarZIPDeAcuses = async (
   dataArray,
   nombreLote,
   setProgreso,
-  baseIndex = 0,
-  total = dataArray.length
+  parteNro,
 ) => {
   const zip = new JSZip();
-  const concurrencyLimit = 6; // Ajustá esto según el rendimiento
+  const concurrencyLimit = 4; 
 
   const procesarAcuse = (item, index) => {
     return new Promise(async (resolve) => {
-      const currentIndex = baseIndex + index;
-      setProgreso(`Generando acuse ${currentIndex + 1} de ${total}`);
-      await new Promise((res) => setTimeout(res, 10)); // Dejá pequeño delay para permitir re-render
+      setProgreso(`Generando acuse ${index + 1} de ${dataArray.length} de parte ${parteNro}`);
+      await new Promise((res) => setTimeout(res, 50));
 
       const contenedor = document.createElement("div");
       contenedor.style.position = "fixed";
@@ -106,6 +113,10 @@ const AcuseCliente = () => {
   const [progreso, setProgreso] = useState("");
   const [dataCliente, setDataCliente] = useState([]);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
+  const [acusesPorBloque, setAcusesPorBloque] = useState([]);
+  const [expandedAccordion, setExpandedAccordion] = useState(null);
+  const [nombreLoteSeleccionado, setNombreLoteSeleccionado] = useState("");
+
 
   useEffect(() => {
     const fetchLotes = async () => {
@@ -131,22 +142,13 @@ const AcuseCliente = () => {
   const onDescargarAcuses2 = async (formData) => {
     if (!formData.loteSeleccionado) return;
     setLoading(true);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1000000); // 10 minutes
+    setProgreso("Filtrando acuses...");
 
     try {
       const lote = formData.loteSeleccionado;
+      setNombreLoteSeleccionado(lote);
 
-      const response = await fetch(
-        `${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`,
-        {
-          signal: controller.signal,
-        }
-      );
-
-      clearTimeout(timeoutId); // clear the timeout if fetch succeeds
-
+      const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
       const data = await response.json();
       const allAcuses = data.acusesData || [];
 
@@ -156,95 +158,19 @@ const AcuseCliente = () => {
       }
 
       const chunkSize = 500;
-      const total = allAcuses.length;
+      const chunks = [];
+
       for (let i = 0; i < allAcuses.length; i += chunkSize) {
-        const slice = allAcuses.slice(i, i + chunkSize);
-        const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
-        await generarZIPDeAcuses(slice, nombreZip, setProgreso, i, total);
+        chunks.push(allAcuses.slice(i, i + chunkSize));
       }
+
+      setAcusesPorBloque(chunks);
     } catch (err) {
-      if (err.name === "AbortError") {
-        console.error("La solicitud fue abortada por timeout.");
-        alert("La descarga tardó demasiado y fue cancelada.");
-      } else {
-        console.error("Error al obtener acuses:", err);
-        alert("Ocurrió un error al descargar los acuses.");
-      }
+      console.error("Error al obtener acuses:", err);
+      alert("Ocurrió un error al filtrar los acuses.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const onDescargarJSON = async (formData) => {
-    if (!formData.loteSeleccionado) return;
-    setLoading(true);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1000000); // 10 minutos
-
-    try {
-      const lote = formData.loteSeleccionado;
-
-      const response = await fetch(
-        `${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`,
-        { signal: controller.signal }
-      );
-
-      clearTimeout(timeoutId); // evita que se dispare si todo salió bien
-
-      if (!response.ok) throw new Error("Error de red o respuesta no OK");
-
-      const data = await response.json();
-      const allAcuses = data.acusesData || [];
-
-      if (!Array.isArray(allAcuses) || allAcuses.length === 0) {
-        alert("No se encontraron acuses.");
-        return;
-      }
-
-      const blobJSON = new Blob([JSON.stringify(allAcuses)], {
-        type: "application/json",
-      });
-      saveAs(blobJSON, `${lote}_acuses.json`);
-    } catch (err) {
-      if (err.name === "AbortError") {
-        console.error("La solicitud fue abortada por timeout.");
-        alert("La descarga tardó demasiado y fue cancelada.");
-      } else {
-        console.error("Error al descargar JSON:", err);
-        alert("Ocurrió un error al descargar el JSON.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  const onCargarJSONLocal = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setLoading(true);
-    try {
-      const text = await file.text();
-      const acuses = JSON.parse(text);
-
-      if (!Array.isArray(acuses) || acuses.length === 0) {
-        alert("El archivo JSON no contiene datos válidos.");
-        return;
-      }
-
-      const chunkSize = 500;
-      for (let i = 0; i < acuses.length; i += chunkSize) {
-        const slice = acuses.slice(i, i + chunkSize);
-        const nombreZip = `acuses_json_parte_${i / chunkSize + 1}`;
-        await generarZIPDeAcuses(slice, nombreZip);
-      }
-    } catch (err) {
-      console.error("Error al procesar el JSON:", err);
-      alert("Error al procesar el archivo JSON.");
-    } finally {
-      setLoading(false);
+      setProgreso("");
     }
   };
 
@@ -267,7 +193,6 @@ const AcuseCliente = () => {
       setProgreso("");
     }
   };
-
 
   return (
     <>
@@ -300,7 +225,7 @@ const AcuseCliente = () => {
               borderRadius: 3,
             }}
           >
-            <SoftTypography variant="h5" fontWeight="bold" mb={3}>
+            <SoftTypography variant="h5" fontWeight="bold" mb={0}>
               Acuse por Lote
             </SoftTypography>
             <SoftBox
@@ -337,7 +262,7 @@ const AcuseCliente = () => {
                 color="info"
                 onClick={handleSubmit(onDescargarAcuses2)}
               >
-                DESCARGAR ACUSES
+                FILTRAR
               </SoftButton>
             </SoftBox>
           </Card>
@@ -352,7 +277,7 @@ const AcuseCliente = () => {
               borderRadius: 3,
             }}
           >
-            <SoftTypography variant="h5" fontWeight="bold" mb={3}>
+            <SoftTypography variant="h5" fontWeight="bold" mb={0}>
               Acuse por N° Cliente
             </SoftTypography>
             <form onSubmit={handleSubmit(onFiltrarPorCliente)}>
@@ -394,8 +319,89 @@ const AcuseCliente = () => {
         {dataCliente.length > 0 && (
           <SoftBox width="98%" mt={0}>
             <TablaAcusesCliente data={dataCliente} />
-          </SoftBox>    
-           )}
+          </SoftBox>
+        )}
+
+        {acusesPorBloque.length > 0 && (
+          <SoftBox width="98%" mt={3}>
+            {acusesPorBloque.map((bloque, index) => (
+              <Accordion
+                key={index}
+                expanded={expandedAccordion === index}
+                onChange={() =>
+                  setExpandedAccordion(expandedAccordion === index ? null : index)
+                }
+                sx={{ mb: 2, boxShadow: 2, borderRadius:"8px" }}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  sx={{
+                    background: "linear-gradient(to top, #2152ff, #21d4fd)",
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    paddingY: "2px", // controlado
+                    paddingX: 2,
+                    textTransform: "uppercase",
+                    borderRadius: "8px",
+                    minHeight: "15px !important", // altura más controlada
+                    '& .MuiAccordionSummary-content': {
+                      margin: 0, // elimina los márgenes verticales
+                      alignItems: "center",
+                      height: "100%", // toma el alto del summary
+                    },
+                    '& .MuiAccordionSummary-expandIconWrapper': {
+                      alignSelf: "center", // asegura que el ícono no cambie el alto
+                    },
+                  }}
+                >
+                  <span
+                    style={{
+                      flexGrow: 1,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    PARTE {index + 1} - {bloque.length} acuses
+                  </span>
+
+                  <Tooltip title="Descargar parte">
+                    <IconButton
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setLoading(true);
+                        try {
+                          await generarZIPDeAcuses(
+                          bloque,
+                          `${nombreLoteSeleccionado}_Parte_${index + 1}`,
+                          setProgreso,
+                          index + 1
+                        );
+
+                        } catch (error) {
+                          console.error("Error generando ZIP:", error);
+                        } finally {
+                          setLoading(false);
+                          setProgreso(""); // opcional: limpiar progreso cuando termina
+                        }
+                      }}
+                      sx={{ color: "#ffffff", fontSize: "20px" }}
+                    >
+                      <DownloadIcon />
+                    </IconButton>
+
+                  </Tooltip>
+                </AccordionSummary>
+                <AccordionDetails sx={{ paddingTop: 0, paddingBottom: 2 }}>
+                  {expandedAccordion === index && (
+                    <TablaAcusesCliente data={bloque} />
+                  )}
+                </AccordionDetails>
+
+              </Accordion>
+            ))}
+          </SoftBox>
+        )}
       </SoftBox>
     </>
   );
