@@ -41,7 +41,7 @@ const generarZIPDeAcuses = async (
   const procesarAcuse = (item, index) => {
     return new Promise(async (resolve) => {
       setProgreso(`Generando acuse ${index + 1} de ${dataArray.length} de parte ${parteNro}`);
-      await new Promise((res) => setTimeout(res, 50));
+      await new Promise((res) => setTimeout(res, 10));
 
       const contenedor = document.createElement("div");
       contenedor.style.position = "fixed";
