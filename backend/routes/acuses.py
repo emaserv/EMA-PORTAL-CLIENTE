@@ -1,6 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
+from io import BytesIO
 import json
+from tkinter import Image
 from flask import Blueprint, jsonify, request
 from sqlalchemy import text, cast, Text
 from db.masterRepo import DatabaseSession
@@ -28,27 +30,49 @@ def getLoteDropDwn():
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
+def compress_and_encode_image(url, quality=40, resize_factor=0.5): 
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code != 200:
+            return None
+
+        image = Image.open(BytesIO(response.content))
+
+        # Redimensionar
+        new_size = (
+            int(image.width * resize_factor),
+            int(image.height * resize_factor)
+        )
+        image = image.resize(new_size, Image.LANCZOS)
+
+        # Convertir si tiene canal alfa
+        if image.mode in ("RGBA", "P"):
+            image = image.convert("RGB")
+
+        # Comprimir a JPEG
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG", quality=quality, optimize=True)
+
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    except Exception as e:
+        print(f"Error al comprimir imagen: {e}")
+        return None
+    
 @lru_cache(maxsize=1024)
 def cached_encode_url_image_to_base64(url):
-    try:
-        if url and url.startswith("http"):
-            response = requests.get(url, timeout=5)
-            if response.status_code == 200:
-                return base64.b64encode(response.content).decode('utf-8')
-    except Exception as e:
-        print(f"Error al descargar o codificar la imagen: {e}")
-    return None
+    return compress_and_encode_image(url, quality=40, resize_factor=0.5)
 
 def encode_multiple_images_parallel(urls):
     results = {}
     unique_urls = set(url for url in urls if url)
-    
+
     with ThreadPoolExecutor(max_workers=25) as executor:
         future_to_url = {executor.submit(cached_encode_url_image_to_base64, url): url for url in unique_urls}
         for future in as_completed(future_to_url):
             url = future_to_url[future]
             results[url] = future.result()
-    
+
     return results
 
 @acuses.route('/api/acuses/getAcuses', methods=['GET'])
