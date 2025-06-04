@@ -54,10 +54,24 @@ const generarZIPDeAcuses = async (
 
       const root = ReactDOM.createRoot(contenedor);
 
-      root.render(
-        <AcuseReciboConFirma
-          data={item}
-          onRendered={async (refElement) => {
+        const itemFormateado = {
+          ...item,
+          fecha: formatearFecha(item.fecha),
+          hora: formatearHora(item.hora),
+          fechaEmision: formatearFecha(item.fechaEmision),
+          vencimiento: formatearFecha(item.vencimiento),
+          segundaVisita: {
+            ...item.segundaVisita,
+            fecha2: formatearFecha(item.segundaVisita?.fecha2),
+            hora2: formatearHora(item.segundaVisita?.hora2),
+          },
+        };
+
+        root.render(
+          <AcuseReciboConFirma
+            data={itemFormateado}
+            onRendered={async (refElement) => {
+
             const canvas = await html2canvas(refElement, {
               useCORS: true,
               backgroundColor: "#fff",
@@ -106,6 +120,20 @@ const generarZIPDeAcuses = async (
 };
 
 
+const formatearFecha = (date) => {
+  if (!date) return "-";
+  const partes = date.split(/[-/]/); // acepta "-" o "/"
+  if (partes.length !== 3) return date;
+  return `${partes[2]}/${partes[1]}/${partes[0]}`; // DD/MM/YYYY
+};
+
+const formatearHora = (hora) => {
+  if (!hora) return "-";
+  return hora.slice(0, 5); // Ej: "15:55:58" → "15:55"
+};
+
+
+
 const AcuseCliente = () => {
   const { handleSubmit, control } = useForm();
   const [lotes, setLotes] = useState([]);
@@ -121,7 +149,7 @@ const AcuseCliente = () => {
   useEffect(() => {
     const fetchLotes = async () => {
       try {
-        const response = await fetch(`${API_BACK}/api/acuses/loteDropDwn`);
+        const response = await fetch(`/api/acuses/loteDropDwn`);
         const data = (await response.ok) ? await response.json() : [];
 
         setLotes(
@@ -148,7 +176,7 @@ const AcuseCliente = () => {
       const lote = formData.loteSeleccionado;
       setNombreLoteSeleccionado(lote);
 
-      const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
+      const response = await fetch(`/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
       const data = await response.json();
       const allAcuses = data.acusesData || [];
 
@@ -180,7 +208,7 @@ const AcuseCliente = () => {
     setProgreso("Buscando acuses del cliente...");
     try {
       const response = await fetch(
-        `${API_BACK}/api/acuses/getAcuses?nroCliente=${formData.numCliente}`
+        `/api/acuses/getAcuses?nroCliente=${formData.numCliente}`
       );
       const data = await response.json();
       console.log("RESPONSE CRUDO", data.acusesData);

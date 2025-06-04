@@ -45,6 +45,7 @@ const headCells = [
   { id: "nroCliente", label: "NRO CLIENTE", labelComplete: "Número de Cliente" },
   { id: "medidor", label: "MEDIDOR", labelComplete: "Número de Medidor" },
   { id: "nombreCliente", label: "TITULAR", labelComplete: "Titular" },
+  { id: "comprobante", label: "COMPROBANTE", labelComplete:"Comprobante"},
   { id: "direccion", label: "DIRECCION", labelComplete: "Dirección" },
   { id: "codigoPostal", label: "CP - LOCALIDAD", labelComplete: "Código Postal y Localidad" },
   { id: "fecha", label: "F. 1º V", labelComplete: "Fecha 1º Visita" },
@@ -69,7 +70,20 @@ const TablaAcusesCliente = ({ data }) => {
   const [popupFirmaAbierta, setPopupFirmaAbierta] = useState(false);
   const [firmaSeleccionada, setFirmaSeleccionada] = useState(null);
 
-  const abrirAcuseEnNuevaPestaniaConCanvas = (item) => {
+  const abrirAcuseEnNuevaPestaniaConCanvas = (itemOriginal) => {
+    const item = {
+      ...itemOriginal,
+      fecha: formatearFecha(itemOriginal.fecha),
+      hora: formatearHora(itemOriginal.hora),
+      fechaEmision: formatearFecha(itemOriginal.fechaEmision),
+      vencimiento: formatearFecha(itemOriginal.vencimiento),
+      segundaVisita: {
+        ...itemOriginal.segundaVisita,
+        fecha2: formatearFecha(itemOriginal.segundaVisita?.fecha2),
+        hora2: formatearHora(itemOriginal.segundaVisita?.hora2),
+      },
+    };
+
     const contenedor = document.createElement("div");
     contenedor.style.position = "fixed";
     contenedor.style.top = "-9999px";
@@ -103,98 +117,98 @@ const TablaAcusesCliente = ({ data }) => {
               const nuevaVentana = window.open();
               if (nuevaVentana) {
                 nuevaVentana.document.write(`
-  <html>
-    <head>
-      <title>Acuse de Recibo</title>
-      <style>
-        body {
-          margin: 0;
-          font-family: Arial, sans-serif;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: flex-start;
-          background-color: white;
-        }
+              <html>
+                <head>
+                  <title>Acuse de Recibo</title>
+                  <style>
+                    body {
+                      margin: 0;
+                      font-family: Arial, sans-serif;
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                      justify-content: flex-start;
+                      background-color: white;
+                    }
 
-        .boton-descargar {
-          margin: 20px auto 10px auto;
-          padding: 8px 16px;
-          background-color: #2152ff;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          font-size: 14px;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .soft-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: linear-gradient(to top, #2152ff, #21d4fd);
-          color: white;
-          padding: 8px 16px;
-          border-radius: 8px;
-          font-weight: bold;
-          text-transform: uppercase;
-          font-size: 0.8rem;
-          cursor: pointer;
-          text-decoration: none;
-          box-shadow: 0 4px 8px rgba(33, 82, 255, 0.3);
-          transition: all 0.3s ease;
-        }
+                    .boton-descargar {
+                      margin: 20px auto 10px auto;
+                      padding: 8px 16px;
+                      background-color: #2152ff;
+                      color: white;
+                      border: none;
+                      border-radius: 5px;
+                      cursor: pointer;
+                      font-size: 14px;
+                      text-decoration: none;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    }
+                    
+                    .soft-button {
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 8px;
+                      background: linear-gradient(to top, #2152ff, #21d4fd);
+                      color: white;
+                      padding: 8px 16px;
+                      border-radius: 8px;
+                      font-weight: bold;
+                      text-transform: uppercase;
+                      font-size: 0.8rem;
+                      cursor: pointer;
+                      text-decoration: none;
+                      box-shadow: 0 4px 8px rgba(33, 82, 255, 0.3);
+                      transition: all 0.3s ease;
+                    }
 
-        .soft-button:hover {
-          box-shadow: 0 6px 12px rgba(33, 82, 255, 0.4);
-          transform: translateY(-1px);
-        }
+                    .soft-button:hover {
+                      box-shadow: 0 6px 12px rgba(33, 82, 255, 0.4);
+                      transform: translateY(-1px);
+                    }
 
-        .icon {
-          width: 18px;
-          height: 18px;
-          fill: white;
-        }
+                    .icon {
+                      width: 18px;
+                      height: 18px;
+                      fill: white;
+                    }
 
 
-        .contenido-img {
-          display: flex;
-          justify-content: center;
-          width: 100%;
-        }
+                    .contenido-img {
+                      display: flex;
+                      justify-content: center;
+                      width: 100%;
+                    }
 
-        img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 4px;
-          box-shadow: 0 0 8px rgba(0,0,0,0.1);
-        }
+                    img {
+                      max-width: 100%;
+                      height: auto;
+                      border-radius: 4px;
+                      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+                    }
 
-        .icon {
-          width: 18px;
-          height: 18px;
-          fill: white;
-        }
-      </style>
-    </head>
-    <body>
-      <a href="${urlDescarga}" download="_${item.codigoBarras}.jpg" class="soft-button">
-        <svg class="icon" viewBox="0 0 24 24">
-          <path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.34v4h4.66v-4h3.34L12 2z"/>
-        </svg>
-        Descargar JPG
-      </a>
+                    .icon {
+                      width: 18px;
+                      height: 18px;
+                      fill: white;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <a href="${urlDescarga}" download="_${item.codigoBarras}.jpg" class="soft-button">
+                    <svg class="icon" viewBox="0 0 24 24">
+                      <path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.34v4h4.66v-4h3.34L12 2z"/>
+                    </svg>
+                    Descargar JPG
+                  </a>
 
-      <div class="contenido-img">
-        <img src="${dataUrl}" alt="acuse" />
-      </div>
-    </body>
-  </html>
-`);
+                  <div class="contenido-img">
+                    <img src="${dataUrl}" alt="acuse" />
+                  </div>
+                </body>
+              </html>
+            `);
 
 
                 nuevaVentana.document.close();
@@ -297,6 +311,7 @@ const TablaAcusesCliente = ({ data }) => {
                           {item.nombreCliente?.slice(0, 8)}
                       </TableCell>
                   </Tooltip>
+                  <Tooltip title={item.comprobante}><TableCell sx={{ textAlign: "center", fontSize: "0.85rem", whiteSpace: "nowrap", }}>{item.comprobante}</TableCell></Tooltip>
 
                   <Tooltip title={item.direccion}>
                       <TableCell sx={{ textAlign: "center", fontSize: "0.85rem", whiteSpace: "nowrap", }}>

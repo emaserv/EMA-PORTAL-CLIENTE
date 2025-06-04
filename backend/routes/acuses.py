@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from io import BytesIO
 import json
-from tkinter import Image
+from PIL import Image
 from flask import Blueprint, jsonify, request
 from sqlalchemy import text, cast, Text
 from db.masterRepo import DatabaseSession
