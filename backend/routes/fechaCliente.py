@@ -156,7 +156,7 @@ def tablaFC():
             datosPiezasPostales.append({
                 'id': row.id,
                 'fechaEmision': format_date(row.fechaEmision),
-                'fechaVencimiento': res_venc,
+                'fechaVencimiento': res_venc if grupoCliente == '4' else format_date(row.vencimiento),
                 'grupoCliente': row.grupoCliente,
                 'nroCliente': row.nroCliente,
                 'titular': row.titular,
@@ -167,7 +167,7 @@ def tablaFC():
                 'localidad': row.localidad,
                 'fecha': fecha,
                 'hora': format_time(row.hora), 
-                'importe': res_imp,
+                'importe': res_imp if grupoCliente == '4' else row.importe,
                 'estadoPieza': row.estadoPieza,
                 'estadoMetro': row.estadoMetro,
                 'obsVisita': row.obsVisita,
@@ -175,6 +175,11 @@ def tablaFC():
                 'foto': row.foto,
                 'firma': row.firma,
                 'acuseDeDeuda': res_acuse,
+                'medidor': row.medidor,
+                'entreCalles': row.entreCalles,
+                'codigoPostal': row.codigoPostal,
+                #'fechaAsignacion': format_date(row.fechaAsignacion),
+                'fechaIngreso': format_date(row.fechaIngreso)
             })
             
         if not datosPiezasPostales:
@@ -305,7 +310,7 @@ def tablaInformacion():
                 "6_DEV": "6 DEV"
             },
             {
-                "Empresa": "METROGAS" if grupoCliente == "4" else "EDESUR",
+                "Empresa": "METROGAS" if grupoCliente == "4" else "NATURGY" if grupoCliente == "2" else "EDESUR",
                 "ZP": "BAJO PUERTA",
                 "BP_CR": "BAJO PUERTA",
                 "FAD": "BAJO FIRMA",

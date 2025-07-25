@@ -10,6 +10,7 @@ import { useForm, Controller } from "react-hook-form";
 import PRSTable from "./data/fechaClientePRSTable";
 import { useAuth } from "layouts/auth/AuthContext";
 import CalleAlturaTable from "./data/fechaClienteCalleAlturaTable";
+import NaturgyTable from "./data/fechaClienteNaturgyTable";
 import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
 import styled from "styled-components";
@@ -497,13 +498,12 @@ const FechaCliente = () => {
                     </SoftButton>
                   </SoftBox>
                   <SoftBox p={3}>
-                    {user.idGrupoCliente !== 4 ? (
-                      <PRSTable data={datosFiltrados} columns={columns} />
+                    {user.idGrupoCliente === 2 ? (
+                      <NaturgyTable data={datosFiltrados} columns={columns} />
+                    ) : user.idGrupoCliente === 4 ? (
+                      <CalleAlturaTable data={datosFiltrados} columns={columns} />
                     ) : (
-                      <CalleAlturaTable
-                        data={datosFiltrados}
-                        columns={columns}
-                      />
+                      <PRSTable data={datosFiltrados} columns={columns} />
                     )}
                   </SoftBox>
                 </>
@@ -512,7 +512,7 @@ const FechaCliente = () => {
           </SoftBox>
         </SoftBox>
 
-        {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 1) ? (
+        {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 1 || user.idGrupoCliente === 2) ? (
           <SoftBox
             paddingBottom={3}
             style={{ width: "90%" }}

@@ -126,7 +126,7 @@ const Home = () => {
 
                 
 
-                {user && user.idGrupoCliente !== 2 ? (
+                {user  ? (
                 <Grid
                   sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                   item
@@ -167,7 +167,7 @@ const Home = () => {
                   </div>
                 </Grid>) : null}
 
-                {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 2) ? (
+                {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 2 || user.idGrupoCliente === 6) ? (
                 <Grid
                   sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                   item
@@ -188,7 +188,7 @@ const Home = () => {
                 </Grid>)
                 : null}
 
-                {user && (user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2) ? (
+                {user && (user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2 && user.idGrupoCliente !== 6) ? (
                   <Grid
                     sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                     item
@@ -209,7 +209,7 @@ const Home = () => {
                   </Grid>
                 ) : null}
 
-                {user && (user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2) ? (
+                {user && (user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2 && user.idGrupoCliente !== 6) ? (
                 <Grid
                     sx={{ textAlign: "left", marginTop: "1rem" }} // Centrado del texto
                     item

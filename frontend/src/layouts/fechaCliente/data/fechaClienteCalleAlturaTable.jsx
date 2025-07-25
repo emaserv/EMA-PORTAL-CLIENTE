@@ -457,6 +457,10 @@ export default function CalleAlturaTable({ data, columns }) {
                             column !== "firma" &&
                             column !== "foto" &&
                             column !== "acuseDeDeuda" &&
+                            column !== "medidor" &&
+                            column !== "entreCalles" &&
+                            column !== "codigoPostal" &&
+                            column !== "fechaIngreso" &&
                             column !== "estadoMetro" && (
                               <TableCell
                                 key={`${row.id}-${column}-${index}`}
