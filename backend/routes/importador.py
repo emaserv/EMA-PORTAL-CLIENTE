@@ -13,7 +13,7 @@ importador = Blueprint('importador', __name__)
 def get_column_names(model):
     return [column.name for column in model.__table__.columns]
 
-@importador.route('/api/upload', methods=['POST'])
+@importador.route( '/api/upload', methods=['POST'])
 def uploadFileAndData():
     if not os.path.exists(current_app.config['UPLOAD_FOLDER']):
         os.makedirs(current_app.config['UPLOAD_FOLDER'])

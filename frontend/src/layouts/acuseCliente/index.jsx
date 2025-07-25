@@ -8,7 +8,7 @@ import SoftTypography from "components/SoftTypography";
 import SoftButton from "components/SoftButton";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "layouts/auth/AuthContext";
-import { API_BACK } from "../../config";
+import {API_BACK} from "../../config";
 import LoadingModal from "../../components/loadingModal";
 import DropdownList from "components/DropdownList";
 import AcuseReciboConFirma from "./components/acuseConFirma";
@@ -54,24 +54,10 @@ const generarZIPDeAcuses = async (
 
       const root = ReactDOM.createRoot(contenedor);
 
-        const itemFormateado = {
-          ...item,
-          fecha: formatearFecha(item.fecha),
-          hora: formatearHora(item.hora),
-          fechaEmision: formatearFecha(item.fechaEmision),
-          vencimiento: formatearFecha(item.vencimiento),
-          segundaVisita: {
-            ...item.segundaVisita,
-            fecha2: formatearFecha(item.segundaVisita?.fecha2),
-            hora2: formatearHora(item.segundaVisita?.hora2),
-          },
-        };
-
-        root.render(
-          <AcuseReciboConFirma
-            data={itemFormateado}
-            onRendered={async (refElement) => {
-
+      root.render(
+        <AcuseReciboConFirma
+          data={item}
+          onRendered={async (refElement) => {
             const canvas = await html2canvas(refElement, {
               useCORS: true,
               backgroundColor: "#fff",
@@ -120,20 +106,6 @@ const generarZIPDeAcuses = async (
 };
 
 
-const formatearFecha = (date) => {
-  if (!date) return "-";
-  const partes = date.split(/[-/]/); // acepta "-" o "/"
-  if (partes.length !== 3) return date;
-  return `${partes[2]}/${partes[1]}/${partes[0]}`; // DD/MM/YYYY
-};
-
-const formatearHora = (hora) => {
-  if (!hora) return "-";
-  return hora.slice(0, 5); // Ej: "15:55:58" → "15:55"
-};
-
-
-
 const AcuseCliente = () => {
   const { handleSubmit, control } = useForm();
   const [lotes, setLotes] = useState([]);
@@ -149,7 +121,7 @@ const AcuseCliente = () => {
   useEffect(() => {
     const fetchLotes = async () => {
       try {
-        const response = await fetch(`/api/acuses/loteDropDwn`);
+        const response = await fetch(`${API_BACK}/api/acuses/loteDropDwn`);
         const data = (await response.ok) ? await response.json() : [];
 
         setLotes(
@@ -168,31 +140,46 @@ const AcuseCliente = () => {
   }, []);
 
   const onDescargarAcuses2 = async (formData) => {
+
     if (!formData.loteSeleccionado) return;
     setLoading(true);
     setProgreso("Filtrando acuses...");
+    setAcusesPorBloque([]);
 
     try {
       const lote = formData.loteSeleccionado;
       setNombreLoteSeleccionado(lote);
 
-      const response = await fetch(`/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
-      const data = await response.json();
-      const allAcuses = data.acusesData || [];
+      const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
 
-      if (allAcuses.length === 0) {
-        alert("No se encontraron acuses.");
-        return;
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Dividimos los eventos enviados (por lotes de 500)
+        const parts = buffer.split("\n\n");
+
+        for (let i = 0; i < parts.length - 1; i++) {
+          const line = parts[i];
+          if (line.startsWith("data:")) {
+            const jsonData = JSON.parse(line.slice(5));
+            if (Array.isArray(jsonData) && jsonData.length > 0) {
+              setAcusesPorBloque((prev) => [...prev, jsonData]);
+            }
+          }
+        }
+
+        buffer = parts[parts.length - 1]; // lo que no se procesó aún
       }
 
-      const chunkSize = 500;
-      const chunks = [];
-
-      for (let i = 0; i < allAcuses.length; i += chunkSize) {
-        chunks.push(allAcuses.slice(i, i + chunkSize));
-      }
-
-      setAcusesPorBloque(chunks);
     } catch (err) {
       console.error("Error al obtener acuses:", err);
       alert("Ocurrió un error al filtrar los acuses.");
@@ -208,7 +195,7 @@ const AcuseCliente = () => {
     setProgreso("Buscando acuses del cliente...");
     try {
       const response = await fetch(
-        `/api/acuses/getAcuses?nroCliente=${formData.numCliente}`
+        `${API_BACK}/api/acuses/getAcuses?nroCliente=${formData.numCliente}`
       );
       const data = await response.json();
       console.log("RESPONSE CRUDO", data.acusesData);

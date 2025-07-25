@@ -31,33 +31,33 @@ def login():
         pswrd = data_dict.get("password")
 
         password = get_sha256_hash(pswrd)
-
-        print(user_name)
-        print(password)
-
+        
         with DatabaseSession().get_session() as session:
             query = text('SELECT * FROM get_credenciales(:userName, :password)')
             data_query = session.execute(query, {'userName': user_name, 'password': password})
 
         dataQueryJson = []
         for row in data_query:
-            dataQueryJson.append({
-                'userName': row.userN,
-                'nombre': row.nombre,
-                'apellido': row.apellido,
-                'idGrupoCliente': row.idGrupoCliente,
-                'found': row.found
-            })
+            try:
+                # Convertir explícitamente los tipos
+                dataQueryJson.append({
+                    'userName': str(row[0]) if row[0] else None,
+                    'nombre': str(row[1]) if row[1] else None,
+                    'apellido': str(row[2]) if row[2] else None,
+                    'idGrupoCliente': int(row[3]) if row[3] else None,
+                    'found': bool(row[4])
+                })
+            except (ValueError, TypeError) as e:
+                app.logger.error(f"Error converting data types: {e}")
+                continue
 
-        print(dataQueryJson)
-
-        if dataQueryJson[0]['found']:
-             return jsonify({"data": dataQueryJson}), 200
+        if dataQueryJson and dataQueryJson[0]['found']:
+            return jsonify({"data": dataQueryJson}), 200
         else:
             return jsonify({"message": "Bad username or password"}), 401
-    
+
     except Exception as e:
-        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 401
+        return jsonify({"message": f"Error al ejecutar la consulta de mierda!: {str(e)}"}), 401
     
 @auth.route('/protected', methods=['GET'])
 @jwt_required()

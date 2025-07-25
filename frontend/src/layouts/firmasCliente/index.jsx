@@ -54,7 +54,7 @@ const FirmasCliente = () => {
 
   useEffect(() => {
     if (user) {
-      fetch(`/api/emisiones/radioClienteEdesur?idGrupoCliente=${user.idGrupoCliente}`, { mode: "cors" })
+      fetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user.idGrupoCliente}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           if (apiData.multiplesEmision && apiData.columns) {
@@ -98,7 +98,7 @@ const FirmasCliente = () => {
 const fetchFirmaCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta, idEmision) => {
   try {
     const response2 = await fetch(
-      `/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}&fechaEmision=${idEmision || ""}`
+      `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}&fechaEmision=${idEmision || ""}`
     );
 
     const apiData2 = await response2.json();

@@ -3,7 +3,7 @@ from functools import lru_cache
 from io import BytesIO
 import json
 from PIL import Image
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, Response, stream_with_context
 from sqlalchemy import text, cast, Text
 from db.masterRepo import DatabaseSession
 from models.emision.ItemEmision import ItemEmision
@@ -28,6 +28,7 @@ def getLoteDropDwn():
         return jsonify(loteDropDown), 200
 
     except Exception as e:
+        print(e)
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
 def compress_and_encode_image(url, quality=40, resize_factor=0.5): 
@@ -75,10 +76,9 @@ def encode_multiple_images_parallel(urls):
 
     return results
 
-@acuses.route('/api/acuses/getAcuses', methods=['GET'])
+@acuses.route( '/api/acuses/getAcuses', methods=['GET'])
 def getAcuses():
     try:
-
         lote_param = request.args.get('lote')
         nroCliente = request.args.get('nroCliente')
 
@@ -86,172 +86,135 @@ def getAcuses():
             return jsonify({"message": "Debe proporcionar al menos 'lote' o 'nroCliente'."}), 400
 
         estados_validos = ['DV', 'DR', 'DM', 'F AD', 'F ZP AD', '1° ZP', 'BP CR', 'ZPBP', 'UZP']
-        acusesData = []
 
-        with DatabaseSession().get_session() as session:
-            # Obtener todos los lotes si se filtra solo por cliente
-            lotes = []
-            if lote_param:
-                lotes = [lote_param]
-            elif nroCliente:
-                lotes = [r[0] for r in session.query(ItemEmision.lote)
-                        .filter(
-                            ItemEmision.nroCliente == nroCliente,
-                            ItemEmision.idGrupoCliente == 2
-                        )
-                        .distinct().all()]
+        def generate():
+            with DatabaseSession().get_session() as session:
+                lotes = [lote_param] if lote_param else [
+                    r[0] for r in session.query(ItemEmision.lote)
+                        .filter(ItemEmision.nroCliente == nroCliente, ItemEmision.idGrupoCliente == 2)
+                        .distinct().all()
+                ]
 
-            for lote in lotes:
-                query = session.query(ItemEmision).filter(
-                    ItemEmision.lote == lote,
-                    ItemEmision.estadoPieza.in_(estados_validos)
-                )
+                for lote in lotes:
+                    query = session.query(ItemEmision).filter(
+                        ItemEmision.lote == lote,
+                        ItemEmision.estadoPieza.in_(estados_validos)
+                    )
+                    if nroCliente:
+                        query = query.filter(ItemEmision.nroCliente == nroCliente)
 
-                if nroCliente:
-                    query = query.filter(ItemEmision.nroCliente == nroCliente)
+                    resultados = query.all()
 
-                resultados = query.all()
+                    nroClientes = list(set(item.nroCliente for item in resultados))
+                    registros_nr = session.query(ItemEmision).filter(
+                        ItemEmision.lote == lote,
+                        ItemEmision.estadoPieza == 'NR',
+                        ItemEmision.nroCliente.in_(nroClientes)
+                    ).all()
+                    nr_por_cliente = {item.nroCliente: item for item in registros_nr}
 
-                nroClientes = list(set(item.nroCliente for item in resultados))
-                nr_query = session.query(ItemEmision).filter(
-                    ItemEmision.lote == lote,
-                    ItemEmision.estadoPieza == 'NR',
-                    ItemEmision.nroCliente.in_(nroClientes)
-                )
-                registros_nr = nr_query.all()
+                    def parse_obs_visita(obs):
+                        datos = {"dni": None, "aclaracion": None, "vinculo": None, "referencia1": None, "referencia2": None, "referencia3": None}
+                        if not obs:
+                            return datos
+                        dni_match = re.search(r"DNI:\s*(\d+)", obs)
+                        nombre_match = re.search(r"NOMBRE Y APELLIDO:\s*([^,]+)", obs)
+                        vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs)
 
-                nr_por_cliente = {item.nroCliente: item for item in registros_nr}
+                        def ref_con_color(n):
+                            ref = re.search(rf"{n}° REFERENCIA:\s*([^,]+)", obs)
+                            color = re.search(rf"{n}° COLOR:\s*([^,]+)", obs)
+                            if ref:
+                                ref_text = ref.group(1).strip()
+                                color_text = color.group(1).strip() if color else ""
+                                return f"{ref_text} {color_text}" if color_text else ref_text
+                            return None
 
-                def parse_obs_visita(obs):
-                    datos = {
-                        "dni": None,
-                        "aclaracion": None,
-                        "vinculo": None,
-                        "referencia1": None,
-                        "referencia2": None,
-                        "referencia3": None
-                    }
-
-                    if not obs:
+                        if dni_match:
+                            datos["dni"] = dni_match.group(1)
+                        if nombre_match:
+                            datos["aclaracion"] = nombre_match.group(1).strip()
+                        if vinculo_match:
+                            datos["vinculo"] = vinculo_match.group(1).strip()
+                        datos["referencia1"] = ref_con_color(1)
+                        datos["referencia2"] = ref_con_color(2)
+                        datos["referencia3"] = ref_con_color(3)
                         return datos
 
-                    # Expresiones regulares para cada dato
-                    dni_match = re.search(r"DNI:\s*(\d+)", obs)
-                    nombre_match = re.search(r"NOMBRE Y APELLIDO:\s*([^,]+)", obs)
-                    vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs)
+                    def process_in_batches(data, batch_size=500):
+                        for i in range(0, len(data), batch_size):
+                            yield data[i:i + batch_size]
 
-                    def ref_con_color(n):
-                        ref = re.search(rf"{n}° REFERENCIA:\s*([^,]+)", obs)
-                        color = re.search(rf"{n}° COLOR:\s*([^,]+)", obs)
-                        if ref:
-                            ref_text = ref.group(1).strip()
-                            color_text = color.group(1).strip() if color else ""
-                            return f"{ref_text} {color_text}" if color_text else ref_text
-                        return None
+                    for batch in process_in_batches(resultados, 500):
+                        batch_image_urls = [item.foto for item in batch if item.foto]
+                        batch_signature_urls = [item.firma for item in batch if item.firma]
+                        encoded_data = encode_multiple_images_parallel(batch_image_urls + batch_signature_urls)
 
-                    # Guardamos los datos extraídos
-                    if dni_match:
-                        datos["dni"] = dni_match.group(1)
-                    if nombre_match:
-                        datos["aclaracion"] = nombre_match.group(1).strip()
-                    if vinculo_match:
-                        datos["vinculo"] = vinculo_match.group(1).strip()
+                        lote_acuses = []
+                        for item in batch:
+                            obs = parse_obs_visita(item.obsVisita)
+                            estado = item.estadoPieza
 
-                    datos["referencia1"] = ref_con_color(1)
-                    datos["referencia2"] = ref_con_color(2)
-                    datos["referencia3"] = ref_con_color(3)
+                            descripcion = (
+                                "Otros" if estado == "DV" else
+                                "Rehusado" if estado == "DR" else
+                                "Se mudó" if estado == "DM" else None
+                            )
 
-                    return datos
-                
-                # Función para procesar en lotes
-                def process_in_batches(data, batch_size=500):
-                    for i in range(0, len(data), batch_size):
-                        batch = data[i:i + batch_size]
-                        yield batch
+                            tipo_entrega = (
+                                "Bajo Puerta" if estado in ["1° ZP", "BP CR", "ZPBP", "UZP"] else
+                                "Firmada" if estado in ["F AD", "F ZP AD"] else
+                                "Otros" if estado == "DV" else
+                                "Rehusado" if estado == "DR" else
+                                "Se mudó" if estado == "DM" else None
+                            )
 
-                
+                            segunda_visita = {}
+                            fecha = item.fechaDistrib
+                            hora = item.horaDistrib
 
-                all_image_urls = []
-                all_signature_urls = []
+                            if estado in ['1° ZP', 'BP CR', 'ZPBP', 'UZP']:
+                                segunda_visita = {
+                                    "fecha2": item.fechaDistrib,
+                                    "hora2": item.horaDistrib
+                                }
+                                nr_item = nr_por_cliente.get(item.nroCliente)
+                                if nr_item:
+                                    fecha = nr_item.fechaDistrib
+                                    hora = nr_item.horaDistrib
 
-                # Procesamos los resultados en lotes de 100
-                for batch in process_in_batches(resultados, 500):
-                    # Pre-procesar URLs del batch actual
-                    batch_image_urls = []
-                    batch_signature_urls = []
-                    for item in batch:
-                        if item.foto: batch_image_urls.append(item.foto)
-                        if item.firma: batch_signature_urls.append(item.firma)
-                    
-                    # Codificar imágenes del batch en paralelo
-                    encoded_data = encode_multiple_images_parallel(batch_image_urls + batch_signature_urls)
+                            lote_acuses.append({
+                                "importe": item.importe,
+                                "fechaEmision": item.fechaEmision,
+                                "vencimiento": item.vencimiento,
+                                "nroCliente": item.nroCliente,
+                                "medidor": item.medidor,
+                                "nombreCliente": item.titular,
+                                "comprobante": item.comprobante,
+                                "direccion": f"{item.calle or ''} {item.altura or ''}".strip(),
+                                "entreCalle": item.entreCalles,
+                                "codigoPostal": f"{item.codigoPostal or ''} - {item.localidad or ''}".strip(),
+                                "codigoBarras": item.codigoBarras,
+                                "fecha": fecha,
+                                "hora": hora,
+                                "distribuidor": f"{item.legajo or ''} - {item.distribuidor or ''}".strip(),
+                                "dni": obs["dni"],
+                                "aclaracion": obs["aclaracion"],
+                                "vinculo": obs["vinculo"],
+                                "referencia1": obs["referencia1"],
+                                "referencia2": obs["referencia2"],
+                                "referencia3": obs["referencia3"],
+                                "descripcion": descripcion,
+                                "foto": encoded_data.get(item.foto),
+                                "firma": encoded_data.get(item.firma),
+                                "geo": item.geoVisita,
+                                "segundaVisita": segunda_visita,
+                                "tipoEntrega": tipo_entrega,
+                            })
 
-                    for item in batch:
-                        obs = parse_obs_visita(item.obsVisita)
-                        estado = item.estadoPieza
-                        descripcion = (
-                            "Otros" if estado == "DV" else
-                            "Rehusado" if estado == "DR" else
-                            "Se mudó" if estado == "DM" else
-                            None
-                        )
+                        yield f"data:{json.dumps(lote_acuses)}\n\n"
 
-                        tipo_entrega = (
-                            "Bajo Puerta" if estado in ["1° ZP", "BP CR", "ZPBP", "UZP"] else
-                            "Firmada" if estado in ["F AD", "F ZP AD"] else
-                            "Otros" if estado == "DV" else
-                            "Rehusado" if estado == "DR" else
-                            "Se mudó" if estado == "DM" else
-                            None
-                        )
-
-                        segunda_visita = {}
-                        fecha = item.fechaDistrib
-                        hora = item.horaDistrib
-
-                        if estado in ['1° ZP', 'BP CR', 'ZPBP', 'UZP']:
-                            segunda_visita = {
-                                "fecha2": item.fechaDistrib,
-                                "hora2": item.horaDistrib
-                            }
-
-                            # Si hay un NR con mismo cliente y lote, reemplazar fecha y hora principales
-                            nr_item = nr_por_cliente.get(item.nroCliente)
-                            if nr_item:
-                                fecha = nr_item.fechaDistrib
-                                hora = nr_item.horaDistrib
-
-                        acusesData.append({
-                            "importe": item.importe,
-                            "fechaEmision": item.fechaEmision,
-                            "vencimiento": item.vencimiento,
-                            "nroCliente": item.nroCliente,
-                            "medidor": item.medidor,
-                            "nombreCliente": item.titular,
-                            "comprobante": item.comprobante,
-                            "direccion": f"{item.calle or ''} {item.altura or ''}".strip(),
-                            "entreCalle": item.entreCalles,
-                            "codigoPostal": f"{item.codigoPostal or ''} - {item.localidad or ''}".strip(),
-                            "codigoBarras": item.codigoBarras,
-                            "fecha": fecha,
-                            "hora": hora,
-                            "distribuidor": f"{item.legajo or ''} - {item.distribuidor or ''}".strip(),
-                            "dni": obs["dni"],
-                            "aclaracion": obs["aclaracion"],
-                            "vinculo": obs["vinculo"],
-                            "referencia1": obs["referencia1"],
-                            "referencia2": obs["referencia2"],
-                            "referencia3": obs["referencia3"],
-                            "descripcion": descripcion,
-                            "foto": encoded_data.get(item.foto),
-                            "firma": encoded_data.get(item.firma),
-                            "geo": item.geoVisita,
-                            "segundaVisita": segunda_visita,
-                            "tipoEntrega": tipo_entrega,
-                        })
-                        #total=len(acusesData)
-
-        return jsonify({"message": "Conexión y consulta exitosas", "acusesData": acusesData})
+        return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
     except Exception as e:
         print(e)

@@ -47,7 +47,7 @@ def format_date(date_str):
     return nuevaFecha
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
-@radioCliente.route('/api/radio-cliente', methods=['GET'])
+@radioCliente.route( '/api/radio-cliente', methods=['GET'])
 def tablaRC():
     fechaEmision = request.args.get('fechaEmision')
     plan = request.args.get('plan')
@@ -140,7 +140,7 @@ def tablaRC():
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
-@radioCliente.route('/api/radio/geoMapaItems', methods=['GET'])
+@radioCliente.route( '/api/radio/geoMapaItems', methods=['GET'])
 def mapaItems():
     plan = request.args.get('plan')
     sucursal = request.args.get('sucursal')
@@ -221,7 +221,7 @@ def mapaItems():
 
 
 
-@radioCliente.route('/api/get-presentismo', methods=['GET'])
+@radioCliente.route( '/api/get-presentismo', methods=['GET'])
 def obtener_presentismo():
     hini = request.args.get('hini') 
     hfin = request.args.get('hfin')
@@ -255,7 +255,7 @@ def obtener_presentismo():
 
     
 
-@radioCliente.route('/api/geoMapaCamino', methods=['GET'])
+@radioCliente.route( '/api/geoMapaCamino', methods=['GET'])
 def mapaCamino():
     # Obtén los parámetros de la solicitud GET
     plan = request.args.get('plan')
@@ -344,7 +344,7 @@ def mapaCamino():
 
 
 
-@radioCliente.route('/api/geo-dai', methods=['GET'])
+@radioCliente.route( '/api/geo-dai', methods=['GET'])
 def get_dai_data():
     fechaini = request.args.get('hini')
     fechafin = request.args.get('hfin')
@@ -404,7 +404,7 @@ def get_dai_data():
 
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
-@radioCliente.route('/api/plan', methods=['GET'])
+@radioCliente.route( '/api/plan', methods=['GET'])
 def planRC():
     
     try:        
@@ -432,7 +432,7 @@ def planRC():
 
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
-@radioCliente.route('/api/sucursal', methods=['GET'])
+@radioCliente.route( '/api/sucursal', methods=['GET'])
 def sucursalRC():
     
     try:        
@@ -460,7 +460,7 @@ def sucursalRC():
 
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
-@radioCliente.route('/api/radio', methods=['GET'])
+@radioCliente.route( '/api/radio', methods=['GET'])
 def radioRC():
     try:        
         query = text('SELECT DISTINCT("radio") FROM "itemEmision"')

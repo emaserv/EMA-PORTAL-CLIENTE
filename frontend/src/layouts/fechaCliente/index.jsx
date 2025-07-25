@@ -54,7 +54,7 @@ const FechaCliente = () => {
   
 
   useEffect(() => {
-    fetch(`/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+    fetch(`${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
       .then((response) => response.json())
       .then((apiData) => {
         if (apiData.dataTabla && apiData.columns) {
@@ -69,7 +69,7 @@ const FechaCliente = () => {
 
   useEffect(() => {
       if (mutex) {
-        fetch(`/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+        fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
           .then((response) => response.json())
           .then((apiData) => {
             if (apiData.multiplesEmision && apiData.columns) {
@@ -122,7 +122,7 @@ const FechaCliente = () => {
 
     try {
       // Primera solicitud: fecha-cliente
-      const url1 = `/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí      
+      const url1 = `${API_BACK}/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí      
       const params1 = {
         cliente: cliente || "",
         grupoCliente: user ? user.idGrupoCliente : null|| "",
@@ -151,7 +151,7 @@ const FechaCliente = () => {
 
     try {
       // Segunda solicitud: geoMapaItems
-      const url2 = `/api/fecha/geoMapaItems`;
+      const url2 = `${API_BACK}/api/fecha/geoMapaItems`;
       const params2 = {
         cliente: cliente || "",
         grupoCliente: user ? user.idGrupoCliente : null || "",

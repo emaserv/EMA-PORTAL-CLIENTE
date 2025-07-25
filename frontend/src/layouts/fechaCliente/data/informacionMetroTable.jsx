@@ -170,6 +170,13 @@ export default function InformacionMetroTable({ data, columns }) {
       labelComplete: "NO RESPONDE LLAMADO",
     },
     {
+      id: "ZPBP",
+      numeric: false,
+      disablePadding: false,
+      label: "BAJO PUERTA ZONA PELIGROSA",
+      labelComplete: "BAJO PUERTA ZONA PELIGROSA",
+    },
+    {
       id: "UZP",
       numeric: false,
       disablePadding: false,

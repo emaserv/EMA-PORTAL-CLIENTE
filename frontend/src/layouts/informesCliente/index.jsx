@@ -35,7 +35,7 @@ const InformesCliente = () => {
   const [alertTitle, setAlertTitle] = useState("");
 
   useEffect(() => {
-    fetch(`/api/tablaInformacion`, { mode: "cors" })
+    fetch(`${API_BACK}/api/tablaInformacion`, { mode: "cors" })
       .then((response) => response.json())
       .then((apiData) => {
         if (apiData.dataTabla && apiData.columns) {
@@ -50,7 +50,7 @@ const InformesCliente = () => {
 
   useEffect(() => {
     if (mutex) {
-      fetch(`/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+      fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           if (apiData.multiplesEmision && apiData.columns) {
@@ -76,7 +76,7 @@ const InformesCliente = () => {
 
     try {
       // Primera solicitud: fecha-cliente
-      const url1 = `/api/informe-emision?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`; // La URL base debe configurarse en axios o agregarla completa aquí
+      const url1 = `${API_BACK}/api/informe-emision?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`; // La URL base debe configurarse en axios o agregarla completa aquí
 
       const response1 = await axios.get(url1);
       console.log("Response", response1.status);
@@ -105,7 +105,7 @@ const InformesCliente = () => {
     
     try {
   
-      const url = `/api/informe-emision-extendido?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`;      
+      const url = `${API_BACK}/api/informe-emision-extendido?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`;      
       const response = await axios.get(url);
       const apiData = response.data;
   

@@ -258,7 +258,7 @@ def mapaItems():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
-@fechaCliente.route('/api/nroCliente', methods=['GET'])
+@fechaCliente.route( '/api/nroCliente', methods=['GET'])
 def nroClienteFC():
     
     try:        
@@ -286,7 +286,7 @@ def nroClienteFC():
 
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
-@fechaCliente.route('/api/tablaInformacion', methods=['GET'])
+@fechaCliente.route( '/api/tablaInformacion', methods=['GET'])
 def tablaInformacion():
     grupoCliente = request.args.get("grupoCliente")
     
@@ -299,6 +299,7 @@ def tablaInformacion():
                 "BP_CR": "BP CR",
                 "FAD": "F AD" if grupoCliente == "4" else "F",
                 "NV": "NR",
+                "ZPBP": "ZPBP",
                 "UZP": "UZP",
                 "ZP_CR_2": "ZP CR",
                 "6_DEV": "6 DEV"
@@ -309,6 +310,7 @@ def tablaInformacion():
                 "BP_CR": "BAJO PUERTA",
                 "FAD": "BAJO FIRMA",
                 "NV": "NO RESPONDE LLAMADO",
+                "ZPBP": "BAJO PUERTA ZONA PELIGROSA",
                 "UZP": "BAJO PUERTA",
                 "ZP_CR_2": "BAJO PUERTA",
                 "6_DEV": "DEVOLUCION",
@@ -325,6 +327,7 @@ def tablaInformacion():
                 'BP_CR': row['BP_CR'],
                 'FAD': row['FAD'],
                 'NV': row['NV'],
+                'ZPBP': row['ZPBP'],
                 'UZP': row['UZP'],
                 'ZP_CR_2': row['ZP_CR_2'],
                 '6_DEV': row['6_DEV'],
@@ -346,7 +349,7 @@ def tablaInformacion():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
 
-@fechaCliente.route('/api/emision-cliente', methods=['GET'])
+@fechaCliente.route( '/api/emision-cliente', methods=['GET'])
 def tablaEmision():
     idEmision = request.args.get('idEmision')
     print(idEmision)
@@ -455,7 +458,7 @@ def tablaEmision():
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
-@fechaCliente.route('/api/emisiones', methods=['GET'])
+@fechaCliente.route( '/api/emisiones', methods=['GET'])
 def get_emisiones():
     idGrupoCliente = request.args.get('idGrupoCliente')
 
@@ -489,7 +492,7 @@ def get_emisiones():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
 
-@fechaCliente.route('/api/emisiones/radioClienteEdesur', methods=['GET'])
+@fechaCliente.route( '/api/emisiones/radioClienteEdesur', methods=['GET'])
 def get_emisionesEdesur():
     idGrupoCliente = request.args.get('idGrupoCliente')
 
@@ -526,7 +529,7 @@ def buscar_por_id(data, id_buscado):
     return None
 
 
-@fechaCliente.route('/api/informe-emision', methods=['GET'])
+@fechaCliente.route( '/api/informe-emision', methods=['GET'])
 def informeEmision():
     idEmision = request.args.get('idEmision')
     idGrupoCliente = request.args.get('idGrupoCliente')
@@ -612,7 +615,7 @@ def informeEmision():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 
-@fechaCliente.route('/api/informe-emision-extendido', methods=['GET'])
+@fechaCliente.route( '/api/informe-emision-extendido', methods=['GET'])
 def informeEmisionExtendido():
     idEmision = request.args.get('idEmision')
     idGrupoCliente = request.args.get('idGrupoCliente')    
