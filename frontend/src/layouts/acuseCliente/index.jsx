@@ -25,8 +25,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DownloadIcon from '@mui/icons-material/Download';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-
-
+import Checkbox from "@mui/material/Checkbox";
 
 
 const generarZIPDeAcuses = async (
@@ -45,11 +44,13 @@ const generarZIPDeAcuses = async (
 
       const contenedor = document.createElement("div");
       contenedor.style.position = "fixed";
-      contenedor.style.top = "-9999px";
+      contenedor.style.top = "0";
       contenedor.style.left = "0";
-      contenedor.style.width = "1000px";
-      contenedor.style.zIndex = "-1";
-      contenedor.style.backgroundColor = "#fff";
+      contenedor.style.width = "300px";
+      contenedor.style.height = "300px";
+      contenedor.style.opacity = "1";
+      contenedor.style.zIndex = "999999";
+
       document.body.appendChild(contenedor);
 
       const root = ReactDOM.createRoot(contenedor);
@@ -116,7 +117,24 @@ const AcuseCliente = () => {
   const [acusesPorBloque, setAcusesPorBloque] = useState([]);
   const [expandedAccordion, setExpandedAccordion] = useState(null);
   const [nombreLoteSeleccionado, setNombreLoteSeleccionado] = useState("");
+  const [partesSeleccionadas, setPartesSeleccionadas] = useState([]);
+  const { user } = useAuth();
 
+  const toggleParteSeleccionada = (index) => {
+    setPartesSeleccionadas((prev) =>
+      prev.includes(index)
+        ? prev.filter((i) => i !== index)
+        : [...prev, index]
+    );
+  };
+
+  const toggleSeleccionarTodas = () => {
+    if (partesSeleccionadas.length === acusesPorBloque.length) {
+      setPartesSeleccionadas([]);
+    } else {
+      setPartesSeleccionadas(acusesPorBloque.map((_, i) => i));
+    }
+  };
 
   useEffect(() => {
     const fetchLotes = async () => {
@@ -213,10 +231,12 @@ const AcuseCliente = () => {
     <>
       {loading && (
         <SoftBox
-          position="fixed"
-          top="calc(50% + 60px)"
-          left="50%"
-          style={{ transform: "translate(-50%, -50%)", zIndex: 999999999 }}
+          display="flex"
+          justifyContent="center" // <-- esto hay que hacerlo dinámico
+          flexWrap="wrap"
+          gap={2}
+          mt={6}
+          width="100%"
         >
           <SoftTypography variant="h2" color="black" fontWeight="bold">
             {progreso}
@@ -229,58 +249,67 @@ const AcuseCliente = () => {
           <ResponsiveAppBar />
         </SoftBox>
 
-        <SoftBox display="flex" justifyContent="center" flexWrap="wrap" gap={2} mt={6} width="100%">
+        <SoftBox
+          display="flex"
+          justifyContent={
+            user?.userName === "imorales@emaservicios.com.ar" ? "space-between" : "flex-start"
+          }
+          flexWrap="wrap"
+          gap={2}
+          mt={6}
+          width="100%"
+        >
+
           {/* Card Selección de Lote */}
-          <Card
-            sx={{
-              width: { xs: "100%", md: "48%" },
-              p: 4,
-              mt: '4rem',
-              boxShadow: 4,
-              borderRadius: 3,
-            }}
-          >
-            <SoftTypography variant="h5" fontWeight="bold" mb={0}>
-              Acuse por Lote
-            </SoftTypography>
-            <SoftBox
-              display="flex"
-              flexDirection={{ xs: "column", sm: "row" }}
-              gap={2}
-              alignItems="center"
+          {user?.userName === "imorales@emaservicios.com.ar" && (
+            <Card
+              sx={{
+                width: { xs: "100%", md: "48%" },
+                p: 4,
+                mt: "4rem",
+                boxShadow: 4,
+                borderRadius: 3,
+              }}
             >
-              <SoftBox flex={1}>
-                <SoftTypography component="label" variant="caption">
+              <SoftTypography variant="h5" fontWeight="bold" mb={0}>
+                Acuse por Lote
+              </SoftTypography>
+              <SoftBox
+                display="flex"
+                flexDirection={{ xs: "column", sm: "row" }}
+                gap={2}
+                alignItems="center"
+              >
+                <SoftBox flex={1}>
+                  <SoftTypography component="label" variant="caption">
                     Lote:
                   </SoftTypography>
-                <Controller
-                  name="loteSeleccionado"
-                  control={control}
-                  render={({ field }) => (
-                    <DropdownList
-                      width="30vw"
-                      list={lotes}
-                      campoAMostrar="nombre"
-                      campoID="nombre"
-                      placeholder="Seleccione un Lote"
-                      {...field}
-                    />
-                  )}
-                />
+                  <Controller
+                    name="loteSeleccionado"
+                    control={control}
+                    render={({ field }) => (
+                      <DropdownList
+                        width="30vw"
+                        list={lotes}
+                        campoAMostrar="nombre"
+                        campoID="nombre"
+                        placeholder="Seleccione un Lote"
+                        {...field}
+                      />
+                    )}
+                  />
+                </SoftBox>
+                <SoftButton
+                  sx={{ mt: "2rem" }}
+                  variant="gradient"
+                  color="info"
+                  onClick={handleSubmit(onDescargarAcuses2)}
+                >
+                  FILTRAR
+                </SoftButton>
               </SoftBox>
-              <SoftButton
-                sx={{
-                    mt: '2rem',
-            }}
-              
-                variant="gradient"
-                color="info"
-                onClick={handleSubmit(onDescargarAcuses2)}
-              >
-                FILTRAR
-              </SoftButton>
-            </SoftBox>
-          </Card>
+            </Card>
+          )}
 
           {/* Card Acuse por N° Cliente */}
           <Card
@@ -290,6 +319,7 @@ const AcuseCliente = () => {
               mt: '4rem',
               boxShadow: 4,
               borderRadius: 3,
+              ...(user?.userName !== "imorales@emaservicios.com.ar" && { ml: { xs: 0, md: 4 } })
             }}
           >
             <SoftTypography variant="h5" fontWeight="bold" mb={0}>
@@ -339,6 +369,43 @@ const AcuseCliente = () => {
 
         {acusesPorBloque.length > 0 && (
           <SoftBox width="98%" mt={3}>
+            <SoftBox display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <SoftBox display="flex" alignItems="center">
+                <Checkbox
+                  checked={partesSeleccionadas.length === acusesPorBloque.length}
+                  onChange={toggleSeleccionarTodas}
+                  color="primary"
+                  size="medium"
+                  sx={{ mr: 1 }}
+                />
+                <SoftTypography variant="button" fontWeight="bold">
+                  Seleccionar todas las partes
+                </SoftTypography>
+              </SoftBox>
+              <SoftButton
+                color="info"
+                disabled={partesSeleccionadas.length === 0}
+                onClick={async () => {
+                  setLoading(true);
+                  for (const parteIdx of partesSeleccionadas) {
+                    try {
+                      await generarZIPDeAcuses(
+                        acusesPorBloque[parteIdx],
+                        `${nombreLoteSeleccionado}_Parte_${parteIdx + 1}`,
+                        setProgreso,
+                        parteIdx + 1
+                      );
+                    } catch (err) {
+                      console.error("Error descargando parte", parteIdx + 1, err);
+                    }
+                  }
+                  setLoading(false);
+                  setProgreso("");
+                }}
+              >
+                Descargar seleccionadas
+              </SoftButton>
+            </SoftBox>
             {acusesPorBloque.map((bloque, index) => (
               <Accordion
                 key={index}
@@ -377,6 +444,16 @@ const AcuseCliente = () => {
                       alignItems: "center",
                     }}
                   >
+                    <Checkbox
+                      checked={partesSeleccionadas.includes(index)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleParteSeleccionada(index);
+                      }}
+                      size="medium" // o "small"
+                      color="primary"
+                      sx={{ mr: 1 }}
+                    />
                     PARTE {index + 1} - {bloque.length} acuses
                   </span>
 

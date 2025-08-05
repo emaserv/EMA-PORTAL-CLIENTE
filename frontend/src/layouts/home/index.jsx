@@ -2,7 +2,7 @@ import * as React from "react";
 import SoftBox from "components/SoftBox";
 import ResponsiveAppBar from "./components/responsiveAppBar";
 
-import { useState } from "react";
+import {useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 
 import styled from "styled-components";
@@ -35,6 +35,7 @@ const Home = () => {
   const [fileName, setFileName] = useState(null);
   const { handleSubmit, control } = useForm();
   const { user } = useAuth();
+  
 
   // Estado para la pantalla de cargas de los archivos
   const [loading, setLoading] = useState(false);
@@ -126,7 +127,7 @@ const Home = () => {
 
                 
 
-                {user  ? (
+                {user && user.idGrupoCliente !== 2  ? (
                 <Grid
                   sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
                   item
@@ -147,25 +148,27 @@ const Home = () => {
                 </Grid>)
                 : null}
 
-                {user && user.idGrupoCliente == 2 ?(
-                <Grid
-                  sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
-                  item
-                  xs={12}
-                >
-                  <div className="content" display="flex">
-                    <Link to="/acuse-cliente">
-                      <SoftButton
-                        variant="gradient"
-                        color="info"
-                        size="large"
-                        sx={{ width: "30rem" }}
-                      >
-                        Acuse Cliente
-                      </SoftButton>
-                    </Link>
-                  </div>
-                </Grid>) : null}
+                {(user && (user.idGrupoCliente === 2 || user?.userName === "imorales@emaservicios.com.ar")) && (
+                  <Grid
+                    sx={{ textAlign: "left", marginTop: "1rem" }}
+                    item
+                    xs={12}
+                  >
+                    <div className="content" style={{ display: "flex" }}>
+                      <Link to="/acuse-cliente">
+                        <SoftButton
+                          variant="gradient"
+                          color="info"
+                          size="large"
+                          sx={{ width: "30rem" }}
+                        >
+                          Acuse Cliente
+                        </SoftButton>
+                      </Link>
+                    </div>
+                  </Grid>
+                )}
+
 
                 {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 2 || user.idGrupoCliente === 6) ? (
                 <Grid
