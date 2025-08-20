@@ -138,6 +138,9 @@ def getAcuses():
                 if nroCliente:
                     query = query.filter(ItemEmision.nroCliente == nroCliente)
 
+                # ORDENAR POR nroCliente
+                query = query.order_by(ItemEmision.nroCliente)
+                
                 resultados = query.all()
                 nroClientes = list(set(item.nroCliente for item in resultados))
                 registros_nr = session.query(ItemEmision).filter(
@@ -228,10 +231,12 @@ def getAcuses():
             else:
                 # MODO JSON PLANO
                 for lote in lotes:
-                    for batch in generar_acuses(lote):  # <-- ahora sí, plano
+                    for batch in generar_acuses(lote):
                         all_acuses.extend(batch)
 
-
+                # ORDENAR LA LISTA FINAL POR nroCliente (por si hay múltiples lotes)
+                all_acuses.sort(key=lambda x: x["nroCliente"])
+                
                 return jsonify({"acusesData": all_acuses}), 200
 
     except Exception as e:
