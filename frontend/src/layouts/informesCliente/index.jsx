@@ -77,11 +77,10 @@ const InformesCliente = () => {
     try {
       // Primera solicitud: fecha-cliente
       const url1 = `${API_BACK}/api/informe-emision?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`; // La URL base debe configurarse en axios o agregarla completa aquí
-
       const response1 = await axios.get(url1);
       console.log("Response", response1.status);
       const apiData1 = response1.data;
-
+      console.log("DATAAA: ",apiData1)
       if (apiData1.dataTabla) {
         setDataEmision(apiData1.dataTabla);
         setColumnsEmision(apiData1.columns);
@@ -133,6 +132,26 @@ const InformesCliente = () => {
               Firma: row.firma || "-",
             }));
           } else if (user.idGrupoCliente === 2) {
+            return apiData.dataTabla.map((row) => ({
+              //ID: row.id || "-",
+              "Fecha Emisión": row.fechaEmision || "-",
+              "Número Cliente": row.nroCliente || "-",
+              Titular: row.titular || "-",
+              //Plan: row.plan || "-",
+              //Sucursal: row.sucursal || "-",
+              //Radio: row.radio || "-",
+              Dirección: row.direccion || "-",
+              Localidad: row.localidad || "-",
+              Fecha: row.fecha || "-",
+              //Hora: row.hora || "-",
+              "Estado Pieza": row.estadoPieza || "-",
+              //"Estado Metro": row.estadoMetro || "-",
+              "Observación Visita": row.obsVisita || "-",
+              //GeoVisita: row.geoVisita || "-",
+              Acuse: row.foto || "-",
+              //Firma: row.firma || "-",
+            }));
+          } else if (user.idGrupoCliente === 6) {
             return apiData.dataTabla.map((row) => ({
               //ID: row.id || "-",
               "Fecha Emisión": row.fechaEmision || "-",
@@ -311,7 +330,7 @@ const InformesCliente = () => {
                         data={dataEmision}
                         columns={columnsEmision}
                       />
-                    ) :  user.idGrupoCliente === 2 ? (
+                    ) :  user.idGrupoCliente === 2 || user.idGrupoCliente === 6 ? (
                       <CalleAlturaTableNaturgy
                         data={dataEmision}
                         columns={columnsEmision}

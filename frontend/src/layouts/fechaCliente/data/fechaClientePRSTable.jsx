@@ -24,6 +24,7 @@ import Edit from "@mui/icons-material/Edit";
 import ArticleIcon from "@mui/icons-material/Article";
 import { Tooltip } from "@mui/material";
 import MobileFriendlyTooltip from "components/TooltipMobile";
+import { useAuth } from "layouts/auth/AuthContext";
 
 dayjs.locale("ES");
 
@@ -32,6 +33,7 @@ const toDate = (dayjsObject) =>
 const todayGMT3 = dayjs().subtract(3, "hour");
 
 export default function PRSTable({ data, columns }) {
+  const { user } = useAuth();
   const [order, setOrder] = React.useState("asc");
   const [orderBy, setOrderBy] = React.useState("cantidadDePiezas");
   const [selected, setSelected] = React.useState([]);
@@ -73,6 +75,7 @@ export default function PRSTable({ data, columns }) {
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
   };
+  
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
@@ -251,6 +254,14 @@ export default function PRSTable({ data, columns }) {
     },
   ];
 
+  // filtrado dinámico
+  const columnasFiltradas =
+    user.idGrupoCliente === 6
+      ? headCells.filter(
+          (col) => !["planTurno", "sucursal", "radio"].includes(col.id)
+        )
+      : headCells;
+
   function Completion({ value, color }) {
     return (
       <SoftBox display="flex" alignItems="center">
@@ -312,7 +323,7 @@ export default function PRSTable({ data, columns }) {
             //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
           }}
         >
-          {headCells.map((headCell) => (
+          {columnasFiltradas.map((headCell) => (
             <TableCell
               key={headCell.id}
               align={headCell.numeric ? "right" : "left"}
@@ -444,48 +455,59 @@ export default function PRSTable({ data, columns }) {
                     selected={isItemSelected}
                     sx={{ cursor: "pointer" }}
                   >
-                    {columns.map(
-                      (column) =>
-                        //Con esto oculto la columna que tiene el id
-                        //NO BORRAR LA COLUMNA ID PORQUE SI NO SE ROMPE LA TABLA
-                        column !== "id" &&
-                        column !== "grupoCliente" &&
-                        column !== "geoVisita" &&
-                        column !== "firma" &&
-                        column !== "direccion" &&
-                        column !== "foto" &&
-                        column !== "estadoMetro" &&
-                        column !== "fechaVencimiento" &&
-                        column !== "importe" &&
-                        column !== "acuseDeDeuda" &&
-                        column !== "medidor" &&
-                        column !== "entreCalles" &&
-                        column !== "codigoPostal" &&
-                        column !== "fechaIngreso" &&
-                        column !== "legajo" && (
-                          <TableCell
-                            key={`${row.id}-${column}`}
-                            align="left"
-                            sx={{
-                              fontSize: "0.875rem",
-                              paddingTop: "2px",
-                              paddingBottom: "2px",
-                            }}
+                  {columns.map((column) => {
+                    // columnas que siempre ocultamos
+                    const ocultasFijas = [
+                      "id",
+                      "grupoCliente",
+                      "geoVisita",
+                      "firma",
+                      "direccion",
+                      "foto",
+                      "estadoMetro",
+                      "fechaVencimiento",
+                      "importe",
+                      "acuseDeDeuda",
+                      "medidor",
+                      "entreCalles",
+                      "codigoPostal",
+                      "fechaIngreso",
+                      "legajo",
+                    ];
+
+                    // columnas que se ocultan solo para idGrupoCliente 6
+                    const ocultasGrupo6 = ["plan","sucursal", "radio"];
+
+                    if (
+                      ocultasFijas.includes(column) ||
+                      (user.idGrupoCliente === 6 && ocultasGrupo6.includes(column))
+                    ) {
+                      return null;
+                    }
+
+                    return (
+                      <TableCell
+                        key={`${row.id}-${column}`}
+                        align="left"
+                        sx={{
+                          fontSize: "0.875rem",
+                          paddingTop: "2px",
+                          paddingBottom: "2px",
+                        }}
+                      >
+                        {column !== "porcentaje" ? (
+                          <MobileFriendlyTooltip
+                            title={row[column] ? row[column] : "Sin información"}
                           >
-                            {column !== "porcentaje" ? (
-                              <MobileFriendlyTooltip
-                                title={
-                                  row[column] ? row[column] : "Sin información"
-                                }
-                              >
-                                <span>{truncarTexto(row[column], 12)}</span>
-                              </MobileFriendlyTooltip>
-                            ) : (
-                              <Completion value={row[column]} color="info" />
-                            )}
-                          </TableCell>
-                        )
-                    )}
+                            <span>{truncarTexto(row[column], 12)}</span>
+                          </MobileFriendlyTooltip>
+                        ) : (
+                          <Completion value={row[column]} color="info" />
+                        )}
+                      </TableCell>
+                    );
+                  })}
+
 
                     {row.estadoPieza !== "NR" ? (
                       <TableCell

@@ -18,6 +18,8 @@ import { HiChevronUp, HiChevronDown } from "react-icons/hi";
 import dayjs from "dayjs";
 import MobileFriendlyTooltip from "components/TooltipMobile";
 import axios from "axios";
+import { useAuth } from "layouts/auth/AuthContext";
+
 
 dayjs.locale("ES");
 
@@ -32,7 +34,7 @@ export default function CalleAlturaTableNaturgy({ data, columns }) {
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(25);
-
+  const { user } = useAuth();
   const [startDate, setStartDate] = React.useState(null);
   const [endDate, setEndDate] = React.useState(null);
 
@@ -153,6 +155,12 @@ export default function CalleAlturaTableNaturgy({ data, columns }) {
     },
   ];
 
+  const columnasFiltradas =
+    user.idGrupoCliente === 6
+      ? headCells.filter(col => col.id !== "condicion")
+      : headCells;
+
+
   function Completion({ value, color }) {
     return (
       <SoftBox display="flex" alignItems="center">
@@ -214,7 +222,7 @@ export default function CalleAlturaTableNaturgy({ data, columns }) {
             //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
           }}
         >
-          {headCells.map((headCell) => (
+          {columnasFiltradas.map((headCell) => (
             <TableCell
               key={headCell.id}
               align={headCell.numeric ? "right" : "left"}

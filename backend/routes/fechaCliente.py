@@ -148,7 +148,7 @@ def tablaFC():
             res_imp = str("${:,.2f}".format(res.get("Importe", 0)))
             res_acuse = res.get("Url", "0")
 
-            if grupoCliente == '4':
+            if grupoCliente == '4' or grupoCliente == '6':
                 fecha = format_date(row.fechaDistrib)
             else:
                 fecha = format_date(row.fechaCertificacion)
@@ -476,6 +476,8 @@ def get_emisiones():
             queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icn GROUP BY "fechaEmision" ORDER BY 1')
         elif int(idGrupoCliente) == 1:
             queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 1 GROUP BY "fechaEmision" ORDER BY 1')
+        elif int(idGrupoCliente) == 6:
+            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 6 GROUP BY "fechaEmision" ORDER BY 1')
 
         if queryBase is None:
             return jsonify({"message": "idGrupoCliente no válido"}), 400
@@ -544,6 +546,8 @@ def informeEmision():
             queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
         elif int(idGrupoCliente)  == 2:
             queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icm GROUP BY "fechaEmision" ORDER BY 1')
+        elif int(idGrupoCliente) == 6:
+            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 6 GROUP BY "fechaEmision" ORDER BY 1')
         
         with DatabaseSession().get_session() as session:
             data_query_search = session.execute(queryBaseSearch)
@@ -562,6 +566,8 @@ def informeEmision():
             queryBase = 'SELECT * FROM "informeClienteMetrogas" icm'
         elif int(idGrupoCliente) == 2:
             queryBase = 'SELECT * FROM "informeClienteNaturgy" icn'
+        elif int(idGrupoCliente) == 6:
+            queryBase = 'SELECT * FROM "informeClienteEcogas" ie'
         
         where_clauses = []
         qParams = {}
@@ -572,6 +578,9 @@ def informeEmision():
             qParams['fechaEmision'] = fechaEncontrada
         elif idEmision and int(idGrupoCliente) == 2:
             where_clauses.append('icn."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEncontrada
+        elif idEmision and int(idGrupoCliente) == 6:
+            where_clauses.append('ie."fechaEmision" = :fechaEmision')
             qParams['fechaEmision'] = fechaEncontrada
 
         # Combinar cláusulas WHERE si existen
@@ -608,15 +617,24 @@ def informeEmision():
                     'estadoPieza': row.estadoPieza,
                     'count': str(row.count),
                 })
+            elif int(idGrupoCliente) == 6:
+                datosPiezasPostales.append({
+                    'id': row.id, 
+                    #'idEmision': row.idEmision,
+                    'fechaEmision': row.fechaEmision,
+                    'estadoPieza': row.estadoPieza,
+                    'count': str(row.count),
+                })
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204
 
         keys = list(datosPiezasPostales[0].keys())
-
+        print("LLAVES ",keys,"DATOS ", datosPiezasPostales)
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
 
     except Exception as e:
+        print("ERROR: ",e)
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 
