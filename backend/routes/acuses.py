@@ -133,7 +133,8 @@ def getAcuses():
             def generar_acuses(lote):
                 query = session.query(ItemEmision).filter(
                     ItemEmision.lote == lote,
-                    ItemEmision.estadoPieza.in_(estados_validos)
+                    ItemEmision.estadoPieza.in_(estados_validos),
+                    ItemEmision.estadoMetro.is_(None)
                 )
                 if nroCliente:
                     query = query.filter(ItemEmision.nroCliente == nroCliente)

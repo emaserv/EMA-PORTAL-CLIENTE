@@ -638,60 +638,84 @@ def informeEmision():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 
-@fechaCliente.route( '/api/informe-emision-extendido', methods=['GET'])
+@fechaCliente.route('/api/informe-emision-extendido', methods=['GET'])
 def informeEmisionExtendido():
     idEmision = request.args.get('idEmision')
     idGrupoCliente = request.args.get('idGrupoCliente')    
     
     try:
         if int(idGrupoCliente) == 4:
-            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+            queryBaseSearch = text('''
+                SELECT DISTINCT("fechaEmision") AS nombre, 
+                       row_number() OVER () AS id 
+                FROM "informeClienteMetrogas" icm 
+                GROUP BY "fechaEmision" 
+                ORDER BY 1
+            ''')
         elif int(idGrupoCliente) == 2:
-            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icn GROUP BY "fechaEmision" ORDER BY 1')
+            queryBaseSearch = text('''
+                SELECT DISTINCT("fechaEmision") AS nombre, 
+                       row_number() OVER () AS id 
+                FROM "informeClienteNaturgy" icn 
+                GROUP BY "fechaEmision" 
+                ORDER BY 1
+            ''')
         
+        # Obtener lista de fechas
         with DatabaseSession().get_session() as session:
             data_query_search = session.execute(queryBaseSearch)
         
         dataQueryBusqueda = []
-        
         for row in data_query_search:
-             dataQueryBusqueda.append({
+            dataQueryBusqueda.append({
                 'id': row.id, 
                 'nombre': row.nombre
             })
         
         fechaEncontrada = buscar_por_id(dataQueryBusqueda, idEmision)
-        
         print(fechaEncontrada)
         
-        queryBase = 'SELECT * FROM "fechaCliente" fc'
-        
-        where_clauses = []
+        # Armar query según grupo de cliente
         qParams = {}
-
-        # Verificar y agregar los parámetros condicionalmente
-        if idEmision:
-            where_clauses.append('fc."fechaEmision" = :fechaEmision')
-            qParams['fechaEmision'] = fechaEncontrada
+        if int(idGrupoCliente) == 4:
+            queryBase = 'SELECT * FROM "fechaCliente" fc'
+            where_clauses = []
             
+            if idEmision:
+                where_clauses.append('fc."fechaEmision" = :fechaEmision')
+                qParams['fechaEmision'] = fechaEncontrada
             where_clauses.append('fc."idGrupoCliente" = :idGrupoCliente')
             qParams['idGrupoCliente'] = int(idGrupoCliente)
-    
-
-        # Combinar cláusulas WHERE si existen
-        if where_clauses:
-            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = queryBase + where_clause
-
-        # Convertir a TextClause después de armar la consulta completa
-        query = text(query)
-
+            
+            if where_clauses:
+                queryBase += ' WHERE ' + ' AND '.join(where_clauses)
+        
+        elif int(idGrupoCliente) == 2:
+            # Para Naturgy, traer solo el último registro por cliente y estado
+            queryBase = '''
+                SELECT *
+                FROM (
+                    SELECT fc.*, 
+                           ROW_NUMBER() OVER (
+                               PARTITION BY fc."nroCliente", fc."estadoPieza" 
+                               ORDER BY fc."fecha" DESC, fc."hora" DESC, fc."id" DESC
+                           ) AS rn
+                    FROM "fechaCliente" fc
+                    WHERE fc."idGrupoCliente" = :idGrupoCliente and "estadoMetro" is null
+            '''
+            qParams['idGrupoCliente'] = int(idGrupoCliente)
+            
+            if idEmision:
+                queryBase += ' AND fc."fechaEmision" = :fechaEmision'
+                qParams['fechaEmision'] = fechaEncontrada
+            
+            queryBase += ') sub WHERE rn = 1'
+        
         # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(query, qParams)
-
-        datosPiezasPostales = []
+            data_query = session.execute(text(queryBase), qParams)
         
+        datosPiezasPostales = []
         for row in data_query:
             if int(idGrupoCliente) == 4:
                 datosPiezasPostales.append({
@@ -729,12 +753,11 @@ def informeEmisionExtendido():
                     'foto': row.foto,
                     'firma': row.firma
                 })
-
+        
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204
-
+        
         keys = list(datosPiezasPostales[0].keys())
-
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
 
     except Exception as e:
