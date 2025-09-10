@@ -15,7 +15,14 @@ import LogoEma from "assets/images/Portal-Cliente-Images/Logo-ema.png";
 import LogoNaturgy from "assets/images/Portal-Cliente-Images/Naturgy.png";
 
 const AcuseReciboConFirma = ({ data, onRendered }) => {
-  const ref = useRef(null);
+    const ref = useRef(null);
+    const [mapReady, setMapReady] = React.useState(false);
+
+  useEffect(() => {
+    if (mapReady && ref.current && onRendered) {
+      onRendered(ref.current);
+    }
+  }, [mapReady, onRendered]);
 
   const barcodeRef = useRef(null);
 
@@ -35,16 +42,6 @@ const AcuseReciboConFirma = ({ data, onRendered }) => {
     const [, lat, lon] = match;
     return [[parseFloat(lat), parseFloat(lon)]];
   };
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (ref.current && onRendered) {
-        onRendered(ref.current); // 👉 pasamos el ref real al padre
-      }
-    }, 800); // suficiente para que cargue todo
-
-    return () => clearTimeout(timeout);
-  }, []);
 
 
 
@@ -200,15 +197,28 @@ const AcuseReciboConFirma = ({ data, onRendered }) => {
               />
             )}
             {data.geo && obtenerCoordenadas(data.geo) && (
-              <Box sx={{ height: 300, width: "100%", borderRadius: 1, overflow: "hidden" }}>
-                <MyMap
-                  arrayPuntos={obtenerCoordenadas(data.geo)}
-                  arrayCamino={[]}
-                  geoJsonData={[]}
-                  geoJsonData2={null}
-                />
+              <Box
+                sx={{
+                  height: 300,
+                  width: "100%",
+                  borderRadius: 1,
+                  overflow: "hidden",
+                }}
+              >
+                {(() => {
+                  const [lat, lon] = obtenerCoordenadas(data.geo)[0];
+                  return (
+                    <img
+                      src={`https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=800&height=400&center=lonlat:${lon},${lat}&zoom=15&marker=lonlat:${lon},${lat};type:material;color:%23ff0000;size:large&apiKey=6fec1629df8544fa92d13b0333dd05a9`}
+                      alt="Mapa estático"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onLoad={() => setMapReady(true)}
+                    />
+                  );
+                })()}
               </Box>
             )}
+
 
             <TextField
   variant="outlined"

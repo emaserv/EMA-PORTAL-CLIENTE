@@ -15,6 +15,7 @@ import L from 'leaflet';
 // Icono personalizado para los marcadores
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import MapLoadWatcher from './MapLoadWatcher';
 
 const customMarkerIcon = L.icon({
   iconUrl: markerIcon,
@@ -38,7 +39,7 @@ function CenterMapManualmente({ position }) {
   return null;
 }
 
-function MyMap({ arrayPuntos, arrayCamino, geoJsonData, geoJsonData2 }) {
+function MyMap({ arrayPuntos, arrayCamino, geoJsonData, geoJsonData2, onMapLoaded }) {
   const [puntos, setPuntos] = useState([]);
   const [camino, setCamino] = useState([]);
 
@@ -79,6 +80,9 @@ function MyMap({ arrayPuntos, arrayCamino, geoJsonData, geoJsonData2 }) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
+
+
+      <MapLoadWatcher onLoaded={onMapLoaded} />
 
       {puntos.length > 0 && puntos.map((pos, index) => (
         <Marker
