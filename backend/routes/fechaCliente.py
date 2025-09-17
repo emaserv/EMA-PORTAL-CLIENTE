@@ -201,6 +201,7 @@ def mapaItems():
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
     grupoCliente = request.args.get('grupoCliente')
+    fechaEmision = request.args.get('fechaEmision')
 
     try:        
         queryBase = 'SELECT * FROM "geoItemEmision" gie'
@@ -229,6 +230,9 @@ def mapaItems():
             # Si solo se proporciona fechaHasta, busca hasta esa fecha
             where_clauses.append('gie."fechaDistrib" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
+        elif fechaEmision and fechaEmision != 'null':
+            where_clauses.append('gie."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEmision
 
         if where_clauses:
             where_clause = ' WHERE ' + ' AND '.join(where_clauses)
@@ -304,7 +308,7 @@ def tablaInformacion():
                 "BP_CR": "BP CR",
                 "FAD": "F AD" if grupoCliente == "4" else "F",
                 "NV": "NR",
-                "ZPBP": "ZPBP",
+                **({"ZPBP": "ZPBP"} if grupoCliente != "1" else {}),
                 "UZP": "UZP",
                 "ZP_CR_2": "ZP CR",
                 "6_DEV": "6 DEV"
@@ -315,28 +319,34 @@ def tablaInformacion():
                 "BP_CR": "BAJO PUERTA",
                 "FAD": "BAJO FIRMA",
                 "NV": "NO RESPONDE LLAMADO",
-                "ZPBP": "BAJO PUERTA ZONA PELIGROSA",
+                **({"ZPBP": "BAJO PUERTA ZONA PELIGROSA"} if grupoCliente in ["2", "4"] else {}),
                 "UZP": "BAJO PUERTA",
                 "ZP_CR_2": "BAJO PUERTA",
                 "6_DEV": "DEVOLUCION",
             },
+
+            
         ]
         
         datosPiezasPostales = []
 
         # Corregido: Acceso a los datos en el diccionario utilizando corchetes []
         for row in data_query:
-            datosPiezasPostales.append({
-                'Empresa': row['Empresa'],      # Corregido el acceso a los elementos del diccionario
+            item = {
+                'Empresa': row['Empresa'],
                 'ZP': row['ZP'],
                 'BP_CR': row['BP_CR'],
                 'FAD': row['FAD'],
                 'NV': row['NV'],
-                'ZPBP': row['ZPBP'],
                 'UZP': row['UZP'],
                 'ZP_CR_2': row['ZP_CR_2'],
                 '6_DEV': row['6_DEV'],
-            })
+            }
+
+            if "ZPBP" in row:
+                item['ZPBP'] = row['ZPBP']
+
+            datosPiezasPostales.append(item)
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204

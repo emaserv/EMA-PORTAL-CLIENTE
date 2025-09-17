@@ -158,6 +158,7 @@ const FechaCliente = () => {
         grupoCliente: user ? user.idGrupoCliente : null || "",
         fechaDesde: fechaDesde || "",
         fechaHasta: fechaHasta || "",
+        fechaEmision: idEmision || "",
       };
 
       // Enviar parámetros en la URL con axios.get

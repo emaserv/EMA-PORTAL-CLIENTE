@@ -104,6 +104,7 @@ def uploadFileAndData():
 
         return {'message': 'File uploaded and converted to JSON successfully'}, 200
     except Exception as e:
+        print("ERROR: ", e)
         if 'lote' in locals():
             session.rollback()
         return {'error': str(e)}, 500

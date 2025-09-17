@@ -37,7 +37,7 @@ export default function PRSTable({ data, columns }) {
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(25);
+  const [rowsPerPage, setRowsPerPage] = React.useState(100);
 
   const [startDate, setStartDate] = React.useState(null);
   const [endDate, setEndDate] = React.useState(null);
@@ -405,7 +405,7 @@ export default function PRSTable({ data, columns }) {
           startDate={startDate}
           endDate={endDate}
         />
-        <TableContainer>
+        <TableContainer sx={{ maxHeight: 600, overflow: "auto" }}>
           <Table
             sx={{ minWidth: 750 }}
             aria-labelledby="tableTitle"
@@ -588,7 +588,7 @@ export default function PRSTable({ data, columns }) {
           }}
         >
           <TablePagination
-            rowsPerPageOptions={[5, 15, 25, 50, 75, 100]}
+            rowsPerPageOptions={[100, 500, 1000]}
             component="div"
             count={data.length}
             rowsPerPage={rowsPerPage}

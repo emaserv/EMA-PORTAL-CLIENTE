@@ -147,9 +147,9 @@ const InformesCliente = () => {
               "Estado Pieza": row.estadoPieza || "-",
               //"Estado Metro": row.estadoMetro || "-",
               "Observación Visita": row.obsVisita || "-",
-              //GeoVisita: row.geoVisita || "-",
+              GeoVisita: row.geoVisita || "-",
               Acuse: row.foto || "-",
-              //Firma: row.firma || "-",
+              Firma: row.firma || "-",
             }));
           } else if (user.idGrupoCliente === 6) {
             return apiData.dataTabla.map((row) => ({

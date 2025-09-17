@@ -105,7 +105,7 @@ const fetchFirmaCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta, 
     if (apiData2.dataTabla) {
       setAllData(apiData2.dataTabla);
       setColumns(apiData2.columns);
-      filtrarDatos(apiData2.dataTabla, plan, sucursal, radio, fechaDesde, fechaHasta);
+      filtrarDatos(apiData2.dataTabla, plan, sucursal, radio, fechaDesde, fechaHasta, idEmision);
     } else if (response2.status === 404) {
       console.error("No se recibieron datos de radio-cliente API");
       cambiarEstadoPopUp1(true);
@@ -125,7 +125,7 @@ const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta, idEmisio
     return;
   }
   try {
-    await fetchFirmaCliente(plan, sucursal, radio, fechaDesde, fechaHasta);
+    await fetchFirmaCliente(plan, sucursal, radio, fechaDesde, fechaHasta, idEmision);
   } finally {
     setIsLoading(false); // Desactiva el loading después de completar `fetchFirmaCliente`
   }

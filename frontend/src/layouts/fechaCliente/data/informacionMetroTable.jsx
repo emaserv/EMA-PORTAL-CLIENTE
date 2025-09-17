@@ -15,6 +15,8 @@ import SoftProgress from "components/SoftProgress";
 import { HiChevronUp, HiChevronDown } from "react-icons/hi";
 import dayjs from "dayjs";
 import MobileFriendlyTooltip from "components/TooltipMobile";
+import { useAuth } from "layouts/auth/AuthContext";
+
 
 dayjs.locale("ES");
 
@@ -28,7 +30,7 @@ export default function InformacionMetroTable({ data, columns }) {
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(25);
-
+  const { user } = useAuth();
   const [startDate, setStartDate] = React.useState(null);
   const [endDate, setEndDate] = React.useState(null);
 
@@ -260,42 +262,36 @@ export default function InformacionMetroTable({ data, columns }) {
             //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
           }}
         >
-          {headCells.map((headCell) => (
-            <TableCell
-              key={headCell.id}
-              align={headCell.numeric ? "right" : "center"}
-              padding={headCell.disablePadding ? "none" : "normal"}
-              sortDirection={orderBy === headCell.id ? order : false}
-              sx={{
-                background: "linear-gradient(to top, #006400, #32CD32)",
-                borderRadius: "1px", // Bordes redondeados
-                minWidth: "auto",
-                fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                fontSize: "0.85rem",
-                opacity: 1,
-                cursor: "pointer",
-                fontWeight: "700",
-                color: "#ffffff", // Texto en blanco para mayor contraste
-                textTransform: "uppercase",
-                padding: "0px",
-                paddingLeft: "10px",
-                //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
-              }}
-              selected={numSelected > 0 && orderBy === headCell.id}
-              onClick={createSortHandler(headCell.id)}
-            >
-              <Tooltip
-                title={
-                  headCell.labelComplete
-                    ? headCell.labelComplete
-                    : "Sin información"
-                }
+          {headCells
+            .filter(headCell => !(user.idGrupoCliente === 1 && headCell.id === "ZPBP"))
+            .map((headCell) => (
+              <TableCell
+                key={headCell.id}
+                align={headCell.numeric ? "right" : "center"}
+                padding={headCell.disablePadding ? "none" : "normal"}
+                sortDirection={orderBy === headCell.id ? order : false}
+                sx={{
+                  background: "linear-gradient(to top, #006400, #32CD32)",
+                  borderRadius: "1px",
+                  minWidth: "auto",
+                  fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+                  fontSize: "0.85rem",
+                  opacity: 1,
+                  cursor: "pointer",
+                  fontWeight: "700",
+                  color: "#ffffff",
+                  textTransform: "uppercase",
+                  padding: "0px",
+                  paddingLeft: "10px",
+                }}
+                selected={numSelected > 0 && orderBy === headCell.id}
+                onClick={createSortHandler(headCell.id)}
               >
-                <span>{headCell.label}</span>
-              </Tooltip>
-              {orderBy === headCell.id &&
-                (order == "asc" ? ascendingIcon : descendingIcon)}
-            </TableCell>
+                <Tooltip title={headCell.labelComplete || "Sin información"}>
+                  <span>{headCell.label}</span>
+                </Tooltip>
+                {orderBy === headCell.id && (order === "asc" ? ascendingIcon : descendingIcon)}
+              </TableCell>
           ))}
         </TableRow>
       </TableHead>

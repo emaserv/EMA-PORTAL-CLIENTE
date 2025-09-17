@@ -340,8 +340,8 @@ const RadioCliente = () => {
 
     // Llamadas a las tres funciones
     await fetchGeoJsonData(sucursal, plan, radio);
-    await fetchGeoMapaItems(plan, sucursal, radio, fechaDesde, fechaHasta);
-    await fetchRadioCliente(plan, sucursal, radio, fechaDesde, fechaHasta);
+    await fetchGeoMapaItems(plan, sucursal, radio, fechaDesde, fechaHasta, idEmision);
+    await fetchRadioCliente(plan, sucursal, radio, fechaDesde, fechaHasta, idEmision);
   };
 
   const filtrarDatos = (

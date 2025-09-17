@@ -148,6 +148,7 @@ def mapaItems():
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
     grupoCliente = request.args.get('grupoCliente')
+    fechaEmision = request.args.get('fechaEmision')
 
     try:        
         queryBase = 'SELECT * FROM "geoItemEmision" gie'
@@ -184,6 +185,9 @@ def mapaItems():
             # Si solo se proporciona fechaHasta, busca hasta esa fecha
             where_clauses.append('gie."fechaCertificacion" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
+        elif fechaEmision and fechaEmision != 'null':
+            where_clauses.append('gie."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEmision
 
         if where_clauses:
             where_clause = ' WHERE ' + ' AND '.join(where_clauses)
