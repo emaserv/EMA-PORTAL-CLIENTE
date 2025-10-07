@@ -35,7 +35,10 @@ const InformesCliente = () => {
   const [alertTitle, setAlertTitle] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BACK}/api/tablaInformacion`, { mode: "cors" })
+      fetch(
+        `${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
+          { mode: "cors" }
+        )
       .then((response) => response.json())
       .then((apiData) => {
         if (apiData.dataTabla && apiData.columns) {

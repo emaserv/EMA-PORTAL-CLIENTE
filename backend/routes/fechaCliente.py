@@ -308,7 +308,6 @@ def tablaInformacion():
                 "BP_CR": "BP CR",
                 "FAD": "F AD" if grupoCliente == "4" else "F",
                 "NV": "NR",
-                **({"ZPBP": "ZPBP"} if grupoCliente != "1" else {}),
                 "UZP": "UZP",
                 "ZP_CR_2": "ZP CR",
                 "6_DEV": "6 DEV"
@@ -319,7 +318,6 @@ def tablaInformacion():
                 "BP_CR": "BAJO PUERTA",
                 "FAD": "BAJO FIRMA",
                 "NV": "NO RESPONDE LLAMADO",
-                **({"ZPBP": "BAJO PUERTA ZONA PELIGROSA"} if grupoCliente in ["2", "4"] else {}),
                 "UZP": "BAJO PUERTA",
                 "ZP_CR_2": "BAJO PUERTA",
                 "6_DEV": "DEVOLUCION",
@@ -342,9 +340,6 @@ def tablaInformacion():
                 'ZP_CR_2': row['ZP_CR_2'],
                 '6_DEV': row['6_DEV'],
             }
-
-            if "ZPBP" in row:
-                item['ZPBP'] = row['ZPBP']
 
             datosPiezasPostales.append(item)
 

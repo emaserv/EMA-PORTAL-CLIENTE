@@ -201,6 +201,15 @@ export default function InformacionMetroTable({ data, columns }) {
     },
   ];
 
+    // filtrado dinámico
+  const columnasFiltradas =
+    user.idGrupoCliente === 4
+      ? headCells.filter(
+          (col) => !["ZP", "ZPBP", "UZP"].includes(col.id)
+        )
+      : headCells;
+
+
   function Completion({ value, color }) {
     return (
       <SoftBox display="flex" alignItems="center">
@@ -263,7 +272,15 @@ export default function InformacionMetroTable({ data, columns }) {
           }}
         >
           {headCells
-            .filter(headCell => !(user.idGrupoCliente === 1 && headCell.id === "ZPBP"))
+            .filter(headCell => {
+                if (user.idGrupoCliente === 1) {
+                  return headCell.id !== "ZPBP";
+                }
+                if (user.idGrupoCliente === 4) {
+                  return !["ZP", "ZPBP", "UZP"].includes(headCell.id);
+                }
+                return true; // para otros grupos, no filtra nada
+              })
             .map((headCell) => (
               <TableCell
                 key={headCell.id}
@@ -401,6 +418,7 @@ export default function InformacionMetroTable({ data, columns }) {
                           "sucursal",
                           "firma",
                           "foto",
+                          ...(user.idGrupoCliente === 4 ? ["ZP", "ZPBP", "UZP"] : [])
                         ];
                     
                         // Ocultar columna si está en la lista de columnas ocultas
