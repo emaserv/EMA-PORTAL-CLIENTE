@@ -112,6 +112,8 @@ const RadioCliente = () => {
       (emision) => emision.id === idEmisionSeleccionada
     );
     const nombreEmision = emisionSeleccionada ? emisionSeleccionada.nombre : "";
+    const antiguedad = data.antiguedad || null;
+
 
     setFiltroPlan(data.plan || null);
     setFiltroSucursal(data.sucursal || null);
@@ -126,7 +128,8 @@ const RadioCliente = () => {
       data.radio || null,
       fechaDesde,
       fechaHasta,
-      nombreEmision
+      nombreEmision,
+      antiguedad
     );
   };
 
@@ -136,27 +139,25 @@ const RadioCliente = () => {
   };
 
   // Función para realizar la solicitud a la API de geoJson
-  const fetchGeoJsonData = async (sucursal, plan, radio) => {
+  // Función para realizar la solicitud a la API de geoJson
+  const fetchGeoJsonData = async (sucursal, plan, radio, antiguedad) => {
     try {
       setLoading(true);
-      const formattedPlan = formatToTwoDigits(plan);
-      const formattedSucursal = formatToTwoDigits(sucursal);
-      const formattedRadio = formatToTwoDigits(radio);
+      
+      const params = {};
+      
+      if (sucursal) params.sucursal = sucursal;
+      if (plan) params.plan = plan;
+      if (radio) params.radio = radio;
+      if (antiguedad) params.antiguedad = antiguedad; 
 
       const url = new URL(
         `${API_BACK}/api/geoJson/consultarGeoJson`,
         window.location.origin
       );
-      const params = {
-        sucursal: formattedSucursal,
-        plan: formattedPlan,
-        radio: formattedRadio,
-      };
 
       Object.entries(params).forEach(([key, value]) => {
-        if (value) {
-          url.searchParams.append(key, value);
-        }
+        url.searchParams.append(key, value);
       });
 
       const response = await fetch(url, {
@@ -168,9 +169,15 @@ const RadioCliente = () => {
 
       const data = await response.json();
 
-      if (response.ok && data.geoData) {
-        console.log("radio", data.geoData);
-        setGeoJsonData2(data.geoData);
+      if (response.ok && data.geoData && data.metadata) {
+        // Ahora tenemos metadata con información de radios
+        
+        // Guardar tanto los geoData como la metadata para usarlos en el mapa
+        setGeoJsonData2({
+          geoData: data.geoData,
+          metadata: data.metadata
+        });
+        
       } else {
         console.error("No se encontraron datos para esta combinación.");
         setGeoJsonData2([]);
@@ -193,6 +200,10 @@ const RadioCliente = () => {
     idEmision
   ) => {
     try {
+      if (user && user.idGrupoCliente === 1) {
+        return;
+      }
+
       setLoading(true);
       // Create the base URL object
       const url = new URL(
@@ -258,6 +269,9 @@ const RadioCliente = () => {
     idEmision
   ) => {
     try {
+      if (user.idGrupoCliente === 1) {
+        return; 
+      }
       setLoading(true);
       const response2 = await fetch(
         `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
@@ -294,6 +308,10 @@ const RadioCliente = () => {
   // Función para realizar la tercera solicitud: geoMapaCamino
   const fetchGeoMapaCamino = async () => {
     try {
+      if (user.idGrupoCliente === 1) {
+        return; 
+      }
+
       const url = new URL(`${API_BACK}/api/geo-dai`, window.location.origin);
 
       const params = {
@@ -316,7 +334,6 @@ const RadioCliente = () => {
 
       if (apiData3.dataGeoCamino) {
         const results = await processCoordinates(apiData3.dataGeoCamino);
-        console.log(results);
         setGeoJsonData(results);
         setColumnsCamino(apiData3.columns);
       } else {
@@ -328,7 +345,7 @@ const RadioCliente = () => {
     }
   };
 
-  const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta, idEmision) => {
+  const fetchData = async (plan, sucursal, radio, fechaDesde, fechaHasta, idEmision, antiguedad) => {
     if (!plan && !sucursal && !radio && !fechaDesde && !fechaHasta && !idEmision) {
       setAllData([]);
       setPuntosMapa([]);
@@ -338,8 +355,7 @@ const RadioCliente = () => {
       return;
     }
 
-    // Llamadas a las tres funciones
-    await fetchGeoJsonData(sucursal, plan, radio);
+    await fetchGeoJsonData(sucursal, plan, radio, antiguedad); 
     await fetchGeoMapaItems(plan, sucursal, radio, fechaDesde, fechaHasta, idEmision);
     await fetchRadioCliente(plan, sucursal, radio, fechaDesde, fechaHasta, idEmision);
   };
@@ -352,28 +368,19 @@ const RadioCliente = () => {
     fechaDesde,
     fechaHasta
   ) => {
-    //console.log("DAAA", data);
     const datosFiltrados = data.filter((item) => {
-      //console.log("WASA1", fechaDesde);
-      //console.log("WASA2", fechaHasta);
-      //console.log("WASA3", item.fecha);
 
       const fechaParts = item.fecha.split("/"); // Divide la fecha en día, mes y año
       const dia = fechaParts[0];
       const mes = fechaParts[1];
       const año = `20${fechaParts[2]}`; // Asume que 'yy' está en el rango 2000-2099
       const itemFecha = `${año}-${mes}-${dia}`; // Reorganiza a 'yyyy-mm-dd'// Formato YYYY-MM-DD
-      //console.log("WASA33", itemFecha);
 
       const cumplePlan = plan ? item.plan === plan : true;
       const cumpleSucursal = sucursal ? item.sucursal === sucursal : true;
       const cumpleRadio = radio ? item.radio === radio : true;
       const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
       const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
-
-      //console.log("WASA1", fechaDesde);
-      //console.log("WASA2", fechaHasta);
-      //console.log("WASA3", itemFecha);
 
       return (
         cumplePlan &&
@@ -383,8 +390,6 @@ const RadioCliente = () => {
         cumpleFechaHasta
       );
     });
-
-    //console.log("dataaa", datosFiltrados);
 
     setDatosFiltrados(datosFiltrados);
   };
@@ -416,10 +421,8 @@ const RadioCliente = () => {
     });
 
     const caminoAchicado = await processCoordinates(caminoFiltrado);
-    console.log("caminoFiltrado", caminoAchicado);
 
     setCaminoMapaFiltrado(caminoAchicado);
-    //console.log("caminoFiltrado", caminoMapaFiltrado);
   };
 
   function haversineDistance(lat1, lon1, lat2, lon2) {
@@ -471,8 +474,6 @@ const RadioCliente = () => {
       .join(";");
     const routeURL = `https://router.project-osrm.org/route/v1/foot/${coordString}?geometries=geojson`;
 
-    console.log(routeURL); // Para depuración
-
     const response = await fetch(routeURL);
     const data = await response.json();
 
@@ -489,9 +490,6 @@ const RadioCliente = () => {
   // Función principal que procesa las coordenadas
   async function processCoordinates(data) {
     const filteredData = filterClosePoints(data);
-    //console.log(filteredData.length)
-    //const reFilteredData =  filtrarPorDistanciaMultiple(puntosMapa, filteredData);
-    //console.log(reFilteredData.length)
     const chunks = chunkArray(filteredData, 25);
     const results = [];
 
@@ -516,14 +514,14 @@ const RadioCliente = () => {
   }
 
   const filtrarPuntosMapa = (
-    data,
+    dataTabla,
     plan,
     sucursal,
     radio,
     fechaDesde,
     fechaHasta
   ) => {
-    const puntosFiltrados = data.filter((item) => {
+    const puntosFiltrados = dataTabla.filter((item) => { // Línea 538: dataTabla en lugar de data
       const itemFecha = ""; // new Date(item.fechaDistrib).toISOString().split("T")[0]; // Formato YYYY-MM-DD
 
       const cumplePlan = plan ? item.plan === plan : true;
@@ -534,11 +532,10 @@ const RadioCliente = () => {
 
       return cumplePlan && cumpleSucursal && cumpleRadio; // && cumpleFechaDesde && cumpleFechaHasta;
     });
-
-    //console.log("puntosFiltrados", puntosFiltrados);
-    if (data.length > 0) {
+    
+    if (dataTabla.length > 0) {
       // Convertir el campo de fecha y hora al formato ISO
-      const fechas = data.map((item) => {
+      const fechas = dataTabla.map((item) => {
         const formattedDate = `${item.fecha} ${item.hora}`; // Asumiendo que la hora ya está en formato HH:mm:ss
         return new Date(formattedDate);
       });
@@ -547,22 +544,21 @@ const RadioCliente = () => {
       const fechaMin = new Date(Math.min(...fechas));
       const fechaMax = new Date(Math.max(...fechas));
 
-      console.log("HOLAA", fechaMin, fechaMax);
       // Guardar los resultados en el estado
       setHini(fechaMin);
       setHfin(fechaMax);
     }
 
-    setLegajo(data[0].legajo);
+    if (dataTabla.length > 0) {
+      setLegajo(dataTabla[0].legajo);
+    }
 
     setPuntosMapaFiltrados(puntosFiltrados);
     //console.log("puntosFiltrados", puntosMapaFiltrados);
   };
 
   const armarArrayCoordenadas = (data) => {
-    console.log("datita", data)
 
-    //console.log("aaa", data);
     let arrayCoordenadas = [];
 
     for (let i = 0; i < data.length; i++) {
@@ -579,7 +575,6 @@ const RadioCliente = () => {
       }
     }
 
-    console.log("Coordenadas procesadas:", arrayCoordenadas);
     return arrayCoordenadas;
   };
 
@@ -639,28 +634,72 @@ const RadioCliente = () => {
                 alignItems="center"
               >
 
+              {user && (user.idGrupoCliente == 1) ? (
+                <SoftBox
+                  display="flex"
+                  flexDirection="column"
+                  marginTop={{ xs: 2, md: -4 }}
+                  marginLeft={{ md: 3 }}
+                >
+                  <SoftTypography
+                    component="label"
+                    variant="caption"
+                    marginTop={2}
+                    fontSize={{ xs: "0.75rem", sm: "1.25rem" }}
+                  >
+                    Antiguedad
+                  </SoftTypography>
+                  <SoftBox
+                    display="flex"
+                    alignItems="center"
+                    flexDirection={{ xs: "column", md: "row" }}
+                    marginTop={1}
+                  >
+                    <Controller
+                      name="antiguedad"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <DropdownList
+                            width="10vw"
+                            list={[
+                              { id: "Nuevo", nombre: "Nuevos" },
+                              { id: "Viejo", nombre: "Viejos" }
+                            ]}
+                            placeholder="Seleccione antiguedad"
+                            campoAMostrar="nombre"
+                            campoID="id"
+                            inputRef={field.ref}
+                            value={field.value}
+                            onChange={(selectedValue) => field.onChange(selectedValue)}
+                          />
+                          {errors.antiguedad && (
+                            <SoftTypography
+                              color="error"
+                              fontSize="1rem"
+                              marginTop={1}
+                            >
+                              {errors.antiguedad.message}
+                            </SoftTypography>
+                          )}
+                        </>
+                      )}
+                    />
+                  </SoftBox>
+                </SoftBox>
+              ) : null}
+
                 <SoftBox>
                   <SoftTypography marginTop={-2}>Plan</SoftTypography>
                   <Controller
                     name="plan"
                     control={control}
-                    rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
                       <>
                         <SoftInputBase
                           field={field}
                           placeholder="Inserte nro de plan"
-                          error={!!errors.plan} // Muestra borde rojo si hay error
                         />
-                        {errors.plan && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.plan.message}
-                          </SoftTypography>
-                        )}
                       </>
                     )}
                   />
@@ -671,23 +710,12 @@ const RadioCliente = () => {
                   <Controller
                     name="sucursal"
                     control={control}
-                    rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
                       <>
                         <SoftInputBase
                           field={field}
                           placeholder="Inserte nro de sucursal"
-                          error={!!errors.sucursal} // Muestra borde rojo si hay error
                         />
-                        {errors.sucursal && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.sucursal.message}
-                          </SoftTypography>
-                        )}
                       </>
                     )}
                   />
@@ -698,23 +726,12 @@ const RadioCliente = () => {
                   <Controller
                     name="radio"
                     control={control}
-                    rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
                       <>
                         <SoftInputBase
                           field={field}
                           placeholder="Inserte nro de radio"
-                          error={!!errors.radio} // Muestra borde rojo si hay error
                         />
-                        {errors.radio && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.radio.message}
-                          </SoftTypography>
-                        )}
                       </>
                     )}
                   />
@@ -749,8 +766,8 @@ const RadioCliente = () => {
                   <SoftTypography
                     component="label"
                     variant="caption"
-                    marginTop={2}
-                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
+                    marginTop={1}
+                    fontSize={{ xs: "0.75rem", sm: "1.2rem" }}
                   >
                     Emision
                   </SoftTypography>
@@ -829,19 +846,6 @@ const RadioCliente = () => {
           </SoftBox>
         </SoftBox>
 
-        <SoftBox
-          paddingBottom={3}
-          style={{ width: "90%" }}
-          justifyContent="center"
-        >
-          <SoftBox justifyContent="center">
-            <Card>
-              <SoftBox p={3}>
-                <PRSTable data={datosFiltrados} columns={columns} />
-              </SoftBox>
-            </Card>
-          </SoftBox>
-        </SoftBox>
 
         {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 1) ? (
           <SoftBox

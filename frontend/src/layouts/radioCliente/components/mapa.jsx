@@ -22,9 +22,19 @@ function FitBoundsExample({ positions }) {
   const map = useMap();
 
   useEffect(() => {
-    if (positions.length > 0) {
-      // Ajustar el mapa para mostrar todos los puntos
-      map.fitBounds(positions);
+    if (positions && positions.length > 0) {
+      // Filtrar posiciones válidas
+      const validPositions = positions.filter(pos => 
+        pos && pos[0] != null && pos[1] != null && !isNaN(pos[0]) && !isNaN(pos[1])
+      );
+      
+      if (validPositions.length > 0) {
+        // Crear un LatLngBounds con todas las posiciones válidas
+        const bounds = L.latLngBounds(validPositions);
+        
+        // Ajustar el mapa para mostrar todos los puntos con un pequeño padding
+        map.fitBounds(bounds, { padding: [20, 20] });
+      }
     }
   }, [map, positions]);
 
@@ -34,74 +44,309 @@ function FitBoundsExample({ positions }) {
 function MyMap({ arrayPuntos, arrayCamino, geoJsonData, geoJsonData2 }) {
   const [puntos, setPuntos] = useState([]);
   const [camino, setCamino] = useState([]);
+  const [allBounds, setAllBounds] = useState([]);
 
-  console.log("waos", geoJsonData)
-  console.log("waos", geoJsonData2)
-  // Efecto para cargar los puntos desde arrayPuntos
-  useEffect(() => {
-    if (arrayPuntos.length > 0) {
-      setPuntos(arrayPuntos);
-    }
-  }, [arrayPuntos]);
+  const RADIO_COLORS = [
+      '#E74C3C', // Rojo vibrante
+      '#3498DB', // Azul sólido
+      '#2ECC71', // Verde esmeralda
+      '#F39C12', // Naranja cálido
+      '#9B59B6', // Púrpura
+      '#1ABC9C', // Turquesa
+      '#E67E22', // Naranja zanahoria
+      '#2980B9', // Azul oscuro
+      '#27AE60', // Verde bosque
+      '#8E44AD'  // Violeta
+  ];
 
-  useEffect(() => {
-    if (arrayCamino.length > 0) {
-      setCamino(arrayCamino);
+  const getRadioColor = (radioId) => {
+    if (!radioId) return '#3388ff'; // Color por defecto
+    
+    // Convertir el radioId a un número para usar como índice
+    const radioNumber = parseInt(radioId.toString());
+    
+    // Usar módulo para ciclar entre los colores disponibles
+    const colorIndex = Math.abs(radioNumber) % RADIO_COLORS.length;
+    
+    return RADIO_COLORS[colorIndex];
+  };
+
+  const renderGeoJsonWithRadioColors = () => {
+    if (!geoJsonData2) return null;
+
+    // Si geoJsonData2 tiene la nueva estructura con metadata
+    if (geoJsonData2.metadata && geoJsonData2.geoData) {
+      return geoJsonData2.metadata.map((metadata, index) => {
+        const geoDataItem = geoJsonData2.geoData[index];
+        const radio = metadata.radio;
+        
+        if (!geoDataItem) return null;
+
+        return (
+          <GeoJSON 
+            key={`${metadata.nombre}-${index}`}
+            data={geoDataItem} 
+            style={{
+              color: getRadioColor(radio),
+              weight: 3,
+              opacity: 0.8,
+              fillColor: getRadioColor(radio),
+              fillOpacity: 0.3
+            }}
+            onEachFeature={(feature, layer) => {
+              const popupContent = `
+                <div>
+                  <strong>Nombre:</strong> ${metadata.nombre}<br/>
+                  <strong>Sucursal:</strong> ${metadata.sucursal}<br/>
+                  <strong>Plan:</strong> ${metadata.plan}<br/>
+                  <strong>Radio:</strong> ${radio}<br/>
+                  <strong>Antigüedad:</strong> ${metadata.antiguedad}<br/>
+                  <strong>Color:</strong> <span style="color:${getRadioColor(radio)}">■</span> ${getRadioColor(radio)}
+                </div>
+              `;
+              layer.bindPopup(popupContent);
+            }}
+          />
+        );
+      });
     }
-  }, [arrayCamino]);
+    
+    // Si es la estructura antigua (solo array de geoData)
+    if (Array.isArray(geoJsonData2)) {
+      return geoJsonData2.map((geoJson, index) => (
+        geoJson && geoJson.type === "FeatureCollection" && (
+          <GeoJSON 
+            key={index} 
+            data={geoJson} 
+            style={getGeoJsonStyle}
+            onEachFeature={(feature, layer) => {
+              if (feature.properties) {
+                const radioId = feature.properties.id || feature.properties.radio;
+                const popupContent = `
+                  <div>
+                    <strong>Radio:</strong> ${radioId || 'N/A'}<br/>
+                    <strong>Color:</strong> <span style="color:${getRadioColor(radioId)}">■</span>
+                  </div>
+                `;
+                layer.bindPopup(popupContent);
+              }
+            }}
+          />
+        )
+      ));
+    }
+    
+    // Si es un objeto individual
+    if (geoJsonData2 && geoJsonData2.type === "FeatureCollection") {
+      return (
+        <GeoJSON 
+          data={geoJsonData2} 
+          style={getGeoJsonStyle}
+          onEachFeature={(feature, layer) => {
+            if (feature.properties) {
+              const radioId = feature.properties.id || feature.properties.radio;
+              const popupContent = `
+                <div>
+                  <strong>Radio:</strong> ${radioId || 'N/A'}<br/>
+                  <strong>Color:</strong> <span style="color:${getRadioColor(radioId)}">■</span>
+                </div>
+              `;
+              layer.bindPopup(popupContent);
+            }
+          }}
+        />
+      );
+    }
+
+    return null;
+  };
+
+  // Efecto para calcular los bounds cuando cambian los datos
+  useEffect(() => {
+    const bounds = [];
+
+    // Calcular bounds de arrayPuntos
+    if (arrayPuntos && arrayPuntos.length > 0) {
+      const puntosBounds = arrayPuntos
+        .filter(pos => pos && pos[0] != null && pos[1] != null && !isNaN(parseFloat(pos[0])) && !isNaN(parseFloat(pos[1])))
+        .map(pos => [parseFloat(pos[0]), parseFloat(pos[1])]);
+      if (puntosBounds.length > 0) {
+        bounds.push(...puntosBounds);
+      }
+    }
+
+    // Calcular bounds de arrayCamino
+    if (arrayCamino && arrayCamino.length > 0) {
+      const caminoBounds = arrayCamino
+        .filter(pos => pos && pos[0] != null && pos[1] != null && !isNaN(parseFloat(pos[0])) && !isNaN(parseFloat(pos[1])))
+        .map(pos => [parseFloat(pos[0]), parseFloat(pos[1])]);
+      if (caminoBounds.length > 0) {
+        bounds.push(...caminoBounds);
+      }
+    }
+
+    // Calcular bounds de geoJsonData (array de GeoJSON)
+    if (geoJsonData && geoJsonData.length > 0) {
+      geoJsonData.forEach(geoJson => {
+        if (geoJson && geoJson.features) {
+          geoJson.features.forEach(feature => {
+            if (feature.geometry && feature.geometry.coordinates) {
+              extractCoordinates(feature.geometry.coordinates, bounds);
+            }
+          });
+        }
+      });
+    }
+
+    // Calcular bounds de geoJsonData2 (NUEVA ESTRUCTURA con metadata)
+    if (geoJsonData2) {
+      // Si es la nueva estructura con metadata
+      if (geoJsonData2.geoData && Array.isArray(geoJsonData2.geoData)) {
+        geoJsonData2.geoData.forEach(geoJson => {
+          if (geoJson && geoJson.features) {
+            geoJson.features.forEach(feature => {
+              if (feature.geometry && feature.geometry.coordinates) {
+                extractCoordinates(feature.geometry.coordinates, bounds);
+              }
+            });
+          }
+        });
+      } 
+      // Si es la estructura antigua (array directo)
+      else if (Array.isArray(geoJsonData2)) {
+        geoJsonData2.forEach(geoJson => {
+          if (geoJson && geoJson.features) {
+            geoJson.features.forEach(feature => {
+              if (feature.geometry && feature.geometry.coordinates) {
+                extractCoordinates(feature.geometry.coordinates, bounds);
+              }
+            });
+          }
+        });
+      } 
+      // Si es un objeto individual
+      else if (geoJsonData2.features) {
+        geoJsonData2.features.forEach(feature => {
+          if (feature.geometry && feature.geometry.coordinates) {
+            extractCoordinates(feature.geometry.coordinates, bounds);
+          }
+        });
+      }
+    }
+
+    // Filtrar bounds para eliminar cualquier coordenada undefined
+    const validBounds = bounds.filter(coord => 
+      coord && coord[0] != null && coord[1] != null && 
+      !isNaN(coord[0]) && !isNaN(coord[1])
+    );
+
+    setAllBounds(validBounds);
+  }, [arrayPuntos, arrayCamino, geoJsonData, geoJsonData2]);
+
+  // Función auxiliar mejorada para extraer coordenadas de GeoJSON
+  const extractCoordinates = (coordinates, boundsArray) => {
+    if (!coordinates || !Array.isArray(coordinates)) return;
+    
+    if (Array.isArray(coordinates[0])) {
+      // Si es un array de arrays, procesar recursivamente
+      coordinates.forEach(coord => extractCoordinates(coord, boundsArray));
+    } else if (coordinates.length >= 2) {
+      // Es un array de coordenadas [longitud, latitud]
+      const lng = coordinates[0];
+      const lat = coordinates[1];
+      
+      // Verificar que las coordenadas sean válidas
+      if (lng != null && lat != null && !isNaN(lng) && !isNaN(lat)) {
+        // Leaflet usa [latitud, longitud]
+        boundsArray.push([lat, lng]);
+      }
+    }
+  };
 
   const polylineOptions = {
-    color: 'blue', // Color de la línea
-    weight: 5, // Grosor de la línea
-  };
-
-
-  const geoJsonStyle = {
     color: 'blue',
-    weight: 1,
-    opacity: 0.6,
-    fillOpacity: 0.6
+    weight: 5,
   };
+
+  const getGeoJsonStyle = (feature) => {
+    const radioId = feature?.properties?.id || feature?.properties?.radio;
+    
+    return {
+      color: getRadioColor(radioId),
+      weight: 2,
+      opacity: 0.8,
+      fillColor: getRadioColor(radioId),
+      fillOpacity: 0.4
+    };
+  };
+
+  // Centro por defecto seguro
+  const defaultCenter = [-34.61093894313541, -58.386118685562906];
 
   return (
-    <MapContainer zoom={16} style={{ height: '500px', width: '100%' }}>
+    <MapContainer 
+      center={allBounds.length > 0 ? allBounds[0] : defaultCenter} 
+      zoom={13} 
+      style={{ height: '500px', width: '100%' }}
+    >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
 
-      {puntos.length > 0 && puntos.map((pos, index) => (
-        <Marker 
-          key={index} 
-          position={[parseFloat(pos[0]), parseFloat(pos[1])]} // Asegúrate de usar las coordenadas correctas
-          icon={customMarkerIcon}
-        >
-          <Popup>
-            Coordenada {index + 1}: {pos[0]}, {pos[1]}
-          </Popup>
-        </Marker>
-      ))}
+      {allBounds.length > 0 && <FitBoundsExample positions={allBounds} />}
 
-      {camino.length > 0 && puntos.length > 0 ? (
-        <>
-          <Polyline positions={camino.filter(pos => pos[0] && pos[1]).map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} />
-          <FitBoundsExample positions={[...camino.filter(pos => pos[0] && pos[1]).map(pos => [parseFloat(pos[0]), parseFloat(pos[1])]), ...puntos.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])]} />
-        </>
-      ) : (
-        <FitBoundsExample positions={puntos.length > 0 ? puntos.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])]) : [[-34.61093894313541, -58.386118685562906]]} />
+      {/* Renderizar Polyline del camino con validación */}
+      {camino && camino.length > 0 && (
+        <Polyline 
+          positions={camino
+            .filter(pos => pos && pos[0] != null && pos[1] != null && !isNaN(parseFloat(pos[0])) && !isNaN(parseFloat(pos[1])))
+            .map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])} 
+          {...polylineOptions}
+        />
       )}
 
-      {/* Renderizar GeoJSON si se proporciona */}
-      {geoJsonData.length > 0 && geoJsonData.map((route, index) => (
-        <GeoJSON key={index} data={route} style={{ color: 'green', weight: 5 }} />
+      {/* Renderizar markers de puntos con validación */}
+      {puntos && puntos.length > 0 && puntos.map((punto, index) => (
+        punto && punto[0] != null && punto[1] != null && !isNaN(parseFloat(punto[0])) && !isNaN(parseFloat(punto[1])) && (
+          <Marker 
+            key={index}
+            position={[parseFloat(punto[0]), parseFloat(punto[1])]}
+            icon={customMarkerIcon}
+          >
+            <Popup>
+              Punto {index + 1}<br />
+              Lat: {punto[0]}, Lng: {punto[1]}
+            </Popup>
+          </Marker>
+        )
       ))}
 
-      {geoJsonData2  && geoJsonData2.type === "FeatureCollection" && (
-        <GeoJSON 
-          data={geoJsonData2} 
-          style={geoJsonStyle} 
-      />
-      )}
+      {/* Renderizar GeoJSON data con validación */}
+      {geoJsonData && geoJsonData.length > 0 && geoJsonData.map((route, index) => (
+        route && (
+          <GeoJSON 
+            key={index} 
+            data={route} 
+            style={getGeoJsonStyle}
+            onEachFeature={(feature, layer) => {
+              if (feature.properties) {
+                const radioId = feature.properties.id || feature.properties.radio;
+                const popupContent = `
+                  <div>
+                    <strong>Radio:</strong> ${radioId || 'N/A'}<br/>
+                    <strong>Color:</strong> <span style="color:${getRadioColor(radioId)}">■</span>
+                  </div>
+                `;
+                layer.bindPopup(popupContent);
+              }
+            }}
+          />
+        )
+      ))}
+
+      {/* NUEVO: Renderizar GeoJSON con colores por radio */}
+      {renderGeoJsonWithRadioColors()}
 
     </MapContainer>
   );
