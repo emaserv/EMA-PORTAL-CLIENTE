@@ -112,28 +112,44 @@ const InformesCliente = () => {
       const apiData = response.data;
   
       if (apiData.dataTabla) {
-        // Formatear los datos para exportar
         const formattedData = (() => {
-          if (user.idGrupoCliente === 4) {
-            return apiData.dataTabla.map((row) => ({
-              //ID: row.id || "-",
-              "Fecha Emisión": row.fechaEmision || "-",
-              "Número Cliente": row.nroCliente || "-",
-              Titular: row.titular || "-",
-              //Plan: row.plan || "-",
-              //Sucursal: row.sucursal || "-",
-              //Radio: row.radio || "-",
-              Dirección: row.direccion || "-",
-              Localidad: row.localidad || "-",
-              Fecha: row.fecha || "-",
-              Hora: row.hora || "-",
-              "Estado Pieza": row.estadoPieza || "-",
-              "Estado Metro": row.estadoMetro || "-",
-              "Observación Visita": row.obsVisita || "-",
-              GeoVisita: row.geoVisita || "-",
-              Foto: row.foto || "-",
-              Firma: row.firma || "-",
-            }));
+        if (user.idGrupoCliente === 4) {
+          return apiData.dataTabla.map((row) => {
+            // Función para convertir "dd/mm/yy" a Date válido
+            const parseDate = (str) => {
+              if (!str) return null;
+              const [dia, mes, anio] = str.split("/");
+              const fullYear = anio.length === 2 ? 2000 + parseInt(anio) : parseInt(anio);
+              return new Date(fullYear, mes - 1, dia);
+            };
+
+            const fecha = parseDate(row.fecha);
+            const fechaVencimiento = parseDate(row.fechaVencimiento);
+
+            let diferencia = "-";
+            if (fecha && fechaVencimiento && !isNaN(fecha) && !isNaN(fechaVencimiento)) {
+              const diffMs = fechaVencimiento - fecha;
+              diferencia = Math.floor(diffMs / (1000 * 60 * 60 * 24)); 
+            }
+
+              return {
+                "Fecha Emisión": row.fechaEmision || "-",
+                "Número Cliente": row.nroCliente || "-",
+                Titular: row.titular || "-",
+                Dirección: row.direccion || "-",
+                Localidad: row.localidad || "-",
+                Fecha: row.fecha || "-",
+                Hora: row.hora || "-",
+                "Fecha Vencimiento": row.fechaVencimiento || "-",
+                "Diferencia (días)": diferencia,
+                "Estado Pieza": row.estadoPieza || "-",
+                "Estado Metro": row.estadoMetro || "-",
+                "Observación Visita": row.obsVisita || "-",
+                GeoVisita: row.geoVisita || "-",
+                Foto: row.foto || "-",
+                Firma: row.firma || "-",
+              };
+            });
           } else if (user.idGrupoCliente === 2) {
             return apiData.dataTabla.map((row) => ({
               //ID: row.id || "-",

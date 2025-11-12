@@ -726,7 +726,7 @@ def informeEmisionExtendido():
                 datosPiezasPostales.append({
                     'id': row.id,
                     'fechaEmision': format_date(row.fechaEmision),
-                    'fechaVencimiento': row.fechaVencimientoMetro,
+                    'fechaVencimiento': format_date(row.vencimiento),
                     'nroCliente': row.nroCliente,
                     'titular': row.titular,
                     'plan': row.planTurno,
