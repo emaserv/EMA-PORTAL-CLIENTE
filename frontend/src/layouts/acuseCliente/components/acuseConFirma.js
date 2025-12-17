@@ -130,7 +130,21 @@ const AcuseReciboConFirma = ({ data, onRendered }) => {
               </Typography>
               <TextField label="Fecha" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} defaultValue={i === 0 ? data.fecha : data.segundaVisita?.fecha2 || ""} />  
               <TextField label="Hora" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} defaultValue={i === 0 ? data.hora : data.segundaVisita?.hora2 || ""} />
-              <TextField label="Distribuidor" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={i === 1 && !data.segundaVisita?.fecha2 ? "" : data.distribuidor} />
+              <TextField 
+                label="Distribuidor" 
+                variant="outlined" 
+                size="small" 
+                fullWidth 
+                sx={{ mb: 1 }} 
+                value={
+                  i === 1 && 
+                  (!data.segundaVisita?.fecha2 || 
+                  data.segundaVisita?.fecha2 === "-" || 
+                  data.segundaVisita?.fecha2 === "") 
+                  ? "-" 
+                  : data.distribuidor
+                }
+              />
               {i === 1 && (
                 <TextField label="Tipo de Entrega" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={data.tipoEntrega} /> 
               )} 
