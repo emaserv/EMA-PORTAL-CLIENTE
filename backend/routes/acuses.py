@@ -17,7 +17,7 @@ acuses = Blueprint('acuses', __name__)
 def getLoteDropDwn():
     try: 
         with DatabaseSession().get_session() as session:
-            query = text('SELECT DISTINCT(lote) FROM "itemEmision" where "idGrupoCliente" = 2')
+            query = text('SELECT DISTINCT(lote) FROM "itemEmision" where "idGrupoCliente" = 2 and "estadoMetro" is null')
             data_query = session.execute(query)
 
             loteDropDown = [row.lote for row in data_query]
@@ -141,7 +141,6 @@ def getAcuses():
 
                 # ORDENAR POR nroCliente
                 query = query.order_by(ItemEmision.nroCliente)
-                
                 resultados = query.all()
                 nroClientes = list(set(item.nroCliente for item in resultados))
                 registros_nr = session.query(ItemEmision).filter(
