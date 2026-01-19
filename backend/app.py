@@ -3,7 +3,6 @@ from flask_cors import CORS
 from flask import Blueprint
 #from flask_jwt_extended import JWTManager
 from db.serverPostgres import db
-
 import os
 import varEntorno 
 
@@ -31,6 +30,7 @@ from routes.radioCliente import radioCliente
 from routes.importador import importador
 from routes.geoJson import geoJson
 from routes.acuses import acuses
+from routes.acuses_async import acuses_async
 
 app.register_blueprint(auth)
 app.register_blueprint(fechaCliente)
@@ -38,6 +38,7 @@ app.register_blueprint(radioCliente)
 app.register_blueprint(importador)
 app.register_blueprint(geoJson)
 app.register_blueprint(acuses)
+app.register_blueprint(acuses_async)
 
 from services.adaptersRest.AdapterUsuario import AdapterUsuario
 from services.adaptersRest.AdapterGrupoCliente import AdapterGrupoCliente
@@ -56,6 +57,24 @@ from models.cliente import GrupoCliente
 from models.emision import Emision, ItemEmision
 from models.usuario import Credencial, Usuario
 from models.dai import Dai
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Endpoint de verificación de salud"""
+    from datetime import datetime
+    return {
+        "status": "healthy",
+        "service": "acuses-optimizado",
+        "timestamp": datetime.now().isoformat(),
+        "directorios": {
+            "temporales": "Usa tempfile.mkdtemp() - no necesita directorio fijo"
+        },
+        "endpoints": {
+            "async_generate": "/api/acuses-async/generate",
+            "async_status": "/api/acuses-async/status/<task_id>",
+            "async_download": "/api/acuses-async/download/<task_id>"
+        }
+    }
 
 if __name__ == "__main__":
     with app.app_context():

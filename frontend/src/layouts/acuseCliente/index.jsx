@@ -1,147 +1,51 @@
-// ✅ AcuseCliente.jsx (versión sin onRenderComplete ni renderQueue)
+// ✅ AcuseCliente.jsx
 
-import { React, useEffect, useState } from "react";
+import { React, useEffect, useState, useCallback } from "react";
 import SoftBox from "components/SoftBox";
 import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
-import { Card } from "@mui/material";
+import { Card, Alert as MuiAlert, Snackbar } from "@mui/material";
 import SoftTypography from "components/SoftTypography";
 import SoftButton from "components/SoftButton";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "layouts/auth/AuthContext";
-import {API_BACK} from "../../config";
-import LoadingModal from "../../components/loadingModal";
+import { API_BACK } from "../../config";
 import DropdownList from "components/DropdownList";
-import AcuseReciboConFirma from "./components/acuseConFirma";
-import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import html2canvas from "html2canvas";
-import ReactDOM from "react-dom/client";
 import TablaAcusesCliente from "./data/tablaAcusesCliente.jsx";
 import SoftInputBase from "components/SoftInputBase";
-import Accordion from "@mui/material/Accordion";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import DownloadIcon from '@mui/icons-material/Download';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import Checkbox from "@mui/material/Checkbox";
-
-
-const generarZIPDeAcuses = async (
-  dataArray,
-  nombreLote,
-  setProgreso,
-  parteNro,
-) => {
-  const zip = new JSZip();
-  const concurrencyLimit = 4; 
-
-  const procesarAcuse = (item, index) => {
-    return new Promise(async (resolve) => {
-      setProgreso(`Generando acuse ${index + 1} de ${dataArray.length} de parte ${parteNro}`);
-      await new Promise((res) => setTimeout(res, 10));
-
-      const contenedor = document.createElement("div");
-      contenedor.style.position = "fixed";
-      contenedor.style.top = "0";
-      contenedor.style.left = "0";
-      contenedor.style.width = "300px";
-      contenedor.style.height = "300px";
-      contenedor.style.opacity = "1";
-      contenedor.style.zIndex = "999999";
-
-      document.body.appendChild(contenedor);
-
-      const root = ReactDOM.createRoot(contenedor);
-
-      root.render(
-        <AcuseReciboConFirma
-          data={item}
-          onRendered={async (refElement) => {
-            const canvas = await html2canvas(refElement, {
-              useCORS: true,
-              backgroundColor: "#fff",
-              scrollY: 0,
-              scale: 1.2,
-            });
-
-            const blob = await new Promise((res) =>
-              canvas.toBlob(res, "image/jpeg", 0.5)
-            );
-
-            if (blob) {
-              zip.file(`_${item.codigoBarras}.jpg`, blob);
-            }
-
-            canvas.width = 0;
-            canvas.height = 0;
-            root.unmount();
-            document.body.removeChild(contenedor);
-            resolve();
-          }}
-        />
-      );
-    });
-  };
-
-  // ✅ Ejecutar en paralelo con límite
-  const ejecutarEnLotes = async (array, limit) => {
-    let index = 0;
-
-    const ejecutarLote = async () => {
-      while (index < array.length) {
-        const currentIndex = index++;
-        await procesarAcuse(array[currentIndex], currentIndex);
-      }
-    };
-
-    const workers = Array.from({ length: limit }, ejecutarLote);
-    await Promise.all(workers);
-  };
-
-  await ejecutarEnLotes(dataArray, concurrencyLimit);
-
-  const zipBlob = await zip.generateAsync({ type: "blob" });
-  saveAs(zipBlob, `${nombreLote}.zip`);
-};
-
+import Alert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
+import RefreshIcon from '@mui/icons-material/Refresh';
+import CloseIcon from '@mui/icons-material/Close';
 
 const AcuseCliente = () => {
   const { handleSubmit, control } = useForm();
   const [lotes, setLotes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [progreso, setProgreso] = useState("");
   const [dataCliente, setDataCliente] = useState([]);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
-  const [acusesPorBloque, setAcusesPorBloque] = useState([]);
-  const [expandedAccordion, setExpandedAccordion] = useState(null);
-  const [nombreLoteSeleccionado, setNombreLoteSeleccionado] = useState("");
-  const [partesSeleccionadas, setPartesSeleccionadas] = useState([]);
+  const [activeTasks, setActiveTasks] = useState([]);
+  const [showSnackbar, setShowSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("info");
+  const [currentTaskId, setCurrentTaskId] = useState(null);
+  const [pollingActive, setPollingActive] = useState(true);
   const { user } = useAuth();
 
-  const toggleParteSeleccionada = (index) => {
-    setPartesSeleccionadas((prev) =>
-      prev.includes(index)
-        ? prev.filter((i) => i !== index)
-        : [...prev, index]
-    );
+  // Mostrar snackbar
+  const mostrarSnackbar = (message, severity = "info") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setShowSnackbar(true);
   };
 
-  const toggleSeleccionarTodas = () => {
-    if (partesSeleccionadas.length === acusesPorBloque.length) {
-      setPartesSeleccionadas([]);
-    } else {
-      setPartesSeleccionadas(acusesPorBloque.map((_, i) => i));
-    }
-  };
-
+  // Cargar lotes
   useEffect(() => {
     const fetchLotes = async () => {
       try {
         const response = await fetch(`${API_BACK}/api/acuses/loteDropDwn`);
         const data = (await response.ok) ? await response.json() : [];
-
         setLotes(
           data
             .filter((item) => item !== null)
@@ -150,77 +54,318 @@ const AcuseCliente = () => {
       } catch (error) {
         console.error("Error al obtener lotes:", error);
         setLotes([]);
-      } finally {
-        setLoading(false);
       }
     };
     fetchLotes();
   }, []);
 
-  const onDescargarAcuses2 = async (formData) => {
-
-    if (!formData.loteSeleccionado) return;
-    setLoading(true);
-    setProgreso("Filtrando acuses...");
-    setAcusesPorBloque([]);
-
+  // Obtener tareas activas
+  const obtenerTareasActivas = useCallback(async () => {
     try {
-      const lote = formData.loteSeleccionado;
-      setNombreLoteSeleccionado(lote);
-
-      const response = await fetch(`${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`);
-
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let buffer = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // Dividimos los eventos enviados (por lotes de 500)
-        const parts = buffer.split("\n\n");
-
-        for (let i = 0; i < parts.length - 1; i++) {
-          const line = parts[i];
-          if (line.startsWith("data:")) {
-            const jsonData = JSON.parse(line.slice(5));
-            if (Array.isArray(jsonData) && jsonData.length > 0) {
-              setAcusesPorBloque((prev) => [...prev, jsonData]);
-            }
-          }
+      const response = await fetch(`${API_BACK}/api/acuses-async/active-tasks`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setActiveTasks(data.active_tasks || []);
         }
-
-        buffer = parts[parts.length - 1]; // lo que no se procesó aún
       }
+    } catch (error) {
+      console.error("Error obteniendo tareas:", error);
+    }
+  }, []);
 
-    } catch (err) {
-      console.error("Error al obtener acuses:", err);
-      alert("Ocurrió un error al filtrar los acuses.");
-    } finally {
+  // Monitoreo automático
+  useEffect(() => {
+    let intervalo = null;
+    
+    if (activeTasks.length > 0) {
+      intervalo = setInterval(() => {
+        obtenerTareasActivas();
+      }, 5000);
+      
+      return () => {
+        if (intervalo) clearInterval(intervalo);
+      };
+    }
+  }, [activeTasks.length, obtenerTareasActivas]);
+
+  // Iniciar generación
+  const iniciarGeneracionAsync = async (tipo, valor, nombreDescarga) => {
+    // VERIFICAR PRIMERO si ya hay una generación en curso
+    try {
+      const checkResponse = await fetch(`${API_BACK}/api/acuses-async/can-generate`);
+      if (checkResponse.ok) {
+        const checkData = await checkResponse.json();
+        if (!checkData.can_generate) {
+          // Ya hay una generación en curso
+          mostrarSnackbar("Ya hay una generación de acuses en curso. Espere a que termine.", "warning");
+          return; // Salir sin hacer nada
+        }
+      }
+    } catch (checkError) {
+      console.error("Error verificando estado:", checkError);
+      // Continuar de todos modos si falla la verificación
+    }
+    
+    setLoading(true);
+    setProgreso("⏳ Iniciando generación...");
+    setCurrentTaskId(null);
+    
+    try {
+      const requestData = tipo === 'lote' 
+        ? { lote: valor }
+        : { nroCliente: valor };
+      
+      const response = await fetch(`${API_BACK}/api/acuses-async/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        // Manejar específicamente el error de "ya hay generación"
+        if (result.error && (
+            result.error.includes("Ya hay una generación") ||
+            result.error.includes("generación en curso") ||
+            result.status === 423  // Locked
+          )) {
+          throw new Error("⏳ " + result.error);
+        }
+        throw new Error(result.error || 'Error al iniciar generación');
+      }
+      
+      setCurrentTaskId(result.task_id);
+
+      await obtenerTareasActivas();
+      await monitorearTarea(result.task_id, nombreDescarga);
+      
+    } catch (error) {
+      mostrarSnackbar(` ${error.message}`, "error");
       setLoading(false);
       setProgreso("");
+      setCurrentTaskId(null);
     }
   };
 
-  const onFiltrarPorCliente = async (formData) => {
-    if (!formData.numCliente) return;
+  // Monitorear tarea - CON LOGS
+  const monitorearTarea = async (taskId, nombreDescarga) => {
+    let attempts = 0;
+    const maxAttempts = 4500;
+    let shouldContinuePolling = true;
+    let pollingActive = true;
+    let cancelledDetected = false;
+    setPollingActive(true);
+    
+    while (pollingActive && attempts < maxAttempts && !cancelledDetected) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      try {
+        const statusResponse = await fetch(`${API_BACK}/api/acuses-async/status/${taskId}`);
+        const status = await statusResponse.json();
+        
+        if (!status.success) {
+          if (status.status === "expired" || status.status === "gone") {
+            mostrarSnackbar("La tarea ya no está disponible", "info");
+            pollingActive = false;
+            setLoading(false); 
+            setProgreso("");
+            break;
+          }
+          throw new Error(status.error || 'Error al verificar estado');
+        }
+        
+        // Actualizar progreso
+        if (status.status === 'processing') {
+          const newMessage = status.message;
+          setProgreso(newMessage);
+        }
+        
+        // MANEJAR ESTADO CANCELADO
+        if (status.status === 'cancelled' || status.cancelled) {
+          cancelledDetected = true;
+          mostrarSnackbar("Generación cancelada", "info");
+          setProgreso("Cancelada");
+          setLoading(false);
+          setCurrentTaskId(null);
+          setPollingActive(false);
+          pollingActive = false;
+          break; 
+        } else if (status.status === 'completed') {
+            
+            // Descargar el ZIP primero
+            await descargarResultado(taskId, nombreDescarga);
+            
+            // Mostrar estadísticas
+            const totalGenerados = status.total_generados || 0;
+            const totalErrores = status.total_con_errores || 0;
+            
+            // DESCARGAR AUTOMÁTICAMENTE REPORTE SI HAY ERRORES
+            if (totalErrores > 0) {
+              mostrarSnackbar(
+                `${totalGenerados} acuses generados\n  ${totalErrores} con errores - Revisa el archivo CSV dentro del ZIP`,
+                "warning"
+              );
+            } else {
+              mostrarSnackbar(
+                ` ${totalGenerados} acuses generados correctamente`,
+                "success"
+              );
+            }
+            
+            await obtenerTareasActivas();
+            setProgreso("Completado");
+            setCurrentTaskId(null);
+            setLoading(false);
+            return;
+          
+        } else if (status.status === 'failed') {
+          setCurrentTaskId(null);
+          throw new Error(status.error || 'La generación falló');
+        } else if (status.status === 'pending') {
+          console.log(` [monitorearTarea] Tarea PENDIENTE - continuando...`);
+        }
+        
+      } catch (error) {
+        console.error(` [monitorearTarea] Error en intento ${attempts + 1}:`, error);
+      }
+      
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts && pollingActive) {
+      setLoading(false);
+      setProgreso("");
+      mostrarSnackbar(" Tiempo de espera agotado", "warning");
+    }
+    
+  };
+
+  // Descargar resultado
+  const descargarResultado = async (taskId, nombreDescarga) => {
+    try {
+      const downloadResponse = await fetch(`${API_BACK}/api/acuses-async/download/${taskId}`);
+      
+      if (!downloadResponse.ok) {
+        throw new Error('Error al descargar el archivo');
+      }
+      
+      const blob = await downloadResponse.blob();
+      saveAs(blob, `${nombreDescarga}.zip`);
+      
+    } catch (error) {
+      console.error("Error descargando resultado:", error);
+      throw error;
+    }
+  };
+
+  const cancelarTarea = async (taskId) => {
+    
+    try {
+      setProgreso("Cancelando...");
+      
+      const url = `${API_BACK}/api/acuses-async/cancel/${taskId}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setLoading(false);
+        setProgreso("");
+        setCurrentTaskId(null); 
+        
+        mostrarSnackbar(" Tarea cancelada exitosamente", "success");
+        
+        await obtenerTareasActivas();
+        
+        setTimeout(() => {
+          setLoading(false);
+          setProgreso("");
+        }, 100);
+        
+      } else {
+        mostrarSnackbar(` Error: ${result.error || "No se pudo cancelar"}`, "error");
+        
+        if (result.error?.includes("no encontrada") || result.error?.includes("finalizada")) {
+          setLoading(false);
+          setProgreso("");
+          setCurrentTaskId(null);
+        }
+      }
+      
+    } catch (error) {
+      console.error(`[cancelarTarea] Error de red o servidor:`, error);
+      
+      mostrarSnackbar(" Error al contactar al servidor", "warning");
+      
+      setLoading(false);
+      setProgreso("");
+      setCurrentTaskId(null);
+      
+      try {
+        await obtenerTareasActivas();
+      } catch (e) {
+        console.error("Error al actualizar tareas activas:", e);
+      }
+    }
+  };
+
+  const verificarSiPuedeGenerar = async () => {
+    try {
+      const response = await fetch(`${API_BACK}/api/acuses-async/can-generate`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.can_generate;
+      }
+    } catch (error) {
+      console.error("Error verificando:", error);
+    }
+    return true; 
+  };
+
+  // Descargar por lote
+  const onDescargarPorLote = async (formData) => {
+    if (!formData.loteSeleccionado) {
+      mostrarSnackbar("Por favor seleccione un lote", "warning");
+      return;
+    }
+    
+    const lote = formData.loteSeleccionado;
+    await iniciarGeneracionAsync('lote', lote, `${lote}`);
+  };
+
+  // Descargar por cliente
+  const onDescargarPorCliente = async (formData) => {
+    if (!formData.numCliente) {
+      mostrarSnackbar("Por favor ingrese un número de cliente", "warning");
+      return;
+    }
+    
+    const nroCliente = formData.numCliente;
     setBuscandoCliente(true);
-    setProgreso("Buscando acuses del cliente...");
+    setProgreso("🔍 Buscando acuses...");
+    
     try {
       const response = await fetch(
-        `${API_BACK}/api/acuses/getAcuses?nroCliente=${formData.numCliente}`
+        `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}`
       );
       const data = await response.json();
-      console.log("RESPONSE CRUDO", data.acusesData);
-      setDataCliente(data.acusesData || []);
+      
+      if (data.acusesData?.length > 0) {
+        setDataCliente(data.acusesData);
+      } else {
+        mostrarSnackbar(`No se encontraron acuses`, "info");
+      }
     } catch (err) {
       console.error("Error al buscar por cliente:", err);
-      alert("Error al buscar acuses del cliente");
+      mostrarSnackbar("Error al buscar acuses", "error");
     } finally {
       setBuscandoCliente(false);
       setProgreso("");
@@ -229,59 +374,152 @@ const AcuseCliente = () => {
 
   return (
     <>
-      {loading && (
-        <SoftBox
-          display="flex"
-          justifyContent="center" // <-- esto hay que hacerlo dinámico
-          flexWrap="wrap"
-          gap={2}
-          mt={6}
-          width="100%"
+      {/* Snackbar para notificaciones */}
+      <Snackbar
+        open={showSnackbar}
+        autoHideDuration={4000}
+        onClose={() => setShowSnackbar(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <MuiAlert 
+          onClose={() => setShowSnackbar(false)} 
+          severity={snackbarSeverity}
+          elevation={6}
+          variant="filled"
+          sx={{ width: '100%' }}
         >
-          <SoftTypography variant="h2" color="black" fontWeight="bold">
-            {progreso}
-          </SoftTypography>
+          {snackbarMessage}
+        </MuiAlert>
+      </Snackbar>
+
+      {/* Overlay de carga TRANSPARENTE - NO mueve elementos */}
+      {loading && (
+        <SoftBox 
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(39, 39, 39, 0.82)', 
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            paddingTop: '20vh', 
+          }}
+        >
+          {/* Tarjeta de progreso CENTRADA - NO afecta al layout debajo */}
+          <Card sx={{ 
+            width: '90%',
+            maxWidth: '500px',
+            p: 4,
+            borderRadius: 3,
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #e0e0e0',
+            backgroundColor: 'white',
+            position: 'relative',
+            zIndex: 1001,
+          }}>
+            <SoftBox display="flex" flexDirection="column" alignItems="center" gap={3}>
+              <CircularProgress size={60} thickness={4} color="info" />
+              
+              <SoftBox textAlign="center">
+                <SoftTypography variant="h5" fontWeight="bold" color="info" gutterBottom>
+                   Generando Acuses
+                </SoftTypography>
+                <SoftTypography variant="body1" color="text.secondary">
+                  {progreso || "Procesando en segundo plano..."}
+                </SoftTypography>
+              </SoftBox>
+              
+              <SoftBox width="100%">
+                <SoftTypography variant="caption" color="text.secondary" display="block" textAlign="center">
+                  La descarga comenzará automáticamente
+                </SoftTypography>
+              </SoftBox>             
+                <SoftButton
+                  variant="gradient"
+                  color="info"
+                  size="small"
+                  onClick={() => {
+                    
+                    // Opción 1: Si tenemos currentTaskId
+                    if (currentTaskId) {
+                      setLoading(false);
+                      setProgreso("");
+                      setCurrentTaskId(null);
+                      
+                      // Luego enviar cancelación al backend
+                      cancelarTarea(currentTaskId);
+                    } 
+                    // Opción 2: Buscar en activeTasks
+                    else if (activeTasks.length > 0) {
+                      const taskToCancel = activeTasks[0]; 
+                      if (taskToCancel) {
+                        setLoading(false);
+                        setProgreso("");
+                        setCurrentTaskId(null);
+                        cancelarTarea(taskToCancel.task_id);
+                      }
+                    } 
+                    // Opción 3: Solo limpiar UI
+                    else {
+                      setLoading(false);
+                      setProgreso("");
+                      setCurrentTaskId(null);
+                      mostrarSnackbar("Operación cancelada", "info");
+                    }
+                  }}
+                  startIcon={<CloseIcon />}
+                >
+                  Cancelar
+                </SoftButton>
+            </SoftBox>
+          </Card>
         </SoftBox>
       )}
-      <LoadingModal isOpen={loading} />
+
+      {/* CONTENIDO PRINCIPAL - Este NO se mueve */}
       <SoftBox display="flex" flexDirection="column" alignItems="center">
         <SoftBox width="100%">
           <ResponsiveAppBar />
         </SoftBox>
 
+        {/* Cards de selección - SIEMPRE en su posición */}
         <SoftBox
           display="flex"
           justifyContent={
-            user?.userName === "imorales@emaservicios.com.ar" ? "space-between" : "flex-start"
+            user?.userName === "ecorrea@emaservicios.com.ar" ? "space-between" : "flex-start"
           }
           flexWrap="wrap"
           gap={2}
-          mt={6}
-          width="100%"
+          mt={{ xs: '6rem', md: '8rem' }}
+          width="96%"
+          px={2}
         >
-
           {/* Card Selección de Lote */}
-          {user?.userName === "imorales@emaservicios.com.ar" && (
+          {user?.userName === "ecorrea@emaservicios.com.ar" && (
             <Card
               sx={{
                 width: { xs: "100%", md: "48%" },
                 p: 4,
-                mt: "4rem",
-                boxShadow: 4,
-                borderRadius: 3,
+                boxShadow: 3,
+                borderRadius: 2,
               }}
             >
-              <SoftTypography variant="h5" fontWeight="bold" mb={0}>
+              <SoftTypography variant="h5" fontWeight="bold" mb={1}>
                 Acuse por Lote
               </SoftTypography>
               <SoftBox
                 display="flex"
                 flexDirection={{ xs: "column", sm: "row" }}
                 gap={2}
-                alignItems="center"
+                alignItems="flex-end"
               >
                 <SoftBox flex={1}>
-                  <SoftTypography component="label" variant="caption">
+                  <SoftTypography component="label" variant="caption" fontWeight="medium" >
                     Lote:
                   </SoftTypography>
                   <Controller
@@ -289,8 +527,8 @@ const AcuseCliente = () => {
                     control={control}
                     render={({ field }) => (
                       <DropdownList
-                        width="30vw"
                         list={lotes}
+                        width="35vw"
                         campoAMostrar="nombre"
                         campoID="nombre"
                         placeholder="Seleccione un Lote"
@@ -300,12 +538,13 @@ const AcuseCliente = () => {
                   />
                 </SoftBox>
                 <SoftButton
-                  sx={{ mt: "2rem" }}
+                  sx={{ mt: { xs: 2, sm: 0 }, minWidth: '120px' }}
                   variant="gradient"
                   color="info"
-                  onClick={handleSubmit(onDescargarAcuses2)}
+                  onClick={handleSubmit(onDescargarPorLote)}
+                  disabled={loading || buscandoCliente}
                 >
-                  FILTRAR
+                  {loading ? "PROCESANDO..." : "FILTRAR"}
                 </SoftButton>
               </SoftBox>
             </Card>
@@ -314,27 +553,25 @@ const AcuseCliente = () => {
           {/* Card Acuse por N° Cliente */}
           <Card
             sx={{
-              width: { xs: "100%", md: "48%" },
+              width: { xs: "100%", md: user?.userName === "ecorrea@emaservicios.com.ar" ? "48%" : "100%" },
               p: 4,
-              mt: '4rem',
-              boxShadow: 4,
-              borderRadius: 3,
-              ...(user?.userName !== "imorales@emaservicios.com.ar" && { ml: { xs: 0, md: 4 } })
+              boxShadow: 3,
+              borderRadius: 2,
             }}
           >
-            <SoftTypography variant="h5" fontWeight="bold" mb={0}>
+            <SoftTypography variant="h5" fontWeight="bold" mb={1}>
               Acuse por N° Cliente
             </SoftTypography>
-            <form onSubmit={handleSubmit(onFiltrarPorCliente)}>
+            <form onSubmit={handleSubmit(onDescargarPorCliente)}>
               <SoftBox
                 display="flex"
                 justifyContent="space-between"
-                alignItems="center"
+                alignItems={{ xs: "stretch", md: "center" }}
                 flexDirection={{ xs: "column", md: "row" }}
                 gap={2}
               >
                 <SoftBox flex={1}>
-                  <SoftTypography component="label" variant="caption">
+                  <SoftTypography component="label" variant="caption" fontWeight="medium">
                     N° de Cliente
                   </SoftTypography>
                   <Controller
@@ -345,13 +582,20 @@ const AcuseCliente = () => {
                         field={field}
                         placeholder="Inserte nro de cliente"
                         autoComplete="off"
+                        fullWidth
                       />
                     )}
                   />
                 </SoftBox>
-                <SoftBox pt={{ xs: 2, md: 3 }}>
-                  <SoftButton variant="gradient" color="info" type="submit">
-                    Filtrar
+                <SoftBox alignSelf={{ xs: "stretch", md: "flex-end" }}>
+                  <SoftButton 
+                    variant="gradient" 
+                    color="info" 
+                    type="submit"
+                    disabled={buscandoCliente || loading}
+                    fullWidth={window.innerWidth < 900}
+                  >
+                    {buscandoCliente ? "BUSCANDO..." : "FILTRAR"}
                   </SoftButton>
                 </SoftBox>
               </SoftBox>
@@ -359,146 +603,17 @@ const AcuseCliente = () => {
           </Card>
         </SoftBox>
 
-
-        {/* Tabla resultado búsqueda */}
+        {/* Tabla resultado búsqueda por cliente */}
         {dataCliente.length > 0 && (
-          <SoftBox width="98%" mt={0}>
-            <TablaAcusesCliente data={dataCliente} />
-          </SoftBox>
-        )}
-
-        {acusesPorBloque.length > 0 && (
-          <SoftBox width="98%" mt={3}>
-            <SoftBox display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <SoftBox display="flex" alignItems="center">
-                <Checkbox
-                  checked={partesSeleccionadas.length === acusesPorBloque.length}
-                  onChange={toggleSeleccionarTodas}
-                  color="primary"
-                  size="medium"
-                  sx={{ mr: 1 }}
-                />
-                <SoftTypography variant="button" fontWeight="bold">
-                  Seleccionar todas las partes
-                </SoftTypography>
-              </SoftBox>
-              <SoftButton
-                color="info"
-                disabled={partesSeleccionadas.length === 0}
-                onClick={async () => {
-                  setLoading(true);
-                  for (const parteIdx of partesSeleccionadas) {
-                    try {
-                      await generarZIPDeAcuses(
-                        acusesPorBloque[parteIdx],
-                        `${nombreLoteSeleccionado}_Parte_${parteIdx + 1}`,
-                        setProgreso,
-                        parteIdx + 1
-                      );
-                    } catch (err) {
-                      console.error("Error descargando parte", parteIdx + 1, err);
-                    }
-                  }
-                  setLoading(false);
-                  setProgreso("");
-                }}
-              >
-                Descargar seleccionadas
-              </SoftButton>
-            </SoftBox>
-            {acusesPorBloque.map((bloque, index) => (
-              <Accordion
-                key={index}
-                expanded={expandedAccordion === index}
-                onChange={() =>
-                  setExpandedAccordion(expandedAccordion === index ? null : index)
-                }
-                sx={{ mb: 2, boxShadow: 2, borderRadius:"8px" }}
-              >
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
-                  sx={{
-                    background: "linear-gradient(to top, #2152ff, #21d4fd)",
-                    color: "#ffffff",
-                    fontWeight: 700,
-                    fontSize: "0.85rem",
-                    paddingY: "2px", // controlado
-                    paddingX: 2,
-                    textTransform: "uppercase",
-                    borderRadius: "8px",
-                    minHeight: "15px !important", // altura más controlada
-                    '& .MuiAccordionSummary-content': {
-                      margin: 0, // elimina los márgenes verticales
-                      alignItems: "center",
-                      height: "100%", // toma el alto del summary
-                    },
-                    '& .MuiAccordionSummary-expandIconWrapper': {
-                      alignSelf: "center", // asegura que el ícono no cambie el alto
-                    },
-                  }}
-                >
-                  <span
-                    style={{
-                      flexGrow: 1,
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Checkbox
-                      checked={partesSeleccionadas.includes(index)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        toggleParteSeleccionada(index);
-                      }}
-                      size="medium" // o "small"
-                      color="primary"
-                      sx={{ mr: 1 }}
-                    />
-                    PARTE {index + 1} - {bloque.length} acuses
-                  </span>
-
-                  <Tooltip title="Descargar parte">
-                    <IconButton
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        setLoading(true);
-                        try {
-                          await generarZIPDeAcuses(
-                          bloque,
-                          `${nombreLoteSeleccionado}_Parte_${index + 1}`,
-                          setProgreso,
-                          index + 1
-                        );
-
-                        } catch (error) {
-                          console.error("Error generando ZIP:", error);
-                        } finally {
-                          setLoading(false);
-                          setProgreso(""); // opcional: limpiar progreso cuando termina
-                        }
-                      }}
-                      sx={{ color: "#ffffff", fontSize: "20px" }}
-                    >
-                      <DownloadIcon />
-                    </IconButton>
-
-                  </Tooltip>
-                </AccordionSummary>
-                <AccordionDetails sx={{ paddingTop: 0, paddingBottom: 2 }}>
-                  {expandedAccordion === index && (
-                    <TablaAcusesCliente data={bloque} />
-                  )}
-                </AccordionDetails>
-
-              </Accordion>
-            ))}
+          <SoftBox width="96%" mt={3} px={2} mb={4}>
+            <Card sx={{ p: 2, borderRadius: 2 }}>
+              <TablaAcusesCliente data={dataCliente} />
+            </Card>
           </SoftBox>
         )}
       </SoftBox>
     </>
   );
 };
-
-
 
 export default AcuseCliente;

@@ -223,7 +223,7 @@ const AcuseReciboConFirma = ({ data, onRendered }) => {
                   const [lat, lon] = obtenerCoordenadas(data.geo)[0];
                   return (
                     <img
-                      src={`https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=800&height=400&center=lonlat:${lon},${lat}&zoom=15&marker=lonlat:${lon},${lat};type:material;color:%23ff0000;size:large&apiKey=44f7d58265c54b939df7520a9133e625`}
+                      src={`https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=800&height=400&center=lonlat:${lon},${lat}&zoom=15&marker=lonlat:${lon},${lat};type:material;color:%23ff0000;size:large&apiKey=d7367f40cd6d4fb38b4d9213f9548d6c`}
                       alt="Mapa estático"
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       onLoad={() => setMapReady(true)}
