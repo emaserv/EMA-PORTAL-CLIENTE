@@ -491,7 +491,7 @@ const AcuseCliente = () => {
         <SoftBox
           display="flex"
           justifyContent={
-            user?.userName === "ecorrea@emaservicios.com.ar" ? "space-between" : "flex-start"
+            user?.userName === "imorales@emaservicios.com.ar" ? "space-between" : "flex-start"
           }
           flexWrap="wrap"
           gap={2}
@@ -500,7 +500,7 @@ const AcuseCliente = () => {
           px={2}
         >
           {/* Card Selección de Lote */}
-          {user?.userName === "ecorrea@emaservicios.com.ar" && (
+          {user?.userName === "imorales@emaservicios.com.ar" && (
             <Card
               sx={{
                 width: { xs: "100%", md: "48%" },
@@ -528,7 +528,7 @@ const AcuseCliente = () => {
                     render={({ field }) => (
                       <DropdownList
                         list={lotes}
-                        width="35vw"
+                        width="30vw"
                         campoAMostrar="nombre"
                         campoID="nombre"
                         placeholder="Seleccione un Lote"
@@ -553,7 +553,7 @@ const AcuseCliente = () => {
           {/* Card Acuse por N° Cliente */}
           <Card
             sx={{
-              width: { xs: "100%", md: user?.userName === "ecorrea@emaservicios.com.ar" ? "48%" : "100%" },
+              width: { xs: "100%", md: user?.userName === "imorales@emaservicios.com.ar" ? "48%" : "100%" },
               p: 4,
               boxShadow: 3,
               borderRadius: 2,

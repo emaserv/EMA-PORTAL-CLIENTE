@@ -148,7 +148,7 @@ const Home = () => {
                 </Grid>)
                 : null}
 
-                {(user && (user.idGrupoCliente === 2 || user?.userName === "ecorrea@emaservicios.com.ar")) && (
+                {(user && (user.idGrupoCliente === 2 || user?.userName === "imorales@emaservicios.com.ar")) && (
                   <Grid
                     sx={{ textAlign: "left", marginTop: "1rem" }}
                     item

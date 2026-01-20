@@ -10,7 +10,6 @@ from datetime import datetime
 import requests
 import reportlab
 import time
-print(f"ReportLab version: {reportlab.__version__}")
 
 class AcuseImageGenerator:
     """
@@ -104,7 +103,7 @@ class AcuseImageGenerator:
         # Cargar fuentes
         self.fonts = self._load_fonts()
 
-    def _download_image_safe(self, image_url, max_width=800, quality=80, timeout=10):
+    def _download_image_safe(self, image_url, max_width=800, quality=60, timeout=10):
         """
         Descarga y optimiza una imagen directamente SIN CACHE
         """
@@ -235,7 +234,7 @@ class AcuseImageGenerator:
         draw.text((100, 30), text, fill=(255, 255, 255), font=font, anchor="mm")
         return img
     
-    def generate_acuse_jpg(self, acuse_data, quality=80):
+    def generate_acuse_jpg(self, acuse_data, quality=60):
         """
         Genera JPG que replica EXACTAMENTE el diseño React
         VERSIÓN CORREGIDA
@@ -489,7 +488,7 @@ class AcuseImageGenerator:
                 'fecha': str(segunda_visita.get('fecha2', '')).strip(),
                 'hora': str(segunda_visita.get('hora2', '')).strip(),
                 'distribuidor': "" if not segunda_visita.get('fecha2') else str(data.get('distribuidor', '')).strip(),
-                'tipo_entrega': str(data.get('tipoEntrega', '')).strip() if segunda_visita.get('fecha2') else "Firmada"
+                'tipo_entrega': str(data.get('tipoEntrega', '')).strip()
             }
         ]
         
@@ -593,7 +592,7 @@ class AcuseImageGenerator:
                     draw.text((self.image_width // 2, text_y), barcode_text,
                             fill=self.colors['text'], font=self.fonts['body2'], anchor="mm")
             except Exception as e:
-                print(f"❌ Error código de barras: {e}")
+                print(f" Error código de barras: {e}")
         
         # Columna 3: Info EMA (derecha) - TEXTUAL como React
         ema_info = [
@@ -622,8 +621,7 @@ class AcuseImageGenerator:
         import os
         
         # Ruta directa
-        username = os.getenv('USERNAME', 'ecorrea')
-        font_path = f"C:\\Users\\{username}\\AppData\\Local\\Microsoft\\Windows\\Fonts\\code3-9.ttf"
+        font_path = r"C:\Users\lboldrini\AppData\Local\Microsoft\Windows\Fonts\code3-9.ttf"
         
         try:
             font = ImageFont.truetype(font_path, 40)
@@ -652,7 +650,6 @@ class AcuseImageGenerator:
             return img
             
         except Exception as e:
-            print(f" Error generando código de barras: {e}")
             width = 200
             height = 50
             img = Image.new('RGB', (width, height), 'white')
@@ -718,7 +715,6 @@ class AcuseImageGenerator:
                         fill=self.colors['text'], font=self.fonts['body1'])
                         
             except Exception as e:
-                print(f"Error logo Naturgy: {e}")
                 draw.text((x1, y + 10), f"Importe: ${data.get('importe', '0')}",
                         fill=self.colors['text'], font=self.fonts['body1_bold'])
         
@@ -1064,7 +1060,7 @@ class AcuseImageGenerator:
                      fill=(255, 0, 0), font=self.fonts['caption'], anchor="mm")
             
             buffer = BytesIO()
-            img.save(buffer, format='JPEG', quality=80, optimize=True)
+            img.save(buffer, format='JPEG', quality=60, optimize=True)
             return buffer.getvalue()
         except:
             img = Image.new('RGB', (100, 100), self.colors['background'])

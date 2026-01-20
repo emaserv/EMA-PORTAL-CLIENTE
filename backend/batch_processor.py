@@ -18,7 +18,7 @@ class BatchProcessor:
     Procesa lotes de acuses de manera eficiente SIN CACHE
     """
     
-    def __init__(self, max_workers=15):
+    def __init__(self, max_workers=18):
         self.max_workers = max_workers
     
     def obtener_metadata_lote(self, lote_param, nroCliente=None):
@@ -446,4 +446,4 @@ class BatchProcessor:
             traceback.print_exc()
             return None, str(e), []
 
-batch_processor = BatchProcessor(max_workers=15)
+batch_processor = BatchProcessor(max_workers=18)

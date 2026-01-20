@@ -85,7 +85,6 @@ class AsyncTask:
         if current_task_id == self.task_id:
             generation_in_progress = False
             current_task_id = None
-            print(f"🔓 [LOCK] Generación {self.task_id} terminada. Bloqueo liberado.")
     
     def _execute_in_context(self):
         """Ejecuta dentro del contexto Flask - CON MANEJO CORRECTO DE CONTEXTO"""
@@ -315,10 +314,7 @@ def generate_async():
         
         generation_in_progress = True
         task_id = str(uuid.uuid4())
-        current_task_id = task_id
-        
-        print(f"🔐 [LOCK] Iniciando generación {task_id}. Bloqueado: {generation_in_progress}")
-        
+        current_task_id = task_id        
         flask_context = current_app.app_context
         
         task = AsyncTask(
