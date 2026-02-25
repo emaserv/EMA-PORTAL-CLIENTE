@@ -200,7 +200,7 @@ const RadioCliente = () => {
     idEmision
   ) => {
     try {
-      if (user && user.idGrupoCliente === 1) {
+      if (user && user.idGrupoCliente === 1 || user.idGrupoCliente === 7) {
         return;
       }
 
@@ -269,7 +269,7 @@ const RadioCliente = () => {
     idEmision
   ) => {
     try {
-      if (user.idGrupoCliente === 1) {
+      if (user.idGrupoCliente === 1 || user.idGrupoCliente === 7) {
         return; 
       }
       setLoading(true);
@@ -308,7 +308,7 @@ const RadioCliente = () => {
   // Función para realizar la tercera solicitud: geoMapaCamino
   const fetchGeoMapaCamino = async () => {
     try {
-      if (user.idGrupoCliente === 1) {
+      if (user.idGrupoCliente === 1 || user.idGrupoCliente === 7) {
         return; 
       }
 
@@ -634,7 +634,7 @@ const RadioCliente = () => {
                 alignItems="center"
               >
 
-              {user && (user.idGrupoCliente == 1) ? (
+              {user && (user.idGrupoCliente == 1 || user.idGrupoCliente == 7) ? (
                 <SoftBox
                   display="flex"
                   flexDirection="column"
@@ -738,7 +738,7 @@ const RadioCliente = () => {
                 </SoftBox>
                 
                 {user &&
-                (user.idGrupoCliente !== 1) ? (
+                (user.idGrupoCliente !== 1 && user.idGrupoCliente !== 7) ? (
                   <SoftBox display="flex" flexDirection="column" marginTop={-2}>
                     <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
                     <SoftBox display="flex" alignItems="center">
@@ -847,7 +847,7 @@ const RadioCliente = () => {
         </SoftBox>
 
 
-        {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 1) ? (
+        {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 1 || user.idGrupoCliente === 7) ? (
           <SoftBox
             paddingBottom={3}
             style={{ width: "90%" }}
