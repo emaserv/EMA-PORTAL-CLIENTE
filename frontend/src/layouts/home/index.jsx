@@ -147,25 +147,26 @@ const Home = () => {
                 </Grid>)
                 : null}
 
-                {user && user.idGrupoCliente == 2 ?(
-                <Grid
-                  sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
-                  item
-                  xs={12}
-                >
-                  <div className="content" display="flex">
-                    <Link to="/acuse-cliente">
-                      <SoftButton
-                        variant="gradient"
-                        color="info"
-                        size="large"
-                        sx={{ width: "30rem" }}
-                      >
-                        Acuse Cliente
-                      </SoftButton>
-                    </Link>
-                  </div>
-                </Grid>) : null}
+                {(user && (user.idGrupoCliente === 2 || user?.userName === "imorales@emaservicios.com.ar")) && (
+                  <Grid
+                    sx={{ textAlign: "left", marginTop: "1rem" }}
+                    item
+                    xs={12}
+                  >
+                    <div className="content" style={{ display: "flex" }}>
+                      <Link to="/acuse-cliente">
+                        <SoftButton
+                          variant="gradient"
+                          color="info"
+                          size="large"
+                          sx={{ width: "30rem" }}
+                        >
+                          Acuse Cliente
+                        </SoftButton>
+                      </Link>
+                    </div>
+                  </Grid>
+                )}
 
                 {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 2) ? (
                 <Grid
