@@ -571,9 +571,9 @@ const AcuseCliente = () => {
 
   const getCardWidth = () => {
     if (user?.userName === "imorales@emaservicios.com.ar") {
-      return { xs: 12, md: 4 }; 
+      return { xs: 12, md: 3 }; 
     } else {
-      return { xs: 12, md: 6 }; 
+      return { xs: 12, md: 4 }; 
     }
   };
 
@@ -701,14 +701,19 @@ const AcuseCliente = () => {
         >
 
           {/* Grid de cards */}
-          <Grid container spacing={4}>
+          <Grid 
+            container
+            spacing={4}
+            justifyContent="center"
+            alignItems="stretch"
+          >
             {/* Card Lote (solo para usuario específico) */}
             {user?.userName === "imorales@emaservicios.com.ar" && (
               <Grid item {...cardWidth}>
                 <Card
                   sx={{
-                    height: '100%',
-                    p: 4,
+                    height: '445px',
+                    p: 3,
                     boxShadow: 3,
                     borderRadius: 2,
                     display: 'flex',
@@ -820,8 +825,8 @@ const AcuseCliente = () => {
             <Grid item {...cardWidth}>
               <Card
                 sx={{
-                  height: '100%',
-                  p: 4,
+                  height: '445px',
+                  p: 3,
                   boxShadow: 3,
                   borderRadius: 2,
                   display: 'flex',
@@ -884,8 +889,8 @@ const AcuseCliente = () => {
             <Grid item {...cardWidth}>
               <Card
                 sx={{
-                  height: '100%',
-                  p: 4,
+                  height: '445px',
+                  p: 3,
                   boxShadow: 3,
                   borderRadius: 2,
                   display: 'flex',
@@ -918,7 +923,7 @@ const AcuseCliente = () => {
                       border: '2px dashed',
                       borderColor: excelFile ? '#1A73E8' : '#e0e0e0',
                       borderRadius: 2,
-                      p: 4,
+                      p: 2,
                       mt: 1,
                       textAlign: 'center',
                       backgroundColor: excelFile ? 'rgba(26, 115, 232, 0.04)' : '#f8f9fa',
@@ -939,28 +944,28 @@ const AcuseCliente = () => {
                       onChange={handleFileChange}
                     />
                     <CloudUploadIcon sx={{ 
-                      fontSize: 56,
+                      fontSize: 40,
                       color: excelFile ? '#1A73E8' : '#9e9e9e',
-                      mb: 1 
+                      mb: 0.5 
                     }} />
                     <SoftTypography 
-                      variant="body1"
+                      variant="body2"
                       color={excelFile ? 'info' : 'text.secondary'}
                       fontWeight={excelFile ? 'medium' : 'regular'}
                     >
                       {excelFileName || "Haga clic para seleccionar archivo"}
                     </SoftTypography>
-                    <SoftTypography variant="body2" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    <SoftTypography variant="body2" color="text.secondary" display="block" sx={{ mt: 0.5, fontSize: '0.75rem' }}>
                       Formatos: .xlsx, .xls, .csv (máx. 100 clientes)
                     </SoftTypography>
                     {excelFile && (
-                      <SoftTypography variant="body2" color="info" display="block" sx={{ mt: 1 }}>
+                      <SoftTypography variant="caption" color="info" display="block" sx={{ mt: 1 }}>
                         ✓ Archivo listo para procesar
                       </SoftTypography>
                     )}
                   </SoftBox>
 
-                  <SoftTypography variant="body2" color="text.secondary" display="block" sx={{ mt: 2 }}>
+                  <SoftTypography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5, fontSize: '0.75rem' }}>
                     El archivo debe tener los números de cliente en la primera columna
                   </SoftTypography>
                 </SoftBox>
