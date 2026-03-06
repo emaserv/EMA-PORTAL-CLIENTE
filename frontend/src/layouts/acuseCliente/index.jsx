@@ -479,7 +479,7 @@ const AcuseCliente = () => {
       const fecha = new Date().toISOString().split('T')[0];
       const mainFolder = zip.folder(`acuses_multiples_${fecha}`);
       
-      const clientesSinAcuses = [];
+      const clientesConError = [];
       let procesados = 0;
       let exitosos = 0;
 
@@ -491,6 +491,11 @@ const AcuseCliente = () => {
           const response = await fetch(
             `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}`
           );
+          
+          if (!response.ok) {
+            throw new Error(`Error en la respuesta del servidor: ${response.status}`);
+          }
+          
           const result = await response.json();
 
           if (result.acusesData && result.acusesData.length > 0) {
@@ -516,21 +521,49 @@ const AcuseCliente = () => {
             
             setProgreso(`Renderizando acuse para cliente ${nroCliente}...`);
             
-            const imagenBlob = await renderizarAcuseAImagen(acuseData, nroCliente);
-
-            mainFolder.file(`_${acuseData.codigoBarras}.jpg`, imagenBlob, { binary: true });
-            exitosos++;
+            try {
+              const imagenBlob = await renderizarAcuseAImagen(acuseData, nroCliente);
+              mainFolder.file(`${acuseData.codigoBarras}.jpg`, imagenBlob, { binary: true });
+              exitosos++;
+            } catch (renderError) {
+              console.error(`Error renderizando cliente ${nroCliente}:`, renderError);
+              clientesConError.push({
+                nroCliente: nroCliente,
+                motivo: `Error al generar imagen: ${renderError.message || 'Error desconocido'}`
+              });
+            }
             
           } else {
-            clientesSinAcuses.push(nroCliente);
+            clientesConError.push({
+              nroCliente: nroCliente,
+              motivo: "No se encontraron acuses para este cliente"
+            });
           }
 
           await new Promise(resolve => setTimeout(resolve, 200));
 
         } catch (error) {
           console.error(`Error procesando cliente ${nroCliente}:`, error);
-          clientesSinAcuses.push(nroCliente);
+          clientesConError.push({
+            nroCliente: nroCliente,
+            motivo: error.message || "Error en la consulta al servidor"
+          });
         }
+      }
+
+      // Generar CSV con errores si los hay
+      if (clientesConError.length > 0) {
+        setProgreso(`📝 Generando reporte de errores...`);
+        
+        const csvContent = [
+          ["Nro de Cliente", "Motivo del Error"], 
+          ...clientesConError.map(item => [
+            `="${item.nroCliente}"`, 
+            item.motivo
+          ])
+        ].map(row => row.join(",")).join("\n");
+        
+        mainFolder.file("clientes_con_error.csv", csvContent);
       }
 
       setProgreso(`📥 Generando archivo ZIP...`);
@@ -543,9 +576,9 @@ const AcuseCliente = () => {
       
       saveAs(zipBlob, `acuses_multiples_${fecha}.zip`);
 
-      if (clientesSinAcuses.length > 0) {
+      if (clientesConError.length > 0) {
         mostrarSnackbar(
-          ` ${exitosos} acuses generados\n⚠️ ${clientesSinAcuses.length} clientes sin acuses`,
+          `${exitosos} acuses generados\n , ${clientesConError.length} clientes con error - Revisa el CSV dentro del ZIP`,
           "warning"
         );
       } else {
