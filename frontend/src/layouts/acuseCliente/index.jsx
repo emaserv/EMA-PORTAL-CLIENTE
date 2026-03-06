@@ -1,22 +1,27 @@
-// ✅ AcuseCliente.jsx
-
 import { React, useEffect, useState, useCallback } from "react";
 import SoftBox from "components/SoftBox";
 import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
-import { Card, Alert as MuiAlert, Snackbar } from "@mui/material";
+import { Card, Alert as MuiAlert, Snackbar, Grid } from "@mui/material";
 import SoftTypography from "components/SoftTypography";
 import SoftButton from "components/SoftButton";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "layouts/auth/AuthContext";
 import { API_BACK } from "../../config";
-import DropdownList from "components/DropdownList";
 import { saveAs } from "file-saver";
 import TablaAcusesCliente from "./data/tablaAcusesCliente.jsx";
 import SoftInputBase from "components/SoftInputBase";
-import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
-import RefreshIcon from '@mui/icons-material/Refresh';
 import CloseIcon from '@mui/icons-material/Close';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PersonIcon from '@mui/icons-material/Person';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
+import { FormControl, Select, MenuItem, IconButton } from "@mui/material";
+import AcuseReciboConFirma from "./components/acuseConFirma";
+import html2canvas from "html2canvas";
+import ReactDOM from "react-dom/client";
 
 const AcuseCliente = () => {
   const { handleSubmit, control } = useForm();
@@ -30,8 +35,11 @@ const AcuseCliente = () => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("info");
   const [currentTaskId, setCurrentTaskId] = useState(null);
-  const [pollingActive, setPollingActive] = useState(true);
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelFileName, setExcelFileName] = useState("");
+  const [procesandoExcel, setProcesandoExcel] = useState(false);
   const { user } = useAuth();
+  const [renderizando, setRenderizando] = useState(false);
 
   // Mostrar snackbar
   const mostrarSnackbar = (message, severity = "info") => {
@@ -91,20 +99,17 @@ const AcuseCliente = () => {
 
   // Iniciar generación
   const iniciarGeneracionAsync = async (tipo, valor, nombreDescarga) => {
-    // VERIFICAR PRIMERO si ya hay una generación en curso
     try {
       const checkResponse = await fetch(`${API_BACK}/api/acuses-async/can-generate`);
       if (checkResponse.ok) {
         const checkData = await checkResponse.json();
         if (!checkData.can_generate) {
-          // Ya hay una generación en curso
           mostrarSnackbar("Ya hay una generación de acuses en curso. Espere a que termine.", "warning");
-          return; // Salir sin hacer nada
+          return;
         }
       }
     } catch (checkError) {
       console.error("Error verificando estado:", checkError);
-      // Continuar de todos modos si falla la verificación
     }
     
     setLoading(true);
@@ -125,11 +130,10 @@ const AcuseCliente = () => {
       const result = await response.json();
       
       if (!result.success) {
-        // Manejar específicamente el error de "ya hay generación"
         if (result.error && (
             result.error.includes("Ya hay una generación") ||
             result.error.includes("generación en curso") ||
-            result.status === 423  // Locked
+            result.status === 423
           )) {
           throw new Error("⏳ " + result.error);
         }
@@ -137,7 +141,6 @@ const AcuseCliente = () => {
       }
       
       setCurrentTaskId(result.task_id);
-
       await obtenerTareasActivas();
       await monitorearTarea(result.task_id, nombreDescarga);
       
@@ -149,14 +152,12 @@ const AcuseCliente = () => {
     }
   };
 
-  // Monitorear tarea - CON LOGS
+  // Monitorear tarea
   const monitorearTarea = async (taskId, nombreDescarga) => {
     let attempts = 0;
     const maxAttempts = 4500;
-    let shouldContinuePolling = true;
     let pollingActive = true;
     let cancelledDetected = false;
-    setPollingActive(true);
     
     while (pollingActive && attempts < maxAttempts && !cancelledDetected) {
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -176,32 +177,24 @@ const AcuseCliente = () => {
           throw new Error(status.error || 'Error al verificar estado');
         }
         
-        // Actualizar progreso
         if (status.status === 'processing') {
-          const newMessage = status.message;
-          setProgreso(newMessage);
+          setProgreso(status.message);
         }
         
-        // MANEJAR ESTADO CANCELADO
         if (status.status === 'cancelled' || status.cancelled) {
           cancelledDetected = true;
           mostrarSnackbar("Generación cancelada", "info");
           setProgreso("Cancelada");
           setLoading(false);
           setCurrentTaskId(null);
-          setPollingActive(false);
           pollingActive = false;
           break; 
         } else if (status.status === 'completed') {
-            
-            // Descargar el ZIP primero
             await descargarResultado(taskId, nombreDescarga);
             
-            // Mostrar estadísticas
             const totalGenerados = status.total_generados || 0;
             const totalErrores = status.total_con_errores || 0;
             
-            // DESCARGAR AUTOMÁTICAMENTE REPORTE SI HAY ERRORES
             if (totalErrores > 0) {
               mostrarSnackbar(
                 `${totalGenerados} acuses generados\n  ${totalErrores} con errores - Revisa el archivo CSV dentro del ZIP`,
@@ -223,12 +216,10 @@ const AcuseCliente = () => {
         } else if (status.status === 'failed') {
           setCurrentTaskId(null);
           throw new Error(status.error || 'La generación falló');
-        } else if (status.status === 'pending') {
-          console.log(` [monitorearTarea] Tarea PENDIENTE - continuando...`);
         }
         
       } catch (error) {
-        console.error(` [monitorearTarea] Error en intento ${attempts + 1}:`, error);
+        console.error(`Error en monitoreo:`, error);
       }
       
       attempts++;
@@ -239,7 +230,6 @@ const AcuseCliente = () => {
       setProgreso("");
       mostrarSnackbar(" Tiempo de espera agotado", "warning");
     }
-    
   };
 
   // Descargar resultado
@@ -261,7 +251,6 @@ const AcuseCliente = () => {
   };
 
   const cancelarTarea = async (taskId) => {
-    
     try {
       setProgreso("Cancelando...");
       
@@ -280,16 +269,8 @@ const AcuseCliente = () => {
         setLoading(false);
         setProgreso("");
         setCurrentTaskId(null); 
-        
         mostrarSnackbar(" Tarea cancelada exitosamente", "success");
-        
         await obtenerTareasActivas();
-        
-        setTimeout(() => {
-          setLoading(false);
-          setProgreso("");
-        }, 100);
-        
       } else {
         mostrarSnackbar(` Error: ${result.error || "No se pudo cancelar"}`, "error");
         
@@ -301,33 +282,12 @@ const AcuseCliente = () => {
       }
       
     } catch (error) {
-      console.error(`[cancelarTarea] Error de red o servidor:`, error);
-      
+      console.error(`Error al cancelar:`, error);
       mostrarSnackbar(" Error al contactar al servidor", "warning");
-      
       setLoading(false);
       setProgreso("");
       setCurrentTaskId(null);
-      
-      try {
-        await obtenerTareasActivas();
-      } catch (e) {
-        console.error("Error al actualizar tareas activas:", e);
-      }
     }
-  };
-
-  const verificarSiPuedeGenerar = async () => {
-    try {
-      const response = await fetch(`${API_BACK}/api/acuses-async/can-generate`);
-      if (response.ok) {
-        const data = await response.json();
-        return data.can_generate;
-      }
-    } catch (error) {
-      console.error("Error verificando:", error);
-    }
-    return true; 
   };
 
   // Descargar por lote
@@ -350,7 +310,7 @@ const AcuseCliente = () => {
     
     const nroCliente = formData.numCliente;
     setBuscandoCliente(true);
-    setProgreso("🔍 Buscando acuses...");
+    setProgreso("Buscando acuses...");
     
     try {
       const response = await fetch(
@@ -372,9 +332,255 @@ const AcuseCliente = () => {
     }
   };
 
+  const renderizarAcuseAImagen = async (acuseData, nroCliente) => {
+    return new Promise((resolve, reject) => {
+      const formatearFecha = (date) => {
+        if (!date) return "-";
+        const partes = date.split(/[-/]/);
+        if (partes.length !== 3) return date;
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      };
+
+      const formatearHora = (hora) => {
+        if (!hora) return "-";
+        return hora.slice(0, 5);
+      };
+
+      const item = {
+        ...acuseData,
+        fecha: formatearFecha(acuseData.fecha),
+        hora: formatearHora(acuseData.hora),
+        fechaEmision: formatearFecha(acuseData.fechaEmision),
+        vencimiento: formatearFecha(acuseData.vencimiento),
+        segundaVisita: {
+          ...acuseData.segundaVisita,
+          fecha2: formatearFecha(acuseData.segundaVisita?.fecha2),
+          hora2: formatearHora(acuseData.segundaVisita?.hora2),
+        },
+      };
+
+      const contenedor = document.createElement("div");
+      contenedor.style.position = "fixed";
+      contenedor.style.top = "-9999px";
+      contenedor.style.left = "0";
+      contenedor.style.width = "1000px";
+      contenedor.style.zIndex = "-1";
+      contenedor.style.backgroundColor = "#fff";
+      document.body.appendChild(contenedor);
+
+      const root = ReactDOM.createRoot(contenedor);
+
+      root.render(
+        <AcuseReciboConFirma
+          data={item}
+          onRendered={async (refElement) => {
+            try {
+              const canvas = await html2canvas(refElement, {
+                useCORS: true,
+                backgroundColor: "#fff",
+                scrollY: 0,
+                scale: 1.2,
+              });
+
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  root.unmount();
+                  document.body.removeChild(contenedor);
+                  resolve(blob);
+                } else {
+                  reject(new Error(`No se pudo generar blob para cliente ${nroCliente}`));
+                }
+              }, "image/jpeg", 0.5);
+              
+            } catch (error) {
+              console.error(`Error en html2canvas para cliente ${nroCliente}:`, error);
+              root.unmount();
+              document.body.removeChild(contenedor);
+              reject(error);
+            }
+          }}
+        />
+      );
+
+      setTimeout(() => {
+        try {
+          root.unmount();
+          document.body.removeChild(contenedor);
+        } catch (e) {}
+        reject(new Error(`Timeout renderizando cliente ${nroCliente}`));
+      }, 30000);
+    });
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const validTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+        'text/csv'
+      ];
+      
+      if (!validTypes.includes(file.type) && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
+        mostrarSnackbar("Por favor seleccione un archivo Excel válido (.xlsx, .xls, .csv)", "warning");
+        event.target.value = '';
+        setExcelFile(null);
+        setExcelFileName("");
+        return;
+      }
+      
+      setExcelFile(file);
+      setExcelFileName(file.name);
+    }
+  };
+
+  const onDescargarPorExcel = async () => {
+    if (!excelFile) {
+      mostrarSnackbar("Por favor seleccione un archivo Excel", "warning");
+      return;
+    }
+
+    setProcesandoExcel(true);
+    setRenderizando(true);
+    setProgreso("📊 Leyendo archivo Excel...");
+
+    try {
+      const data = await excelFile.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      if (jsonData.length === 0) {
+        throw new Error("El archivo está vacío");
+      }
+
+      const nrosClientes = jsonData
+        .map(row => row[0])
+        .filter(cell => cell !== undefined && cell !== null && cell !== "")
+        .map(cell => String(cell).trim())
+        .filter((value, index, self) => self.indexOf(value) === index);
+
+      if (nrosClientes.length > 0 && isNaN(nrosClientes[0])) {
+        nrosClientes.shift(); 
+      }
+
+      if (nrosClientes.length === 0) {
+        throw new Error("No se encontraron números de cliente en el archivo");
+      }
+
+      if (nrosClientes.length > 100) {
+        mostrarSnackbar(`El archivo contiene ${nrosClientes.length} clientes. Se procesarán los primeros 100.`, "warning");
+        nrosClientes.length = 100;
+      }
+
+      setProgreso(`📦 Procesando ${nrosClientes.length} clientes...`);
+
+      const zip = new JSZip();
+      const fecha = new Date().toISOString().split('T')[0];
+      const mainFolder = zip.folder(`acuses_multiples_${fecha}`);
+      
+      const clientesSinAcuses = [];
+      let procesados = 0;
+      let exitosos = 0;
+
+      for (const nroCliente of nrosClientes) {
+        procesados++;
+        setProgreso(`Procesando cliente ${procesados} de ${nrosClientes.length}: ${nroCliente}`);
+
+        try {
+          const response = await fetch(
+            `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}`
+          );
+          const result = await response.json();
+
+          if (result.acusesData && result.acusesData.length > 0) {
+            const acusesOrdenados = [...result.acusesData].sort((a, b) => {
+              const convertirFecha = (fechaStr) => {
+                if (!fechaStr) return '0000-00-00';
+                const partes = fechaStr.split('/');
+                if (partes.length === 3) {
+                  return `${partes[2]}-${partes[1]}-${partes[0]}`; 
+                }
+                return fechaStr;
+              };
+              
+              const fechaA = convertirFecha(a.fechaEmision);
+              const fechaB = convertirFecha(b.fechaEmision);
+              
+              if (fechaA > fechaB) return -1;
+              if (fechaA < fechaB) return 1;
+              return 0;
+            });
+            
+            const acuseData = acusesOrdenados[0];
+            
+            setProgreso(`Renderizando acuse para cliente ${nroCliente}...`);
+            
+            const imagenBlob = await renderizarAcuseAImagen(acuseData, nroCliente);
+
+            mainFolder.file(`_${acuseData.codigoBarras}.jpg`, imagenBlob, { binary: true });
+            exitosos++;
+            
+          } else {
+            clientesSinAcuses.push(nroCliente);
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+        } catch (error) {
+          console.error(`Error procesando cliente ${nroCliente}:`, error);
+          clientesSinAcuses.push(nroCliente);
+        }
+      }
+
+      setProgreso(`📥 Generando archivo ZIP...`);
+
+      const zipBlob = await zip.generateAsync({ 
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: { level: 6 }
+      });
+      
+      saveAs(zipBlob, `acuses_multiples_${fecha}.zip`);
+
+      if (clientesSinAcuses.length > 0) {
+        mostrarSnackbar(
+          ` ${exitosos} acuses generados\n⚠️ ${clientesSinAcuses.length} clientes sin acuses`,
+          "warning"
+        );
+      } else {
+        mostrarSnackbar(
+          ` ${exitosos} acuses generados correctamente`,
+          "success"
+        );
+      }
+
+      setExcelFile(null);
+      setExcelFileName("");
+      document.getElementById('excel-file-input').value = '';
+
+    } catch (error) {
+      console.error("Error procesando Excel:", error);
+      mostrarSnackbar(`Error: ${error.message}`, "error");
+    } finally {
+      setProcesandoExcel(false);
+      setRenderizando(false);
+      setProgreso("");
+    }
+  };
+
+  const getCardWidth = () => {
+    if (user?.userName === "imorales@emaservicios.com.ar") {
+      return { xs: 12, md: 4 }; 
+    } else {
+      return { xs: 12, md: 6 }; 
+    }
+  };
+
+  const cardWidth = getCardWidth();
+
   return (
     <>
-      {/* Snackbar para notificaciones */}
       <Snackbar
         open={showSnackbar}
         autoHideDuration={4000}
@@ -392,225 +598,406 @@ const AcuseCliente = () => {
         </MuiAlert>
       </Snackbar>
 
-      {/* Overlay de carga TRANSPARENTE - NO mueve elementos */}
-      {loading && (
-        <SoftBox 
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(39, 39, 39, 0.82)', 
-            zIndex: 1000,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            paddingTop: '20vh', 
-          }}
-        >
-          {/* Tarjeta de progreso CENTRADA - NO afecta al layout debajo */}
-          <Card sx={{ 
-            width: '90%',
-            maxWidth: '500px',
-            p: 4,
-            borderRadius: 3,
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-            border: '1px solid #e0e0e0',
-            backgroundColor: 'white',
-            position: 'relative',
-            zIndex: 1001,
-          }}>
-            <SoftBox display="flex" flexDirection="column" alignItems="center" gap={3}>
-              <CircularProgress size={60} thickness={4} color="info" />
-              
-              <SoftBox textAlign="center">
-                <SoftTypography variant="h5" fontWeight="bold" color="info" gutterBottom>
-                   Generando Acuses
-                </SoftTypography>
-                <SoftTypography variant="body1" color="text.secondary">
-                  {progreso || "Procesando en segundo plano..."}
-                </SoftTypography>
-              </SoftBox>
-              
-              <SoftBox width="100%">
-                <SoftTypography variant="caption" color="text.secondary" display="block" textAlign="center">
-                  La descarga comenzará automáticamente
-                </SoftTypography>
-              </SoftBox>             
-                <SoftButton
-                  variant="gradient"
-                  color="info"
-                  size="small"
-                  onClick={() => {
-                    
-                    // Opción 1: Si tenemos currentTaskId
-                    if (currentTaskId) {
-                      setLoading(false);
-                      setProgreso("");
-                      setCurrentTaskId(null);
-                      
-                      // Luego enviar cancelación al backend
-                      cancelarTarea(currentTaskId);
-                    } 
-                    // Opción 2: Buscar en activeTasks
-                    else if (activeTasks.length > 0) {
-                      const taskToCancel = activeTasks[0]; 
-                      if (taskToCancel) {
-                        setLoading(false);
-                        setProgreso("");
-                        setCurrentTaskId(null);
-                        cancelarTarea(taskToCancel.task_id);
-                      }
-                    } 
-                    // Opción 3: Solo limpiar UI
-                    else {
-                      setLoading(false);
-                      setProgreso("");
-                      setCurrentTaskId(null);
-                      mostrarSnackbar("Operación cancelada", "info");
-                    }
-                  }}
-                  startIcon={<CloseIcon />}
-                >
-                  Cancelar
-                </SoftButton>
+    {(loading || procesandoExcel || renderizando) && (
+      <SoftBox 
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(39, 39, 39, 0.82)', 
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          paddingTop: '20vh', 
+        }}
+      >
+        <Card sx={{ 
+          width: '90%',
+          maxWidth: '500px',
+          p: 4,
+          borderRadius: 3,
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
+          border: '1px solid #e0e0e0',
+          backgroundColor: 'white',
+        }}>
+          <SoftBox display="flex" flexDirection="column" alignItems="center" gap={3}>
+            <CircularProgress size={60} thickness={4} color="info" />
+            
+            <SoftBox textAlign="center">
+              <SoftTypography variant="h5" fontWeight="bold" color="info" gutterBottom>
+                {renderizando 
+                  ? "Renderizando Acuses" 
+                  : procesandoExcel 
+                    ? "📊 Procesando Excel" 
+                    : "⚙️ Generando Acuses"}
+              </SoftTypography>
+              <SoftTypography variant="body1" color="text.secondary">
+                {progreso}
+              </SoftTypography>
             </SoftBox>
-          </Card>
-        </SoftBox>
-      )}
+            
+            <SoftBox width="100%">
+              <SoftTypography variant="caption" color="text.secondary" display="block" textAlign="center">
+                {renderizando 
+                  ? "Convirtiendo acuses a imágenes JPG..." 
+                  : procesandoExcel 
+                    ? "Preparando archivos..." 
+                    : "La descarga comenzará automáticamente"}
+              </SoftTypography>
+            </SoftBox>
+            
+            {!renderizando && !procesandoExcel && (
+              <SoftButton
+                variant="gradient"
+                color="info"
+                size="small"
+                onClick={() => {
+                  if (currentTaskId) {
+                    setLoading(false);
+                    setProgreso("");
+                    setCurrentTaskId(null);
+                    cancelarTarea(currentTaskId);
+                  } else if (activeTasks.length > 0) {
+                    const taskToCancel = activeTasks[0]; 
+                    if (taskToCancel) {
+                      setLoading(false);
+                      setProgreso("");
+                      setCurrentTaskId(null);
+                      cancelarTarea(taskToCancel.task_id);
+                    }
+                  } else {
+                    setLoading(false);
+                    setProgreso("");
+                    setCurrentTaskId(null);
+                    mostrarSnackbar("Operación cancelada", "info");
+                  }
+                }}
+                startIcon={<CloseIcon />}
+              >
+                Cancelar
+              </SoftButton>
+            )}
+          </SoftBox>
+        </Card>
+      </SoftBox>
+    )}
 
-      {/* CONTENIDO PRINCIPAL - Este NO se mueve */}
-      <SoftBox display="flex" flexDirection="column" alignItems="center">
+      <SoftBox display="flex" flexDirection="column" alignItems="center" minHeight="100vh">
         <SoftBox width="100%">
           <ResponsiveAppBar />
         </SoftBox>
 
-        {/* Cards de selección - SIEMPRE en su posición */}
-        <SoftBox
-          display="flex"
-          justifyContent={
-            user?.userName === "imorales@emaservicios.com.ar" ? "space-between" : "flex-start"
-          }
-          flexWrap="wrap"
-          gap={2}
-          mt={{ xs: '6rem', md: '8rem' }}
-          width="96%"
-          px={2}
+        {/* CONTENEDOR PRINCIPAL - MÁS AMPLIO */}
+        <SoftBox 
+          width="100%" 
+          maxWidth="1800px"
+          px={4}
+          mt={{ xs: '8rem', md: '10rem' }}
+          mb={4}
         >
-          {/* Card Selección de Lote */}
-          {user?.userName === "imorales@emaservicios.com.ar" && (
-            <Card
-              sx={{
-                width: { xs: "100%", md: "48%" },
-                p: 4,
-                boxShadow: 3,
-                borderRadius: 2,
-              }}
-            >
-              <SoftTypography variant="h5" fontWeight="bold" mb={1}>
-                Acuse por Lote
-              </SoftTypography>
-              <SoftBox
-                display="flex"
-                flexDirection={{ xs: "column", sm: "row" }}
-                gap={2}
-                alignItems="flex-end"
-              >
-                <SoftBox flex={1}>
-                  <SoftTypography component="label" variant="caption" fontWeight="medium" >
-                    Lote:
-                  </SoftTypography>
-                  <Controller
-                    name="loteSeleccionado"
-                    control={control}
-                    render={({ field }) => (
-                      <DropdownList
-                        list={lotes}
-                        width="30vw"
-                        campoAMostrar="nombre"
-                        campoID="nombre"
-                        placeholder="Seleccione un Lote"
-                        {...field}
-                      />
-                    )}
-                  />
-                </SoftBox>
-                <SoftButton
-                  sx={{ mt: { xs: 2, sm: 0 }, minWidth: '120px' }}
-                  variant="gradient"
-                  color="info"
-                  onClick={handleSubmit(onDescargarPorLote)}
-                  disabled={loading || buscandoCliente}
-                >
-                  {loading ? "PROCESANDO..." : "FILTRAR"}
-                </SoftButton>
-              </SoftBox>
-            </Card>
-          )}
 
-          {/* Card Acuse por N° Cliente */}
-          <Card
-            sx={{
-              width: { xs: "100%", md: user?.userName === "imorales@emaservicios.com.ar" ? "48%" : "100%" },
-              p: 4,
-              boxShadow: 3,
-              borderRadius: 2,
-            }}
-          >
-            <SoftTypography variant="h5" fontWeight="bold" mb={1}>
-              Acuse por N° Cliente
-            </SoftTypography>
-            <form onSubmit={handleSubmit(onDescargarPorCliente)}>
-              <SoftBox
-                display="flex"
-                justifyContent="space-between"
-                alignItems={{ xs: "stretch", md: "center" }}
-                flexDirection={{ xs: "column", md: "row" }}
-                gap={2}
-              >
-                <SoftBox flex={1}>
-                  <SoftTypography component="label" variant="caption" fontWeight="medium">
-                    N° de Cliente
+          {/* Grid de cards */}
+          <Grid container spacing={4}>
+            {/* Card Lote (solo para usuario específico) */}
+            {user?.userName === "imorales@emaservicios.com.ar" && (
+              <Grid item {...cardWidth}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    p: 4,
+                    boxShadow: 3,
+                    borderRadius: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6,
+                    }
+                  }}
+                >
+                  <SoftBox display="flex" alignItems="center" mb={2}>
+                    <InventoryIcon sx={{ fontSize: 36, color: '#1A73E8', mr: 1.5 }} />
+                    <SoftTypography variant="h5" fontWeight="bold">
+                      Acuse por Lote
+                    </SoftTypography>
+                  </SoftBox>
+                  
+                  <SoftTypography variant="body2" color="text.secondary" mb={3}>
+                    Genere acuses para todos los comprobantes de un lote específico
                   </SoftTypography>
-                  <Controller
-                    name="numCliente"
-                    control={control}
-                    render={({ field }) => (
-                      <SoftInputBase
-                        field={field}
-                        placeholder="Inserte nro de cliente"
-                        autoComplete="off"
-                        fullWidth
-                      />
-                    )}
-                  />
+
+                  <SoftBox flex={1}>
+                    <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
+                      Seleccionar Lote
+                    </SoftTypography>
+                    <Controller
+                      name="loteSeleccionado"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                          <Select
+                            {...field}
+                            value={field.value || ""}
+                            displayEmpty
+                            renderValue={(selected) => {
+                              if (!selected) {
+                                return <p style={{ color: '#9e9e9e' }}>Seleccione un Lote</p>;
+                              }
+                              const item = lotes.find(item => item.nombre === selected);
+                              return item ? item.nombre : selected;
+                            }}
+                            sx={{
+                              height: '40px',
+                              '& .MuiSelect-select': {
+                                py: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }
+                            }}
+                            MenuProps={{
+                              PaperProps: {
+                                sx: {
+                                  maxWidth: '300px !important',
+                                  width: 'auto',
+                                  maxHeight: '400px !important',
+                                }
+                              }
+                            }}
+                            endAdornment={
+                              field.value ? (
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    field.onChange("");
+                                  }}
+                                  sx={{
+                                    position: 'absolute',
+                                    right: 30,
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    zIndex: 10,
+                                  }}
+                                >
+                                  <CloseIcon fontSize="small" sx={{ color: '#9e9e9e' }} />
+                                </IconButton>
+                              ) : null
+                            }
+                          >
+                            {lotes.map((item) => (
+                              <MenuItem key={item.nombre} value={item.nombre}>
+                                {item.nombre}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+                  </SoftBox>
+
+                  <SoftBox mt={3} display="flex" justifyContent="flex-end">
+                    <SoftButton
+                      variant="gradient"
+                      color="info"
+                      onClick={handleSubmit(onDescargarPorLote)}
+                      disabled={loading || buscandoCliente || procesandoExcel}
+                      sx={{ minWidth: '140px', py: 1.5 }}
+                    >
+                      {loading ? "PROCESANDO..." : "GENERAR"}
+                    </SoftButton>
+                  </SoftBox>
+                </Card>
+              </Grid>
+            )}
+
+            {/* Card Cliente */}
+            <Grid item {...cardWidth}>
+              <Card
+                sx={{
+                  height: '100%',
+                  p: 4,
+                  boxShadow: 3,
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 6,
+                  }
+                }}
+              >
+                <SoftBox display="flex" alignItems="center" mb={2}>
+                  <PersonIcon sx={{ fontSize: 36, color: '#1A73E8', mr: 1.5 }} />
+                  <SoftTypography variant="h5" fontWeight="bold">
+                    Acuse por Cliente
+                  </SoftTypography>
                 </SoftBox>
-                <SoftBox alignSelf={{ xs: "stretch", md: "flex-end" }}>
+                
+                <SoftTypography variant="body2" color="text.secondary" mb={3}>
+                  Busque y visualice los acuses de un cliente específico
+                </SoftTypography>
+
+                <form onSubmit={handleSubmit(onDescargarPorCliente)} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <SoftBox flex={1}>
+                    <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
+                      Número de Cliente
+                    </SoftTypography>
+                    <Controller
+                      name="numCliente"
+                      control={control}
+                      render={({ field }) => (
+                        <SoftBox sx={{ mt: 1 }}>
+                          <SoftInputBase
+                            field={field}
+                            placeholder="Ej: 12345"
+                            autoComplete="off"
+                            fullWidth
+                          />
+                        </SoftBox>
+                      )}
+                    />
+                  </SoftBox>
+
+                  <SoftBox mt={3} display="flex" justifyContent="flex-end">
+                    <SoftButton 
+                      variant="gradient" 
+                      color="info" 
+                      type="submit"
+                      disabled={buscandoCliente || loading || procesandoExcel}
+                      sx={{ minWidth: '140px', py: 1.5 }}
+                    >
+                      {buscandoCliente ? "BUSCANDO..." : "FILTRAR"}
+                    </SoftButton>
+                  </SoftBox>
+                </form>
+              </Card>
+            </Grid>
+
+            {/* Card Excel */}
+            <Grid item {...cardWidth}>
+              <Card
+                sx={{
+                  height: '100%',
+                  p: 4,
+                  boxShadow: 3,
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 6,
+                  }
+                }}
+              >
+                <SoftBox display="flex" alignItems="center" mb={2}>
+                  <DescriptionIcon sx={{ fontSize: 36, color: '#1A73E8', mr: 1.5 }} />
+                  <SoftTypography variant="h5" fontWeight="bold">
+                    Acuse por Excel
+                  </SoftTypography>
+                </SoftBox>
+                
+                <SoftTypography variant="body2" color="text.secondary" mb={3}>
+                  Genere acuses para múltiples clientes desde un archivo Excel
+                </SoftTypography>
+
+                <SoftBox flex={1}>
+                  <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
+                    Archivo Excel
+                  </SoftTypography>
+                  
+                  <SoftBox
+                    sx={{
+                      border: '2px dashed',
+                      borderColor: excelFile ? '#1A73E8' : '#e0e0e0',
+                      borderRadius: 2,
+                      p: 4,
+                      mt: 1,
+                      textAlign: 'center',
+                      backgroundColor: excelFile ? 'rgba(26, 115, 232, 0.04)' : '#f8f9fa',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        borderColor: '#1A73E8',
+                        backgroundColor: 'rgba(26, 115, 232, 0.04)',
+                      }
+                    }}
+                    onClick={() => document.getElementById('excel-file-input').click()}
+                  >
+                    <input
+                      type="file"
+                      id="excel-file-input"
+                      accept=".xlsx,.xls,.csv"
+                      style={{ display: 'none' }}
+                      onChange={handleFileChange}
+                    />
+                    <CloudUploadIcon sx={{ 
+                      fontSize: 56,
+                      color: excelFile ? '#1A73E8' : '#9e9e9e',
+                      mb: 1 
+                    }} />
+                    <SoftTypography 
+                      variant="body1"
+                      color={excelFile ? 'info' : 'text.secondary'}
+                      fontWeight={excelFile ? 'medium' : 'regular'}
+                    >
+                      {excelFileName || "Haga clic para seleccionar archivo"}
+                    </SoftTypography>
+                    <SoftTypography variant="body2" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                      Formatos: .xlsx, .xls, .csv (máx. 100 clientes)
+                    </SoftTypography>
+                    {excelFile && (
+                      <SoftTypography variant="body2" color="info" display="block" sx={{ mt: 1 }}>
+                        ✓ Archivo listo para procesar
+                      </SoftTypography>
+                    )}
+                  </SoftBox>
+
+                  <SoftTypography variant="body2" color="text.secondary" display="block" sx={{ mt: 2 }}>
+                    El archivo debe tener los números de cliente en la primera columna
+                  </SoftTypography>
+                </SoftBox>
+
+                <SoftBox mt={3} display="flex" justifyContent="flex-end">
                   <SoftButton 
                     variant="gradient" 
-                    color="info" 
-                    type="submit"
-                    disabled={buscandoCliente || loading}
-                    fullWidth={window.innerWidth < 900}
+                    color="info"
+                    onClick={onDescargarPorExcel}
+                    disabled={!excelFile || procesandoExcel || loading || buscandoCliente}
+                    startIcon={<CloudUploadIcon />}
+                    sx={{ minWidth: '160px', py: 1.5 }}
                   >
-                    {buscandoCliente ? "BUSCANDO..." : "FILTRAR"}
+                    {procesandoExcel ? "PROCESANDO..." : "GENERAR ZIP"}
                   </SoftButton>
                 </SoftBox>
-              </SoftBox>
-            </form>
-          </Card>
-        </SoftBox>
+              </Card>
+            </Grid>
+          </Grid>
 
-        {/* Tabla resultado búsqueda por cliente */}
-        {dataCliente.length > 0 && (
-          <SoftBox width="96%" mt={3} px={2} mb={4}>
-            <Card sx={{ p: 2, borderRadius: 2 }}>
-              <TablaAcusesCliente data={dataCliente} />
-            </Card>
-          </SoftBox>
-        )}
+          {/* Tabla de resultados */}
+          {dataCliente.length > 0 && (
+            <SoftBox mt={4}>
+              <Card sx={{ p: 3, borderRadius: 2 }}>
+                <SoftBox mb={2} px={1}>
+                  <SoftTypography variant="h6" fontWeight="bold" color="info">
+                    Resultados de búsqueda
+                  </SoftTypography>
+                  <SoftTypography variant="body2" color="text.secondary">
+                    Se encontraron {dataCliente.length} acuses para el cliente
+                  </SoftTypography>
+                </SoftBox>
+                <TablaAcusesCliente data={dataCliente} />
+              </Card>
+            </SoftBox>
+          )}
+        </SoftBox>
       </SoftBox>
     </>
   );
