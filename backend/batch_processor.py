@@ -54,7 +54,7 @@ class BatchProcessor:
                     query = query.filter(ItemEmision.nroCliente == nroCliente)
                 
                 query = query.order_by(ItemEmision.nroCliente)
-                #query = query.limit(500)
+                #query = query.limit(250)
                 #print(f" MODO PRUEBA: Limitando a 500 registros")
                 resultados = query.all()
                 

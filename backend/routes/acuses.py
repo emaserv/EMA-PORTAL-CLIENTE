@@ -38,24 +38,12 @@ def encode_image_to_base64(url, quality=40, resize_factor=0.5):
         if response.status_code != 200:
             return None
 
-        image = Image.open(BytesIO(response.content))
-
-        new_size = (
-            int(image.width * resize_factor),
-            int(image.height * resize_factor)
-        )
-        image = image.resize(new_size, Image.LANCZOS)
-
-        if image.mode in ("RGBA", "P"):
-            image = image.convert("RGB")
-
-        buffer = BytesIO()
-        image.save(buffer, format="JPEG", quality=quality, optimize=True)
-
-        return base64.b64encode(buffer.getvalue()).decode("utf-8")
+        # Devolver directamente el contenido binario en base64
+        # SIN USAR PIL EN ABSOLUTO
+        return base64.b64encode(response.content).decode("utf-8")
 
     except Exception as e:
-        print(f"Error al comprimir imagen: {e}")
+        print(f"Error al procesar imagen: {e}")
         return None
 
 @acuses.route('/api/acuses/getAcuses', methods=['GET'])

@@ -10,6 +10,8 @@ from datetime import datetime
 import requests
 import reportlab
 import time
+import cv2
+import numpy as np
 
 class AcuseImageGenerator:
     """
@@ -105,7 +107,7 @@ class AcuseImageGenerator:
 
     def _download_image_safe(self, image_url, max_width=800, quality=60, timeout=10):
         """
-        Descarga y optimiza una imagen directamente SIN CACHE
+        Descarga y optimiza una imagen directamente SIN USAR PIL para evitar rotación
         """
         if not image_url or not isinstance(image_url, str) or image_url.strip() == "":
             return None
@@ -123,44 +125,12 @@ class AcuseImageGenerator:
             if len(content) < 100:
                 return None
             
-            # Verificar que sea una imagen válida
-            try:
-                img = Image.open(BytesIO(content))
-                img.verify()  # Verifica integridad
-            except Exception as img_error:
-                print(f"Imagen corrupta en URL: {image_url[:50]}... - {img_error}")
-                return None
+            # OPCIÓN 1: Devolver la imagen EXACTAMENTE como viene de Amazon
+            # (sin ningún procesamiento)
+            return content
             
-            # Reabrir después de verify()
-            img = Image.open(BytesIO(content))
-            
-            # Redimensionar si es necesario
-            if img.width > max_width:
-                ratio = max_width / img.width
-                new_height = int(img.height * ratio)
-                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
-            
-            # Convertir a RGB si es necesario
-            if img.mode in ('RGBA', 'LA', 'P'):
-                background = Image.new('RGB', img.size, (255, 255, 255))
-                if img.mode == 'P':
-                    img = img.convert('RGBA')
-                background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-                img = background
-            elif img.mode != 'RGB':
-                img = img.convert('RGB')
-            
-            # Guardar optimizada
-            buffer = BytesIO()
-            img.save(buffer, format='JPEG', quality=quality, optimize=True)
-            
-            result = buffer.getvalue()
-            
-            # Verificar resultado
-            if len(result) < 1000:
-                return None
-            
-            return result
+            # OPCIÓN 2: Si necesitas redimensionar, tendrías que hacerlo en el frontend
+            # o usar una librería que no aplique rotación automática
             
         except requests.exceptions.Timeout:
             return None
@@ -890,52 +860,52 @@ class AcuseImageGenerator:
         return max(checkboxes_height, references_height) + 30
     
     def _draw_images_safe(self, draw, img, data, y):
-        """Foto, firma y mapa con ESPACIADO EXACTO como React Grid"""
+        """Foto, firma y mapa - SOLO FOTO con OpenCV"""
         
         col_width = 452  
         spacing = 16     
         
-        # Columna 1: Foto (izquierda) 
         x1 = 40
-        
-        # Columna 2: Firma y Mapa (derecha)
         x2 = x1 + col_width + spacing
         
-        # Variable para altura máxima
         max_y = y
-
-        foto_error = None
-        firma_error = None
-        mapa_error = None
         
-        # 1. FOTO (si existe)
+        # 1. FOTO (si existe) - USANDO OPENCV
         if data.get('foto_url'):
             try:
                 foto_bytes = self._download_image_safe(data['foto_url'])
                 if foto_bytes and len(foto_bytes) > 1000:
-                    foto_img = Image.open(BytesIO(foto_bytes))
-                    try:
-                        foto_img.verify()
-                        foto_img = Image.open(BytesIO(foto_bytes))
+                    
+                    # Convertir bytes a numpy array
+                    nparr = np.frombuffer(foto_bytes, np.uint8)
+                    
+                    # Decodificar con OpenCV (NO aplica rotación EXIF)
+                    img_cv = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    
+                    if img_cv is not None:
+                        # Convertir BGR a RGB (para PIL)
+                        img_cv = cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB)
                         
-                        # Redimensionar: width="100%" (ancho completo de columna)
+                        # Convertir a PIL Image
+                        foto_img = Image.fromarray(img_cv)
+                        
+                        # Redimensionar si es necesario
                         max_width = col_width
                         if foto_img.width > max_width:
                             ratio = max_width / foto_img.width
                             new_height = int(foto_img.height * ratio)
                             foto_img = foto_img.resize((max_width, new_height), Image.Resampling.LANCZOS)
-                        # Si es más pequeña, mantener tamaño original (se alineará arriba)
                         
                         img.paste(foto_img, (x1, y))
                         
-                        # Borde como React: borderRadius: 5, border: "1px solid #ccc"
+                        # Borde
                         draw.rectangle([(x1, y), (x1 + foto_img.width, y + foto_img.height)],
                                     outline=self.colors['gray_border'], width=1)
                         
                         max_y = max(max_y, y + foto_img.height)
+                    else:
+                        print(f"OpenCV no pudo decodificar la imagen")
                         
-                    except:
-                        pass  # No mostrar si está corrupta
             except Exception as e:
                 print(f"Error foto: {e}")
         
