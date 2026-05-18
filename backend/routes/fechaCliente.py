@@ -178,6 +178,7 @@ def tablaFC():
                 'medidor': row.medidor,
                 'entreCalles': row.entreCalles,
                 'codigoPostal': row.codigoPostal,
+                'comprobante': row.comprobante,
                 #'fechaAsignacion': format_date(row.fechaAsignacion),
                 'fechaIngreso': format_date(row.fechaIngreso)
             })

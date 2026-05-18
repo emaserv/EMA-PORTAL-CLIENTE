@@ -501,7 +501,7 @@ const FechaCliente = () => {
                   <SoftBox p={3}>
                     {user.idGrupoCliente === 2 ? (
                       <NaturgyTable data={datosFiltrados} columns={columns} />
-                    ) : user.idGrupoCliente === 4 ? (
+                    ) : user.idGrupoCliente === 4 || user.idGrupoCliente === 6 ? (
                       <CalleAlturaTable data={datosFiltrados} columns={columns} />
                     ) : (
                       <PRSTable data={datosFiltrados} columns={columns} />

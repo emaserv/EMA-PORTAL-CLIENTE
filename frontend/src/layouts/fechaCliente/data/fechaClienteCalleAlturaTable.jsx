@@ -23,6 +23,7 @@ import Edit from "@mui/icons-material/Edit";
 import ArticleIcon from "@mui/icons-material/Article";
 import MobileFriendlyTooltip from "components/TooltipMobile";
 import axios from "axios";
+import { useAuth } from "layouts/auth/AuthContext";
 
 dayjs.locale("ES");
 
@@ -40,7 +41,8 @@ export default function CalleAlturaTable({ data, columns }) {
 
   const [startDate, setStartDate] = React.useState(null);
   const [endDate, setEndDate] = React.useState(null);
-
+  const { user } = useAuth();
+  
   const handleStartDateChange = (date) => {
     setStartDate(date);
   };
@@ -142,26 +144,28 @@ export default function CalleAlturaTable({ data, columns }) {
     return stabilizedThis.map((el) => el[0]);
   };
 
+  // Determinar qué columnas mostrar según el grupo del usuario
   const headCells = [
     {
       id: "fechaEmision",
       numeric: false,
       disablePadding: false,
-      label: "F. Emision",
+      label: "F. Emision",
       labelComplete: "Fecha de Emision",
     },
-    {
+    // Condicionalmente mostrar fechaVencimiento solo si NO es grupo 6
+    ...(user?.idGrupoCliente !== 6 ? [{
       id: "fechaVencimiento",
       numeric: false,
       disablePadding: false,
-      label: "F. Vencimiento",
+      label: "F. Vencimiento",
       labelComplete: "Fecha de Vencimiento",
-    },
+    }] : []),
     {
       id: "nroCliente",
       numeric: false,
       disablePadding: false,
-      label: "Nro. Cliente",
+      label: "Nro. Cliente",
       labelComplete: "Numero de Cliente",
     },
     {
@@ -189,7 +193,7 @@ export default function CalleAlturaTable({ data, columns }) {
       id: "fecha",
       numeric: false,
       disablePadding: false,
-      label: "F. Dist.",
+      label: "F. Dist.",
       labelComplete: "Fecha de Distribucion",
     },
     {
@@ -206,25 +210,25 @@ export default function CalleAlturaTable({ data, columns }) {
       label: "Importe",
       labelComplete: "Importe",
     },
+    ...(user?.idGrupoCliente === 6 ? [{
+      id: "comprobante",
+      numeric: false,
+      disablePadding: false,
+      label: "Comprobante",
+      labelComplete: "Comprobante",
+    }] : []),
     {
       id: "estadoPieza",
       numeric: false,
       disablePadding: false,
-      label: "Est E.",
+      label: "Est E.",
       labelComplete: "Estado EMA",
     },
-    //{
-    //  id: "estadoMetro",
-    //  numeric: false,
-    //  disablePadding: false,
-    // label: "Est M.",
-    //  labelComplete: "Estado Metrogas",
-    //},
     {
       id: "obsVisita",
       numeric: false,
       disablePadding: false,
-      label: "Obs. Visita",
+      label: "Obs. Visita",
       labelComplete: "Observacion de Visita",
     },
     {
@@ -248,13 +252,14 @@ export default function CalleAlturaTable({ data, columns }) {
       label: "Firma",
       labelComplete: "Firma",
     },
-    {
+    // Condicionalmente mostrar imagenAD solo si NO es grupo 6
+    ...(user?.idGrupoCliente !== 6 ? [{
       id: "imagenAD",
       numeric: false,
       disablePadding: false,
-      label: "Im. AD",
+      label: "Im. AD",
       labelComplete: "Imagen Aviso Deuda",
-    },
+    }] : []),
   ];
 
   function Completion({ value, color }) {
@@ -304,18 +309,17 @@ export default function CalleAlturaTable({ data, columns }) {
         <TableRow
           style={{
             background: "linear-gradient(to top, #2152ff, #21d4fd)",
-            borderRadius: "10 px", // Bordes redondeados
+            borderRadius: "10 px",
             minWidth: "auto",
             fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
             fontSize: "0.3rem",
             opacity: 1,
             cursor: "pointer",
             fontWeight: "500",
-            color: "#ffffff", // Texto en blanco para mayor contraste
+            color: "#ffffff",
             textTransform: "uppercase",
             padding: "0px",
             paddingLeft: "16px",
-            //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
           }}
         >
           {headCells.map((headCell) => (
@@ -326,18 +330,17 @@ export default function CalleAlturaTable({ data, columns }) {
               sortDirection={orderBy === headCell.id ? order : false}
               sx={{
                 background: "linear-gradient(to top, #2152ff, #21d4fd)",
-                borderRadius: "1px", // Bordes redondeados
+                borderRadius: "1px",
                 minWidth: "auto",
                 fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
                 fontSize: "0.85rem",
                 opacity: 1,
                 cursor: "pointer",
                 fontWeight: "700",
-                color: "#ffffff", // Texto en blanco para mayor contraste
+                color: "#ffffff",
                 textTransform: "uppercase",
                 padding: "0px",
                 paddingLeft: "10px",
-                //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
               }}
               selected={numSelected > 0 && orderBy === headCell.id}
               onClick={createSortHandler(headCell.id)}
@@ -370,7 +373,9 @@ export default function CalleAlturaTable({ data, columns }) {
     endDate,
     setEndDate,
     setStartDate,
-  }) {}
+  }) {
+    return null;
+  }
 
   EnhancedTableToolbar.propTypes = {
     numSelected: PropTypes.number.isRequired,
@@ -382,9 +387,8 @@ export default function CalleAlturaTable({ data, columns }) {
 
   // Función para truncar texto
   const truncarTexto = (texto, limite) => {
-    //console.log("WASAAAAAA", texto);
     if (!texto || typeof texto !== 'string') {
-      return ''; // O devuelve otro valor predeterminado si lo prefieres
+      return '';
     }
   
     if (texto.length > limite) {
@@ -404,6 +408,12 @@ export default function CalleAlturaTable({ data, columns }) {
     [data, order, orderBy, page, rowsPerPage, startDate, endDate]
   );
 
+  // Función para verificar si una columna debe mostrarse
+  const shouldShowColumn = (column) => {
+    if (column === "fechaVencimiento" && user?.idGrupoCliente === 6) return false;
+    if (column === "imagenAD" && user?.idGrupoCliente === 6) return false;
+    return true;
+  };
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -437,31 +447,24 @@ export default function CalleAlturaTable({ data, columns }) {
 
                 return (
                   <>
-                    {/* Primera fila */}
                     {row.estadoPieza !== "BM" ? (
                       <TableRow
-                        key={`${rowKey}`} // Proporcionar una clave única para la primera fila
+                        key={`${rowKey}`}
                         hover
                         tabIndex={-1}
                       >
-                        {columns.map(
-                          (column) =>
-                            // Con esto oculto la columna que tiene el id
-                            // NO BORRAR LA COLUMNA ID PORQUE SI NO SE ROMPE LA TABLA
-                            column !== "id" &&
-                            column !== "geoVisita" &&
-                            column !== "grupoCliente" &&
-                            column !== "plan" &&
-                            column !== "radio" &&
-                            column !== "sucursal" &&
-                            column !== "firma" &&
-                            column !== "foto" &&
-                            column !== "acuseDeDeuda" &&
-                            column !== "medidor" &&
-                            column !== "entreCalles" &&
-                            column !== "codigoPostal" &&
-                            column !== "fechaIngreso" &&
-                            column !== "estadoMetro" && (
+                        {/* Renderizado de columnas dinámicas */}
+                        {headCells.map((headCell) => {
+                          const column = headCell.id;
+                          
+                          // Si la columna no debe mostrarse por la condición del grupo
+                          if (!shouldShowColumn(column)) {
+                            return null;
+                          }
+
+                          // Para la columna comprobante - mostrar como texto normal
+                          if (column === "comprobante") {
+                            return (
                               <TableCell
                                 key={`${row.id}-${column}-${index}`}
                                 align="left"
@@ -471,104 +474,139 @@ export default function CalleAlturaTable({ data, columns }) {
                                   paddingBottom: "2px",
                                 }}
                               >
-                                {column !== "porcentaje" ? (
-                                  <MobileFriendlyTooltip title={row[column] ? row[column] : 'Sin información'}>
-                                    <span>{truncarTexto(row[column], 12)}</span>
-                                  </MobileFriendlyTooltip>
-                                ) : (
-                                  <Completion
-                                    value={row[column]}
-                                    color="info"
-                                  />
-                                )}
+                                <MobileFriendlyTooltip title={row[column] ? String(row[column]) : 'Sin información'}>
+                                  <span>{truncarTexto(String(row[column] || ''), 12)}</span>
+                                </MobileFriendlyTooltip>
                               </TableCell>
-                            )
-                        )}
+                            );
+                          }
 
-                        <TableCell
-                          id={`${row.id}-geoVisita-1`}
-                          sx={{
-                            paddingTop: "2px",
-                            paddingBottom: "0px",
-                            paddingLeft: "0",
-                          }}
-                        >
-                          <a
-                            href={row.geoVisita ? row.geoVisita : "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              textDecoration: "none",
-                              color: row.geoVisita ? "#4682B4" : "#D3D3D3",
-                            }}
-                          >
-                            <MapIcon fontSize="medium" />
-                          </a>
-                        </TableCell>
+                          // Para columnas que son iconos
+                          if (column === "geoVisita") {
+                            return (
+                              <TableCell
+                                key={`${row.id}-${column}`}
+                                sx={{
+                                  paddingTop: "2px",
+                                  paddingBottom: "0px",
+                                  paddingLeft: "0",
+                                }}
+                              >
+                                <a
+                                  href={row.geoVisita ? row.geoVisita : "#"}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    textDecoration: "none",
+                                    color: row.geoVisita ? "#4682B4" : "#D3D3D3",
+                                  }}
+                                >
+                                  <MapIcon fontSize="medium" />
+                                </a>
+                              </TableCell>
+                            );
+                          }
 
-                          <TableCell
-                            id={`${row.id}-foto-1`}
-                            sx={{
-                              paddingTop: "2px",
-                              paddingBottom: "0px",
-                            }}
-                          >
-                            <a
-                              href={row.foto ? row.foto : "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                textDecoration: "none",
-                                color: row.foto ? "#4682B4" : "#D3D3D3",
+                          if (column === "foto") {
+                            return (
+                              <TableCell
+                                key={`${row.id}-${column}`}
+                                sx={{
+                                  paddingTop: "2px",
+                                  paddingBottom: "0px",
+                                }}
+                              >
+                                <a
+                                  href={row.foto ? row.foto : "#"}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    textDecoration: "none",
+                                    color: row.foto ? "#4682B4" : "#D3D3D3",
+                                  }}
+                                >
+                                  <PhotoIcon fontSize="medium" />
+                                </a>
+                              </TableCell>
+                            );
+                          }
+
+                          if (column === "firma") {
+                            return (
+                              <TableCell
+                                key={`${row.id}-${column}`}
+                                sx={{
+                                  paddingTop: "2px",
+                                  paddingBottom: "0px",
+                                }}
+                              >
+                                <a
+                                  href={row.firma !== '-' ? row.firma : "#"}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    textDecoration: "none",
+                                    color: row.firma !== '-' ? "#4682B4" : "#D3D3D3",
+                                    pointerEvents: row.firma !== '-' ? "auto" : "none",
+                                    cursor: row.firma !== '-' ? "pointer" : "not-allowed",
+                                  }}
+                                >
+                                  <Edit fontSize="medium" />
+                                </a>
+                              </TableCell>
+                            );
+                          }
+
+                          if (column === "acuseDeDeuda") {
+                            return (
+                              <TableCell
+                                key={`${row.id}-${column}`}
+                                sx={{
+                                  paddingTop: "2px",
+                                  paddingBottom: "0px",
+                                }}
+                              >
+                                <a
+                                  href={row.acuseDeDeuda !== '-' ? row.acuseDeDeuda : "#"}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    textDecoration: "none",
+                                    color: row.acuseDeDeuda !== '-' ? "#4682B4" : "#D3D3D3",
+                                    pointerEvents: row.acuseDeDeuda !== '-' ? "auto" : "none",
+                                    cursor: row.acuseDeDeuda !== '-' ? "pointer" : "not-allowed",
+                                  }}
+                                >
+                                  <ArticleIcon fontSize="medium" />
+                                </a>
+                              </TableCell>
+                            );
+                          }
+
+                          // Para todas las demás columnas (incluyendo porcentaje)
+                          return (
+                            <TableCell
+                              key={`${row.id}-${column}-${index}`}
+                              align="left"
+                              sx={{
+                                fontSize: "0.875rem",
+                                paddingTop: "2px",
+                                paddingBottom: "2px",
                               }}
                             >
-                              <PhotoIcon fontSize="medium" />
-                            </a>
-                          </TableCell>
-
-                          <TableCell
-                            id={`${row.id}-firma-1`}
-                            sx={{
-                              paddingTop: "2px",
-                              paddingBottom: "0px",
-                            }}
-                          >
-                            <a
-                              href={row.firma !== '-' ? row.firma : "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                textDecoration: "none",
-                                color: row.firma !== '-' ? "#4682B4" : "#D3D3D3",
-                                pointerEvents: row.firma !== '-' ? "auto" : "none", // Deshabilita el click si es '-'
-                                cursor: row.firma !== '-' ? "pointer" : "not-allowed",
-                              }}
-                            >
-                              <Edit fontSize="medium" />
-                            </a>
-                          </TableCell>
-                          
-                          <TableCell
-                            id={`${row.id}-firma-1`}
-                            sx={{
-                              paddingTop: "2px",
-                              paddingBottom: "0px",
-                            }}
-                          >
-                            <a
-                              href={row.acuseDeDeuda !== '-' ? row.acuseDeDeuda : "#"} // Obtener el link de la factura
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                textDecoration: "none",
-                                color: row.acuseDeDeuda !== '-' ? "#4682B4" : "#D3D3D3",
-                                pointerEvents: row.acuseDeDeuda !== '-' ? "auto" : "none", // Deshabilita el click si es '-'
-                                cursor: row.acuseDeDeuda !== '-' ? "pointer" : "not-allowed",
-                              }}
-                            >
-                              <ArticleIcon fontSize="medium" />
-                            </a>
-                          </TableCell>
+                              {column !== "porcentaje" ? (
+                                <MobileFriendlyTooltip title={row[column] ? String(row[column]) : 'Sin información'}>
+                                  <span>{truncarTexto(String(row[column] || ''), 12)}</span>
+                                </MobileFriendlyTooltip>
+                              ) : (
+                                <Completion
+                                  value={row[column]}
+                                  color="info"
+                                />
+                              )}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     ) : null}
                   </>
@@ -580,7 +618,7 @@ export default function CalleAlturaTable({ data, columns }) {
                     height: (dense ? 33 : 53) * emptyRows,
                   }}
                 >
-                  <TableCell colSpan={columns.length + 1} />
+                  <TableCell colSpan={headCells.length} />
                 </TableRow>
               )}
             </TableBody>
@@ -592,23 +630,7 @@ export default function CalleAlturaTable({ data, columns }) {
             justifyContent: "flex-end",
             marginRight: "10vh",
           }}
-        >
-          {/* 
-          <TablePagination
-            rowsPerPageOptions={[5, 15, 25, 50, 75, 100]}
-            component="div"
-            count={data.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="Filas por página"
-            labelDisplayedRows={({ from, to, count }) =>
-              `${from}-${to} de ${count}`
-            }
-          />
-          */}
-        </div>
+        />
       </Paper>
     </Box>
   );
