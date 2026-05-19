@@ -6,6 +6,7 @@ from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
 from datetime import datetime
 import requests
+import time
 
 fechaCliente = Blueprint('fechaCliente', __name__)
 
@@ -88,108 +89,142 @@ def tablaFC():
     grupoCliente = request.args.get('grupoCliente')
 
     try:
-        queryBase = 'SELECT * FROM "fechaCliente" fc'
+        # Consulta optimizada: ir directamente a las tablas base
+        query = """
+            SELECT 
+                ie."idEmision",
+                ie."idGrupoCliente",
+                gc.nombre as "grupoCliente",
+                ie."nroCliente",
+                ie.titular,
+                ie."planTurno",
+                ie.sucursal,
+                ie.radio,
+                ie."estadoPieza",
+                ie."estadoMetro",
+                ie."geoVisita",
+                (ie.calle || ' ' || ie.altura) as direccion,
+                ie.localidad,
+                ie.foto,
+                ie."obsVisita",
+                ie."fechaDistrib",
+                ie."fechaDistrib" as fecha,
+                ie."horaDistrib" as hora,
+                ie."fechaEmision",
+                ie."fechaCertificacion",
+                ie.firma,
+                ie."avisoMetro",
+                ie."fechaVencimientoMetro",
+                ie.vencimiento,
+                ie.importe,
+                ie.comprobante,
+                ie.medidor,
+                ie."entreCalles",
+                ie."codigoPostal",
+                ie."fechaAsignacion",
+                ie."fechaIngreso"
+            FROM "itemEmision" ie
+            INNER JOIN "grupoCliente" gc ON ie."idGrupoCliente" = gc.id
+            WHERE 1=1
+        """
         
-        where_clauses = []
-        qParams = {}
+        params = {}
         
-        # Verificar y agregar los parámetros condicionalmente
+        # Agregar filtros condicionalmente
         if grupoCliente and grupoCliente != 'null':
-            where_clauses.append('fc."idGrupoCliente" = :grupoCliente')
-            qParams['grupoCliente'] = grupoCliente
+            query += ' AND ie."idGrupoCliente" = :grupoCliente'
+            params['grupoCliente'] = grupoCliente
 
         if numeroCliente:
-            where_clauses.append('fc."nroCliente" = :numeroCliente')
-            qParams['numeroCliente'] = numeroCliente
+            query += ' AND ie."nroCliente" = :numeroCliente'
+            params['numeroCliente'] = numeroCliente
 
         if fechaDesde and fechaHasta:
-            where_clauses.append('fc."fecha" BETWEEN :fechaDesde AND :fechaHasta')
-            qParams['fechaDesde'] = fechaDesde
-            qParams['fechaHasta'] = fechaHasta
+            query += ' AND ie."fechaDistrib" BETWEEN :fechaDesde AND :fechaHasta'
+            params['fechaDesde'] = fechaDesde
+            params['fechaHasta'] = fechaHasta
         elif fechaDesde:
-            where_clauses.append('fc."fecha" >= :fechaDesde')
-            qParams['fechaDesde'] = fechaDesde
+            query += ' AND ie."fechaDistrib" >= :fechaDesde'
+            params['fechaDesde'] = fechaDesde
         elif fechaHasta:
-            where_clauses.append('fc."fecha" <= :fechaHasta')
-            qParams['fechaHasta'] = fechaHasta
+            query += ' AND ie."fechaDistrib" <= :fechaHasta'
+            params['fechaHasta'] = fechaHasta
 
         if fechaEmision and fechaEmision != 'null':
-            where_clauses.append('fc."fechaEmision" = :fechaEmision')
-            qParams['fechaEmision'] = fechaEmision
+            query += ' AND ie."fechaEmision" = :fechaEmision'
+            params['fechaEmision'] = fechaEmision
 
-        # Combinar cláusulas WHERE si existen
-        if where_clauses:
-            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = queryBase + where_clause
-        else:
-            query = queryBase
-
-        # Agregar cláusula ORDER BY
-        query += ' ORDER BY fc."nroCliente", fc."fecha" DESC'
-
-        # Convertir a TextClause después de armar la consulta completa
-        query = text(query)
-
+        # Agregar ORDER BY
+        query += ' ORDER BY ie."nroCliente", ie."fechaDistrib" DESC'
 
         # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(query, qParams)
+            result = session.execute(text(query), params)
             session.commit()
-
+            
+            # Obtener resultados
+            all_rows = list(result)
+        
+        if not all_rows:
+            return jsonify({"message": "Recursos no encontrados"}), 204
+        
+        # Procesar resultados
         datosPiezasPostales = []
-
-        for row in data_query:
-            res = fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision)) if grupoCliente == '4' else {}
-
-            if not isinstance(res, dict):
-                res = {}
-
-            res_venc = res.get("Vencimiento", "0")
-            res_imp = str("${:,.2f}".format(res.get("Importe", 0)))
-            res_acuse = res.get("Url", "0")
+        
+        for row in all_rows:
+            # Obtener diccionario de la fila
+            row_dict = dict(row._mapping)
+            
+            if grupoCliente == '4':
+                # Solo para grupo 4 llamar a fetch_data
+                res = fetch_data(row_dict.get("nroCliente"), format_date_para_url(row_dict.get("fechaEmision")))
+                if not isinstance(res, dict):
+                    res = {}
+                
+                res_venc = res.get("Vencimiento", "0")
+                res_imp = str("${:,.2f}".format(res.get("Importe", 0)))
+                res_acuse = res.get("Url", "0")
+            else:
+                res_venc = format_date(row_dict.get("vencimiento"))
+                res_imp = row_dict.get("importe", 0)
+                res_acuse = "0"
 
             if grupoCliente == '4' or grupoCliente == '6':
-                fecha = format_date(row.fechaDistrib)
+                fecha = format_date(row_dict.get("fechaDistrib"))
             else:
-                fecha = format_date(row.fechaCertificacion)
+                fecha = format_date(row_dict.get("fechaCertificacion"))
         
             datosPiezasPostales.append({
-                'id': row.id,
-                'fechaEmision': format_date(row.fechaEmision),
-                'fechaVencimiento': res_venc if grupoCliente == '4' else format_date(row.vencimiento),
-                'grupoCliente': row.grupoCliente,
-                'nroCliente': row.nroCliente,
-                'titular': row.titular,
-                'plan': row.planTurno,
-                'sucursal': row.sucursal,
-                'radio': row.radio,
-                'direccion': row.direccion,
-                'localidad': row.localidad,
+                'id': row_dict.get("idEmision"),
+                'fechaEmision': format_date(row_dict.get("fechaEmision")),
+                'fechaVencimiento': res_venc,
+                'grupoCliente': row_dict.get("grupoCliente"),
+                'nroCliente': row_dict.get("nroCliente"),
+                'titular': row_dict.get("titular"),
+                'plan': row_dict.get("planTurno"),
+                'sucursal': row_dict.get("sucursal"),
+                'radio': row_dict.get("radio"),
+                'direccion': row_dict.get("direccion"),
+                'localidad': row_dict.get("localidad"),
                 'fecha': fecha,
-                'hora': format_time(row.hora), 
-                'importe': res_imp if grupoCliente == '4' else row.importe,
-                'estadoPieza': row.estadoPieza,
-                'estadoMetro': row.estadoMetro,
-                'obsVisita': row.obsVisita,
-                'geoVisita': row.geoVisita,
-                'foto': row.foto,
-                'firma': row.firma,
+                'hora': format_time(row_dict.get("hora")), 
+                'importe': res_imp,
+                'estadoPieza': row_dict.get("estadoPieza"),
+                'estadoMetro': row_dict.get("estadoMetro"),
+                'obsVisita': row_dict.get("obsVisita"),
+                'geoVisita': row_dict.get("geoVisita"),
+                'foto': row_dict.get("foto"),
+                'firma': row_dict.get("firma"),
                 'acuseDeDeuda': res_acuse,
-                'medidor': row.medidor,
-                'entreCalles': row.entreCalles,
-                'codigoPostal': row.codigoPostal,
-                'comprobante': row.comprobante,
-                #'fechaAsignacion': format_date(row.fechaAsignacion),
-                'fechaIngreso': format_date(row.fechaIngreso)
+                'medidor': row_dict.get("medidor"),
+                'entreCalles': row_dict.get("entreCalles"),
+                'codigoPostal': row_dict.get("codigoPostal"),
+                'comprobante': row_dict.get("comprobante"),
+                'fechaIngreso': format_date(row_dict.get("fechaIngreso"))
             })
-            
-        if not datosPiezasPostales:
-            return jsonify({"message": "Recursos no encontrados"}), 204
-
+        
         keys = list(datosPiezasPostales[0].keys())
         
-        print(datosPiezasPostales)
-
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
 
     except Exception as e:
