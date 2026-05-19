@@ -583,6 +583,32 @@ export default function CalleAlturaTable({ data, columns }) {
                             );
                           }
 
+                          if (column === "imagenAD") {
+                            return (
+                              <TableCell
+                                key={`${row.id}-${column}`}
+                                sx={{
+                                  paddingTop: "2px",
+                                  paddingBottom: "0px",
+                                }}
+                              >
+                                <a
+                                  href={row.acuseDeDeuda !== '-' ? row.acuseDeDeuda : "#"}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    textDecoration: "none",
+                                    color: row.acuseDeDeuda !== '-' ? "#4682B4" : "#D3D3D3",
+                                    pointerEvents: row.acuseDeDeuda !== '-' ? "auto" : "none",
+                                    cursor: row.acuseDeDeuda !== '-' ? "pointer" : "not-allowed",
+                                  }}
+                                >
+                                  <ArticleIcon fontSize="medium" />
+                                </a>
+                              </TableCell>
+                            );
+                          }
+
                           // Para todas las demás columnas (incluyendo porcentaje)
                           return (
                             <TableCell
