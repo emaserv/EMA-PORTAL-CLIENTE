@@ -314,7 +314,7 @@ const AcuseCliente = () => {
     
     try {
       const response = await fetch(
-        `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}`
+          `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}&idGrupoCliente=${user?.idGrupoCliente}`
       );
       const data = await response.json();
       
@@ -489,7 +489,7 @@ const AcuseCliente = () => {
 
         try {
           const response = await fetch(
-            `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}`
+            `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}&idGrupoCliente=${user?.idGrupoCliente}`
           );
           
           if (!response.ok) {

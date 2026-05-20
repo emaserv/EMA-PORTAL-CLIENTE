@@ -46,13 +46,74 @@ def encode_image_to_base64(url, quality=40, resize_factor=0.5):
         print(f"Error al procesar imagen: {e}")
         return None
 
+def formatear_fecha(fecha_str):
+    """Convierte '2026-05-13 00:00:00' a '2026-05-13'"""
+    if not fecha_str:
+        return None
+    # Si es string y tiene espacio, tomar solo la parte de la fecha
+    if isinstance(fecha_str, str) and ' ' in fecha_str:
+        return fecha_str.split(' ')[0]
+    return fecha_str
+
+def formatear_hora(hora_str):
+    """Convierte '13:15:28.431639' a '13:15:28'"""
+    if not hora_str:
+        return None
+    # Si es string y tiene punto, tomar solo hasta los segundos
+    if isinstance(hora_str, str) and '.' in hora_str:
+        return hora_str.split('.')[0]
+    return hora_str 
+
+def fetch_data(nroCliente, fechaEmision):
+    # Convertir fecha al formato DDMMYYYY (sin separadores)
+    if fechaEmision:
+        # Si viene en formato YYYY-MM-DD
+        if '-' in fechaEmision:
+            partes = fechaEmision.split('-')
+            if len(partes) == 3:
+                fechaEmision = f"{partes[2]}{partes[1]}{partes[0]}"  # DDMMYYYY
+        # Si viene en formato DD/MM/YYYY
+        elif '/' in fechaEmision:
+            partes = fechaEmision.split('/')
+            if len(partes) == 3:
+                fechaEmision = f"{partes[0]}{partes[1]}{partes[2]}"  # DDMMYYYY
+    
+    url = f"https://metrogasdocs2.docuprint.com/Api/Form/{nroCliente}/{fechaEmision}"
+    
+    try:
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code != 200:
+            return None
+        
+        if not response.text or response.text.strip() == "":
+            return None
+        
+        try:
+            data = response.json()
+            return data if data else None
+        except ValueError as e:
+            return None
+            
+    except requests.exceptions.Timeout:
+        return None
+    except requests.exceptions.RequestException as e:
+        return None    
+
 @acuses.route('/api/acuses/getAcuses', methods=['GET'])
 def getAcuses():
     try:
         nroCliente = request.args.get('nroCliente')
+        idGrupoCliente = request.args.get('idGrupoCliente')
 
         if not nroCliente:
             return jsonify({"message": "Debe proporcionar 'nroCliente'."}), 400
+
+        if not idGrupoCliente:
+            return jsonify({"message": "Debe proporcionar 'idGrupoCliente'."}), 400
+
+        # Convertir a entero
+        idGrupoCliente = int(idGrupoCliente)
 
         estados_validos = ['DV', 'DR', 'DM', 'F AD', 'F ZP AD', '1° ZP', 'BP CR', 'ZPBP', 'UZP']
 
@@ -84,11 +145,45 @@ def getAcuses():
             datos["referencia3"] = ref_con_color(3)
             return datos
 
+        def formatear_fecha_db(fecha_str):
+            if not fecha_str:
+                return None
+            if isinstance(fecha_str, str) and ' ' in fecha_str:
+                return fecha_str.split(' ')[0]
+            return fecha_str
+
+        def formatear_hora_db(hora_str):
+            if not hora_str:
+                return None
+            if isinstance(hora_str, str) and '.' in hora_str:
+                return hora_str.split('.')[0]
+            return hora_str
+
+        def formatear_fecha_salida(fecha_str):
+            if not fecha_str:
+                return None
+            if isinstance(fecha_str, str) and '-' in fecha_str:
+                partes = fecha_str.split('-')
+                if len(partes) == 3:
+                    return f"{partes[2]}/{partes[1]}/{partes[0]}"
+            return fecha_str
+
+        def formatear_fecha_api(fecha_str):
+            if not fecha_str:
+                return None
+            if isinstance(fecha_str, str) and '/' in fecha_str:
+                partes = fecha_str.split('/')
+                if len(partes) == 3:
+                    return f"{partes[2]}-{partes[1]}-{partes[0]}"
+            return fecha_str
+
         with DatabaseSession().get_session() as session:
-            # Obtener todos los lotes del cliente
             lotes = [
                 r[0] for r in session.query(ItemEmision.lote)
-                    .filter(ItemEmision.nroCliente == nroCliente, ItemEmision.idGrupoCliente == 2)
+                    .filter(
+                        ItemEmision.nroCliente == nroCliente, 
+                        ItemEmision.idGrupoCliente == idGrupoCliente
+                    )
                     .distinct().all()
             ]
 
@@ -99,7 +194,8 @@ def getAcuses():
                     ItemEmision.lote == lote,
                     ItemEmision.estadoPieza.in_(estados_validos),
                     ItemEmision.estadoMetro.is_(None),
-                    ItemEmision.nroCliente == nroCliente
+                    ItemEmision.nroCliente == nroCliente,
+                    ItemEmision.idGrupoCliente == idGrupoCliente
                 ).order_by(ItemEmision.nroCliente)
 
                 resultados = query.all()
@@ -108,7 +204,8 @@ def getAcuses():
                 registros_nr = session.query(ItemEmision).filter(
                     ItemEmision.lote == lote,
                     ItemEmision.estadoPieza == 'NR',
-                    ItemEmision.nroCliente.in_(nroClientes)
+                    ItemEmision.nroCliente.in_(nroClientes),
+                    ItemEmision.idGrupoCliente == idGrupoCliente
                 ).all()
                 nr_por_cliente = {item.nroCliente: item for item in registros_nr}
 
@@ -136,22 +233,39 @@ def getAcuses():
 
                     if estado in ['1° ZP', 'BP CR', 'ZPBP', 'UZP']:
                         segunda_visita = {
-                            "fecha2": item.fechaDistrib,
-                            "hora2": item.horaDistrib
+                            "fecha2": formatear_fecha_db(item.fechaDistrib) if item.fechaDistrib else None,
+                            "hora2": formatear_hora_db(item.horaDistrib) if item.horaDistrib else None
                         }
                         nr_item = nr_por_cliente.get(item.nroCliente)
                         if nr_item:
                             fecha = nr_item.fechaDistrib
                             hora = nr_item.horaDistrib
 
-                    # Procesar imágenes una por una
                     foto_base64 = encode_image_to_base64(item.foto) if item.foto else None
                     firma_base64 = encode_image_to_base64(item.firma) if item.firma else None
 
+                    # Valores por defecto desde la base de datos
+                    importe_valor = item.importe
+                    vencimiento_valor = item.vencimiento
+
+                    # Para grupo 4, obtener vencimiento e importe de la API externa
+                    if idGrupoCliente == 4 and item.fechaEmision:
+                        # Convertir fecha al formato DDMMYYYY para la API
+                        fecha_emision_api = item.fechaEmision
+                        if isinstance(fecha_emision_api, str) and '-' in fecha_emision_api:
+                            partes = fecha_emision_api.split('-')
+                            if len(partes) == 3:
+                                fecha_emision_api = f"{partes[2]}{partes[1]}{partes[0]}"
+                        
+                        api_data = fetch_data(nroCliente, fecha_emision_api)
+                        if api_data:
+                            importe_valor = api_data.get('Importe', item.importe)
+                            vencimiento_valor = formatear_fecha_api(api_data.get('Vencimiento')) if api_data.get('Vencimiento') else item.vencimiento
+
                     all_acuses.append({
-                        "importe": item.importe,
-                        "fechaEmision": item.fechaEmision,
-                        "vencimiento": item.vencimiento,
+                        "importe": importe_valor,
+                        "fechaEmision": formatear_fecha_salida(item.fechaEmision) if item.fechaEmision else None,
+                        "vencimiento": formatear_fecha_salida(vencimiento_valor) if vencimiento_valor else None,
                         "nroCliente": item.nroCliente,
                         "medidor": item.medidor,
                         "nombreCliente": item.titular,
@@ -160,15 +274,15 @@ def getAcuses():
                         "entreCalle": item.entreCalles,
                         "codigoPostal": f"{item.codigoPostal or ''} - {item.localidad or ''}".strip(),
                         "codigoBarras": item.codigoBarras,
-                        "fecha": fecha,
-                        "hora": hora,
+                        "fecha": formatear_fecha_db(fecha) if fecha else None,
+                        "hora": formatear_hora_db(hora) if hora else None,
                         "distribuidor": f"{item.legajo or ''} - {item.distribuidor or ''}".strip(),
                         "dni": obs.get("dni", ""),
-                        "aclaracion": obs["aclaracion"],
-                        "vinculo": obs["vinculo"],
-                        "referencia1": obs["referencia1"],
-                        "referencia2": obs["referencia2"],
-                        "referencia3": obs["referencia3"],
+                        "aclaracion": obs.get("aclaracion", ""),
+                        "vinculo": obs.get("vinculo", ""),
+                        "referencia1": obs.get("referencia1", ""),
+                        "referencia2": obs.get("referencia2", ""),
+                        "referencia3": obs.get("referencia3", ""),
                         "descripcion": descripcion,
                         "foto": foto_base64,
                         "firma": firma_base64,
@@ -177,7 +291,6 @@ def getAcuses():
                         "tipoEntrega": tipo_entrega,
                     })
 
-            # ORDENAR LA LISTA FINAL POR nroCliente
             all_acuses.sort(key=lambda x: x["nroCliente"])
             
             return jsonify({"acusesData": all_acuses}), 200
