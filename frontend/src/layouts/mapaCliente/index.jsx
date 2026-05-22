@@ -1,0 +1,432 @@
+import { React, useEffect, useState } from "react";
+import SoftBox from "components/SoftBox";
+import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
+import { Card, Divider } from "@mui/material";
+import SoftTypography from "components/SoftTypography";
+import SoftButton from "components/SoftButton";
+import { useForm, Controller } from "react-hook-form";
+import { useAuth } from "layouts/auth/AuthContext";
+import MyMap from "./components/mapa";
+import PopUp from "components/PopUp";
+import styled from "styled-components";
+import { API_BACK } from "../../config";
+import LoadingModal from "../../components/loadingModal";
+import DropdownList from "components/DropdownList";
+import SoftInputBase from "components/SoftInputBase";
+
+const DataConverter = (fechaDeSincronizacion) => {
+  const parsedDate = new Date(fechaDeSincronizacion);
+  const year = parsedDate.getFullYear();
+  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
+  const day = String(parsedDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const MapaCliente = () => {
+  const { user } = useAuth();
+  const {
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm();
+
+  const [geoJsonData2, setGeoJsonData2] = useState([]);
+  const [dataInfo, setDataInfo] = useState([]);
+  const [columnsInfo, setColumnsInfo] = useState([]);
+  const [multiplesEmision, setMultiplesEmision] = useState([]);
+  const [mutex, setMutex] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
+
+  // Cargar datos de información metro
+  useEffect(() => {
+    fetch(
+      `${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
+      { mode: "cors" }
+    )
+      .then((response) => response.json())
+      .then((apiData) => {
+        if (apiData.dataTabla && apiData.columns) {
+          setDataInfo(apiData.dataTabla);
+          setColumnsInfo(apiData.columns);
+          setMutex(true);
+        }
+      })
+      .catch((error) => console.error("Error cargando tabla información:", error));
+  }, [user]);
+
+  // Cargar emisiones disponibles
+  useEffect(() => {
+    if (mutex) {
+      fetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, 
+        { mode: "cors" }
+      )
+        .then((response) => response.json())
+        .then((apiData) => {
+          if (apiData.multiplesEmision && apiData.columns) {
+            setMultiplesEmision(apiData.multiplesEmision);
+          }
+        })
+        .catch((error) => console.error("Error cargando emisiones:", error));
+    }
+  }, [mutex, user]);
+
+  // Función para obtener datos geoJson
+  const fetchGeoJsonData = async (sucursal, plan, radio, antiguedad) => {
+    try {
+      setLoading(true);
+      
+      const params = {};
+      if (sucursal) params.sucursal = sucursal;
+      if (plan) params.plan = plan;
+      if (radio) params.radio = radio;
+      if (antiguedad) params.antiguedad = antiguedad;
+
+      const url = new URL(
+        `${API_BACK}/api/geoJson/consultarGeoJson`,
+        window.location.origin
+      );
+
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.append(key, value);
+      });
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.geoData && data.metadata) {
+        setGeoJsonData2({
+          geoData: data.geoData,
+          metadata: data.metadata
+        });
+      } else {
+        console.error("No se encontraron datos para esta combinación.");
+        setGeoJsonData2([]);
+      }
+    } catch (error) {
+      console.error("Error en fetchGeoJsonData:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSubmit = async (data) => {
+    setGeoJsonData2([]);
+    setLoading(true);
+
+    const antiguedad = data.antiguedad || null;
+    const plan = data.plan || null;
+    const sucursal = data.sucursal || null;
+    const radio = data.radio || null;
+    const idEmisionSeleccionada = data.idEmision;
+    
+    const emisionSeleccionada = multiplesEmision.find(
+      (emision) => emision.id === idEmisionSeleccionada
+    );
+    const nombreEmision = emisionSeleccionada ? emisionSeleccionada.nombre : "";
+
+    await fetchGeoJsonData(sucursal, plan, radio, antiguedad);
+  };
+
+  // Función para convertir coordenadas a array
+  const armarArrayCoordenadas = (data) => {
+    let arrayCoordenadas = [];
+    
+    if (data && data.geoData && Array.isArray(data.geoData)) {
+      for (let i = 0; i < data.geoData.length; i++) {
+        const latitud = parseFloat(data.geoData[i]?.latitud);
+        const longitud = parseFloat(data.geoData[i]?.longitud);
+        
+        if (!isNaN(latitud) && !isNaN(longitud)) {
+          arrayCoordenadas.push([latitud, longitud]);
+        }
+      }
+    }
+    
+    return arrayCoordenadas;
+  };
+
+  return (
+    <>
+      <SoftBox display="flex" flexDirection="column" alignItems="center">
+        <SoftBox width="100%">
+          <ResponsiveAppBar />
+        </SoftBox>
+
+        {/* Panel de Filtros */}
+        <Card style={{ marginTop: "7rem", width: "90%" }}>
+          <SoftBox p={3}>
+            <SoftTypography variant="h4">Filtros</SoftTypography>
+            <Divider />
+
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <SoftBox
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                flexWrap="wrap"
+                gap={2}
+              >
+                {/* Filtro Antigüedad */}
+                <SoftBox
+                  display="flex"
+                  flexDirection="column"
+                  marginTop={{ xs: 2, md: -4 }}
+                  marginLeft={{ md: 3 }}
+                >
+                  <SoftTypography
+                    component="label"
+                    variant="caption"
+                    marginTop={2}
+                    fontSize={{ xs: "0.75rem", sm: "1.25rem" }}
+                  >
+                    Antiguedad
+                  </SoftTypography>
+                  <SoftBox
+                    display="flex"
+                    alignItems="center"
+                    flexDirection={{ xs: "column", md: "row" }}
+                    marginTop={1}
+                  >
+                    <Controller
+                      name="antiguedad"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <DropdownList
+                            width="10vw"
+                            list={[
+                              { id: "Nuevo", nombre: "Nuevos" },
+                              { id: "Viejo", nombre: "Viejos" }
+                            ]}
+                            placeholder="Seleccione antiguedad"
+                            campoAMostrar="nombre"
+                            campoID="id"
+                            inputRef={field.ref}
+                            value={field.value}
+                            onChange={(selectedValue) => field.onChange(selectedValue)}
+                          />
+                          {errors.antiguedad && (
+                            <SoftTypography
+                              color="error"
+                              fontSize="1rem"
+                              marginTop={1}
+                            >
+                              {errors.antiguedad.message}
+                            </SoftTypography>
+                          )}
+                        </>
+                      )}
+                    />
+                  </SoftBox>
+                </SoftBox>
+
+                {/* Filtro Plan */}
+                <SoftBox>
+                  <SoftTypography marginTop={-2}>Plan</SoftTypography>
+                  <Controller
+                    name="plan"
+                    control={control}
+                    render={({ field }) => (
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de plan"
+                      />
+                    )}
+                  />
+                </SoftBox>
+
+                {/* Filtro Sucursal */}
+                <SoftBox>
+                  <SoftTypography marginTop={-2}>Sucursal</SoftTypography>
+                  <Controller
+                    name="sucursal"
+                    control={control}
+                    render={({ field }) => (
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de sucursal"
+                      />
+                    )}
+                  />
+                </SoftBox>
+
+                {/* Filtro Radio */}
+                <SoftBox>
+                  <SoftTypography marginTop={-2}>Radio</SoftTypography>
+                  <Controller
+                    name="radio"
+                    control={control}
+                    render={({ field }) => (
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de radio"
+                      />
+                    )}
+                  />
+                </SoftBox>
+
+                {/* Filtro Emisión */}
+                <SoftBox
+                  display="flex"
+                  flexDirection="column"
+                  marginTop={{ xs: 2, md: -2 }}
+                  marginLeft={{ md: 3 }}
+                >
+                  <SoftTypography
+                    component="label"
+                    variant="caption"
+                    marginTop={1}
+                    fontSize={{ xs: "0.75rem", sm: "1.2rem" }}
+                  >
+                    Emision
+                  </SoftTypography>
+                  <SoftBox
+                    display="flex"
+                    alignItems="center"
+                    flexDirection={{ xs: "column", md: "row" }}
+                    marginTop={1}
+                  >
+                    <Controller
+                      name="idEmision"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <DropdownList
+                            width="10vw"
+                            list={multiplesEmision ? [...multiplesEmision].reverse() : []}
+                            placeholder="Seleccione su emisión"
+                            campoAMostrar="nombre"
+                            campoID="id"
+                            inputRef={field.ref}
+                            value={field.value}
+                            onChange={(selectedValue) =>
+                              field.onChange(selectedValue)
+                            }
+                          />
+                          {errors.idEmision && (
+                            <SoftTypography
+                              color="error"
+                              fontSize="1rem"
+                              marginTop={1}
+                            >
+                              {errors.idEmision.message}
+                            </SoftTypography>
+                          )}
+                        </>
+                      )}
+                    />
+                  </SoftBox>
+                </SoftBox>
+
+                {/* Botón Filtrar */}
+                <SoftBox
+                  display="flex"
+                  justifyContent="flex-end"
+                  alignItems="center"
+                  pt={2}
+                  px={3}
+                >
+                  <SoftButton
+                    variant="gradient"
+                    color="info"
+                    type="submit"
+                  >
+                    Filtrar
+                  </SoftButton>
+                </SoftBox>
+              </SoftBox>
+            </form>
+          </SoftBox>
+        </Card>
+
+        {/* Modal de Loading */}
+        <LoadingModal isOpen={loading} />
+
+        {/* Mapa */}
+        <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
+          <SoftBox justifyContent="center">
+            <Card>
+              <SoftBox p={3}>
+                <MyMap
+                  arrayPuntos={[]}
+                  arrayCamino={[]}
+                  geoJsonData={[]}
+                  geoJsonData2={geoJsonData2}
+                />
+              </SoftBox>
+            </Card>
+          </SoftBox>
+        </SoftBox>
+
+      </SoftBox>
+
+      {/* PopUp de error */}
+      <PopUp
+        estado={estadoPopUp1}
+        cambiarEstado={cambiarEstadoPopUp1}
+        titulo=""
+        mostrarHeader={true}
+        mostrarOverlay={true}
+        posicionModal={"center"}
+        padding={"0px"}
+        width={"40vw"}
+        height={"15vh"}
+        background={"#085397"}
+        paddingTopEncabezado={"20px"}
+      >
+        <Contenido>
+          <SoftBox display="flex" justifyContent="center" alignItems="center">
+            <SoftTypography
+              varint="button"
+              fontWeight="medium"
+              color="dark"
+              px={3}
+              py={2}
+              style={{
+                fontSize: "1rem",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              No encontramos información para esta combinación de plan, sucursal
+              y radio.
+            </SoftTypography>
+          </SoftBox>
+        </Contenido>
+      </PopUp>
+    </>
+  );
+};
+
+export default MapaCliente;
+
+const Contenido = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  h1 {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  p {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  img {
+    width: 100%;
+    vertical-align: top;
+    border-radius: 3px;
+  }
+`;

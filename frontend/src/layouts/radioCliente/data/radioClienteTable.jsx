@@ -242,13 +242,6 @@ export default function PRSTable({ data, columns }) {
       label: "Firma",
       labelComplete: "Firma",
     },
-    {
-      id: "imagenAD",
-      numeric: false,
-      disablePadding: false,
-      label: "Im. AD",
-      labelComplete: "Imagen Aviso Deuda",
-    },
   ];
 
   function Completion({ value, color }) {
@@ -407,6 +400,7 @@ export default function PRSTable({ data, columns }) {
         />
         <TableContainer sx={{ maxHeight: 600, overflow: "auto" }}>
           <Table
+           stickyHeader  
             sx={{ minWidth: 750 }}
             aria-labelledby="tableTitle"
             size={dense ? "small" : "medium"}
@@ -542,29 +536,6 @@ export default function PRSTable({ data, columns }) {
                       </TableCell>
                     ) : null}
 
-                    {row.estadoPieza !== "NR" ? (
-                      <TableCell
-                        id={`${row.id}-firma-1`}
-                        sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
-                        }}
-                      >
-                        <a
-                          href={row.firma !== "-" ? row.firma : "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            textDecoration: "none",
-                            color: "#D3D3D3",
-                            pointerEvents: "none", // Deshabilita el click si es '-'
-                            cursor: "not-allowed",
-                          }}
-                        >
-                          <ArticleIcon fontSize="medium" />
-                        </a>
-                      </TableCell>
-                    ) : null}
                   </TableRow>
                 );
               })}

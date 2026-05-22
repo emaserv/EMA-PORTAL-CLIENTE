@@ -231,6 +231,27 @@ const Home = () => {
                   </Grid>
                   ) : null}
 
+                {user &&  user.idGrupoCliente === 1 ? (
+                <Grid
+                    sx={{ textAlign: "left", marginTop: "1rem" }} 
+                    item
+                    xs={12}
+                  >
+                    <div className="content" display="flex">
+                      <Link to="/mapa-cliente">
+                        <SoftButton
+                          variant="gradient"
+                          color="info"
+                          size="large"
+                          sx={{ width: "30rem" }}
+                        >
+                          Consulta por Mapa
+                        </SoftButton>
+                      </Link>
+                    </div>
+                  </Grid>
+                  ) : null}
+
               </Grid>             
               
             ) : null}

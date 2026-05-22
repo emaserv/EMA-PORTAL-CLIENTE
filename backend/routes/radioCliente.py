@@ -46,97 +46,115 @@ def format_date(date_str):
     
     return nuevaFecha
 
-#jsonify lo que hace es convierte lo que trae de la base de datos a json
-@radioCliente.route( '/api/radio-cliente', methods=['GET'])
+@radioCliente.route('/api/radio-cliente', methods=['GET'])
 def tablaRC():
-    fechaEmision = request.args.get('fechaEmision')
-    plan = request.args.get('plan')
-    sucursal = request.args.get('sucursal')
-    radio = request.args.get('radio')
-    fechaDesde = request.args.get('fechaDesde')
-    fechaHasta = request.args.get('fechaHasta')
-    grupoCliente = request.args.get('grupoCliente')
-    
-    try:        
-        queryBase = 'SELECT * FROM "radioCliente" rc'
+    fechaEmision  = request.args.get('fechaEmision',  '')
+    plan          = request.args.get('plan',          '')
+    sucursal      = request.args.get('sucursal',      '')
+    radio         = request.args.get('radio',         '')
+    fechaDesde    = request.args.get('fechaDesde',    '')
+    fechaHasta    = request.args.get('fechaHasta',    '')
+    grupoCliente  = request.args.get('grupoCliente',  '')
+
+    try:
+        # 1. SELECT solo las columnas necesarias, directo sobre la tabla base
+        #    Evita el SELECT * y el row_number() OVER () de la view
+        queryBase = """
+            SELECT
+                ie.id,
+                ie."fechaEmision",
+                gc.nombre            AS "grupoCliente",
+                ie."nroCliente",
+                ie.titular,
+                ie."planTurno",
+                ie.sucursal,
+                ie.radio,
+                concat(ie.calle, ' ', ie.altura) AS direccion,
+                ie.localidad,
+                ie."fechaCertificacion",
+                ie."horaDistrib"     AS hora,
+                ie."estadoPieza",
+                ie."obsVisita",
+                ie."geoVisita",
+                ie.foto,
+                ie.firma,
+                ie.legajo
+            FROM "itemEmision" ie
+            JOIN "grupoCliente" gc ON ie."idGrupoCliente" = gc.id
+        """
 
         where_clauses = []
         qParams = {}
 
-        if grupoCliente != 'null':
-            where_clauses.append('rc."idGrupoCliente" = :grupoCliente')
+        if grupoCliente and grupoCliente != 'null':
+            where_clauses.append('ie."idGrupoCliente" = :grupoCliente')
             qParams['grupoCliente'] = grupoCliente
 
-        if plan != '':
-            where_clauses.append('rc."planTurno" = :plan')
+        if plan:
+            where_clauses.append('ie."planTurno" = :plan')
             qParams['plan'] = plan
-        
-        if sucursal != '':
-            where_clauses.append('rc."sucursal" = :sucursal')
+
+        if sucursal:
+            where_clauses.append('ie.sucursal = :sucursal')
             qParams['sucursal'] = sucursal
 
-        if radio != '':
-            where_clauses.append('rc."radio" = :radio')
+        if radio:
+            where_clauses.append('ie.radio = :radio')
             qParams['radio'] = radio
 
-        if fechaEmision != '':
-            where_clauses.append('rc."fechaEmision" = :fechaEmision')
+        if fechaEmision:
+            where_clauses.append('ie."fechaEmision" = :fechaEmision')
             qParams['fechaEmision'] = fechaEmision
 
-        # Verifica si se proporcionan ambos parámetros de fecha para usar BETWEEN
-        if fechaDesde != '' and fechaHasta != '':
-            where_clauses.append('rc."fechaCertificacion" BETWEEN :fechaDesde AND :fechaHasta')
+        if fechaDesde and fechaHasta:
+            where_clauses.append('ie."fechaCertificacion" BETWEEN :fechaDesde AND :fechaHasta')
             qParams['fechaDesde'] = fechaDesde
             qParams['fechaHasta'] = fechaHasta
-        elif fechaDesde != '':
-            # Si solo se proporciona fechaDesde, busca desde esa fecha en adelante
-            where_clauses.append('rc."fechaCertificacion" >= :fechaDesde')
+        elif fechaDesde:
+            where_clauses.append('ie."fechaCertificacion" >= :fechaDesde')
             qParams['fechaDesde'] = fechaDesde
-        elif fechaHasta != '':
-            # Si solo se proporciona fechaHasta, busca hasta esa fecha
-            where_clauses.append('rc."fechaCertificacion" <= :fechaHasta')
+        elif fechaHasta:
+            where_clauses.append('ie."fechaCertificacion" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
 
         if where_clauses:
-            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = text(queryBase + where_clause)
-        else:
-            query = text(queryBase)
+            queryBase += ' WHERE ' + ' AND '.join(where_clauses)
 
+        # 2. Construir los dicts DENTRO de la sesión activa
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(query, qParams)
-                
-        datosPiezasPostales = []
+            rows = session.execute(text(queryBase), qParams).fetchall()
 
-        for row in data_query:
-            # Solo traigo estas columnas porque las demás no las necesito
-            datosPiezasPostales.append({
-                'id': row.id,                
+        if not rows:
+            return jsonify({"message": "Recursos no encontrados"}), 404
+
+        # 3. List comprehension en lugar de loop con append
+        datosPiezasPostales = [
+            {
+                'id':           row.id,
                 'fechaEmision': format_date(row.fechaEmision),
                 'grupoCliente': row.grupoCliente,
-                'nroCliente': row.nroCliente,
-                'titular': row.titular,
-                'plan': row.planTurno,
-                'sucursal': row.sucursal,
-                'radio': row.radio,
-                'direccion': row.direccion,
-                'localidad': row.localidad,
-                'fecha': format_date(row.fechaCertificacion),
-                'hora': format_time(row.hora),  # Usa la función de formateo aquí
-                'estadoPieza': row.estadoPieza,
-                'obsVisita': row.obsVisita,
-                'geoVisita': row.geoVisita,
-                'foto': row.foto,
-                'firma': row.firma,
-                'legajo': row.legajo
-            })
+                'nroCliente':   row.nroCliente,
+                'titular':      row.titular,
+                'plan':         row.planTurno,
+                'sucursal':     row.sucursal,
+                'radio':        row.radio,
+                'direccion':    row.direccion,
+                'localidad':    row.localidad,
+                'fecha':        format_date(row.fechaCertificacion),
+                'hora':         format_time(row.hora),
+                'estadoPieza':  row.estadoPieza,
+                'obsVisita':    row.obsVisita,
+                'geoVisita':    row.geoVisita,
+                'foto':         row.foto,
+                'firma':        row.firma,
+                'legajo':       row.legajo,
+            }
+            for row in rows
+        ]
 
-        if not datosPiezasPostales:
-            return jsonify({"message": "Recursos no encontrados"}), 404
-        
         keys = list(datosPiezasPostales[0].keys())
-
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
+
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
