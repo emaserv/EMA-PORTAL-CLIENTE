@@ -170,9 +170,9 @@ def _parse_obs_visita(obs):
 
 # ─── Constantes de negocio ───────────────────────────────────────────────────
 
-ESTADOS_VALIDOS = {'DV', 'DR', 'DM', 'F AD', 'F ZP AD', '1° ZP', 'BP CR', 'ZPBP', 'UZP'}
+ESTADOS_VALIDOS = {'DV', 'DR', 'DM', 'F AD', 'F ZP AD', '1° ZP', 'BP CR', 'ZPBP', 'UZP', '1°VBPCR'}
 ESTADOS_BAJO_PUERTA = {'1° ZP', 'BP CR', 'ZPBP', 'UZP'}
-ESTADOS_FIRMADA = {'F AD', 'F ZP AD'}
+ESTADOS_FIRMADA = {'F AD', 'F ZP AD', '1°VBPCR'}
 
 TIPO_ENTREGA_MAP = {
     **{e: "Bajo Puerta" for e in ESTADOS_BAJO_PUERTA},
@@ -180,6 +180,7 @@ TIPO_ENTREGA_MAP = {
     "DV": "Otros",
     "DR": "Rehusado",
     "DM": "Se mudó",
+    "1°VBPCR": "1° Visita Bajo Puerta",
 }
 DESCRIPCION_MAP = {
     "DV": "Otros",
