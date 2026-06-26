@@ -45,14 +45,15 @@ const FechaCliente = () => {
   const [filtroFechaHasta, setFiltroFechaHasta] = useState(null);
   const [filtroEmision, setFiltroEmision] = useState(null);
   const [filtroCliente, setFiltroCliente] = useState(null);
+  const [filtroLote, setFiltroLote] = useState(null);
   const [datosFiltrados, setDatosFiltrados] = useState([]);
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
   const [dataInfo, setDataInfo] = useState([]);
   const [columnsInfo, setColumnsInfo] = useState([]);
   const [loading, SetLoading] = useState(false);
   const [mutex, setMutex] = useState(false);
-  const [multiplesEmision, setMultiplesEmision] = useState([])
-  
+  const [multiplesEmision, setMultiplesEmision] = useState([]);
+  const [lotes, setLotes] = useState([]);
 
   useEffect(() => {
     fetch(`${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
@@ -69,30 +70,39 @@ const FechaCliente = () => {
   }, []);
 
   useEffect(() => {
-      if (mutex) {
-        fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
-          .then((response) => response.json())
-          .then((apiData) => {
-            if (apiData.multiplesEmision && apiData.columns) {
-              setMultiplesEmision(apiData.multiplesEmision);
-            } else {
-            }
-          })
-          .catch((error) => {});
-      }
-    }, [mutex, user]);
+    if (mutex) {
+      fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+        .then((response) => response.json())
+        .then((apiData) => {
+          if (apiData.multiplesEmision && apiData.columns) {
+            setMultiplesEmision(apiData.multiplesEmision);
+          } else {
+          }
+        })
+        .catch((error) => {});
+    }
+  }, [mutex, user]);
+
+  useEffect(() => {
+    if (user && user.idGrupoCliente === 6) {
+      fetch(`${API_BACK}/api/lote`, { mode: "cors" })
+        .then((response) => response.json())
+        .then((apiData) => {
+          if (apiData.dataDropDwn) {
+            setLotes(apiData.dataDropDwn);
+          }
+        })
+        .catch((error) => {});
+    }
+  }, [user]);
 
   const onSubmit = async (data) => {
-    console.log(data)
+    console.log(data);
 
     SetLoading(true);
     try {
-      const fechaDesde = data.fechaDesde
-        ? DataConverter(data.fechaDesde)
-        : null;
-      const fechaHasta = data.fechaHasta
-        ? DataConverter(data.fechaHasta)
-        : null;
+      const fechaDesde = data.fechaDesde ? DataConverter(data.fechaDesde) : null;
+      const fechaHasta = data.fechaHasta ? DataConverter(data.fechaHasta) : null;
 
       const idEmisionSeleccionada = data.idEmision;
       const emisionSeleccionada = multiplesEmision.find(
@@ -104,8 +114,15 @@ const FechaCliente = () => {
       setFiltroFechaDesde(fechaDesde);
       setFiltroFechaHasta(fechaHasta);
       setFiltroEmision(nombreEmision);
+      setFiltroLote(data.lote || null);
 
-      await fetchData(data.numCliente || null, fechaDesde, fechaHasta, nombreEmision);
+      await fetchData(
+        data.numCliente || null,
+        fechaDesde,
+        fechaHasta,
+        nombreEmision,
+        data.lote || null
+      );
     } catch (error) {
       //console.log("Error en el submit:", error);
     } finally {
@@ -113,8 +130,8 @@ const FechaCliente = () => {
     }
   };
 
-  const fetchData = async (cliente, fechaDesde, fechaHasta, idEmision) => {
-    if (!cliente && !fechaDesde && !fechaHasta && !idEmision) {
+  const fetchData = async (cliente, fechaDesde, fechaHasta, idEmision, lote) => {
+    if (!cliente && !fechaDesde && !fechaHasta && !idEmision && !lote) {
       setAllData([]);
       setPuntosMapa([]);
       setDatosFiltrados([]);
@@ -123,13 +140,14 @@ const FechaCliente = () => {
 
     try {
       // Primera solicitud: fecha-cliente
-      const url1 = `${API_BACK}/api/fecha-cliente`; // La URL base debe configurarse en axios o agregarla completa aquí      
+      const url1 = `${API_BACK}/api/fecha-cliente`;
       const params1 = {
         cliente: cliente || "",
-        grupoCliente: user ? user.idGrupoCliente : null|| "",
+        grupoCliente: user ? user.idGrupoCliente : null || "",
         fechaDesde: fechaDesde || "",
         fechaHasta: fechaHasta || "",
         fechaEmision: idEmision || "",
+        lote: lote || "",
       };
 
       const response1 = await axios.get(url1, { params: params1 });
@@ -139,7 +157,7 @@ const FechaCliente = () => {
       if (apiData1.dataTabla) {
         setAllData(apiData1.dataTabla);
         setColumns(apiData1.columns);
-        filtrarDatos(apiData1.dataTabla, cliente, fechaDesde, fechaHasta);
+        filtrarDatos(apiData1.dataTabla, cliente, fechaDesde, fechaHasta, lote);
       } else {
         cambiarEstadoPopUp1(true);
         console.error("No se recibieron datos de fecha-cliente API");
@@ -159,15 +177,14 @@ const FechaCliente = () => {
         fechaDesde: fechaDesde || "",
         fechaHasta: fechaHasta || "",
         fechaEmision: idEmision || "",
+        lote: lote || "",
       };
 
-      // Enviar parámetros en la URL con axios.get
       const response2 = await axios.get(url2, { params: params2 });
       const apiData2 = response2.data;
 
       if (apiData2.dataTabla) {
         setPuntosMapa(apiData2.dataTabla);
-        //console.log(puntosMapa);
         setColumnsMapa(apiData2.columns);
       } else {
         console.error("No se recibieron datos de geoMapaItems API");
@@ -179,45 +196,30 @@ const FechaCliente = () => {
     }
   };
 
-  const filtrarDatos = (data, cliente, fechaDesde, fechaHasta) => {
-    //console.log("DAAA", data);
+  const filtrarDatos = (data, cliente, fechaDesde, fechaHasta, lote) => {
     const datosFiltrados = data.filter((item) => {
-      //console.log("WASA1", fechaDesde);
-      //console.log("WASA2", fechaHasta);
-      //console.log("WASA3", item.fecha);
-
-      const fechaParts = item.fecha ? item.fecha.split("/") : null; // Divide la fecha en día, mes y año
+      const fechaParts = item.fecha ? item.fecha.split("/") : null;
       const dia = fechaParts ? fechaParts[0] : null;
       const mes = fechaParts ? fechaParts[1] : null;
-      const año = fechaParts ? `20${fechaParts[2]}`: null; // Asume que 'yy' está en el rango 2000-2099
-      const itemFecha = fechaParts ? `${año}-${mes}-${dia}`: null; // Reorganiza a 'yyyy-mm-dd'// Formato YYYY-MM-DD
-      //console.log("WASA33", itemFecha);
+      const año = fechaParts ? `20${fechaParts[2]}` : null;
+      const itemFecha = fechaParts ? `${año}-${mes}-${dia}` : null;
 
-      //console.log("item", item);
       const cumpleCliente = cliente ? item.nroCliente === cliente : true;
       const cumpleFechaDesde = fechaDesde ? itemFecha >= fechaDesde : true;
       const cumpleFechaHasta = fechaHasta ? itemFecha <= fechaHasta : true;
+      const cumpleLote = lote ? item.lote === lote : true;
 
-      //console.log("WASA1", fechaDesde);
-      //console.log("WASA2", fechaHasta);
-      //console.log("WASA3", itemFecha);
-
-      return cumpleCliente && cumpleFechaDesde && cumpleFechaHasta;
+      return cumpleCliente && cumpleFechaDesde && cumpleFechaHasta && cumpleLote;
     });
-
-    //console.log("dataaa", datosFiltrados);
 
     setDatosFiltrados(datosFiltrados);
   };
 
   const armarArrayCoordenadas = (data) => {
-    //console.log("dataaaaaa", data);
-
     let arrayCoordenadas = [];
 
     for (let i = 0; i < data.length; i++) {
       if (data[i].latitud && data[i].longitud) {
-        // Genera valores aleatorios de longitud y latitud
         const latitud = parseFloat(data[i].latitud);
         const longitud = parseFloat(data[i].longitud);
         arrayCoordenadas.push([latitud, longitud]);
@@ -231,14 +233,11 @@ const FechaCliente = () => {
     const regex = /[^/]+ \/ [^/]+ \/ [^/]+/;
 
     const formattedData = data.map((row) => {
-      // Comprobación de coincidencia con regex
       if (regex.test(row.obsVisita)) {
-        // esto es para splitear la obs de visita en dni nombre observacion
         const splitBySlash = (str) => {
           return str.split("/");
         };
 
-        // Caso 1: Si cumple con el regex
         return {
           "Fecha Emision": row.fechaEmision || "-",
           "Numero de Cliente": row.nroCliente || "-",
@@ -256,6 +255,7 @@ const FechaCliente = () => {
           Foto: row.foto || "-",
           Firma: row.firma || "-",
           "Imagen Aviso Deuda": "-",
+          Lote: row.lote || "-",
         };
       } else {
         return {
@@ -275,11 +275,11 @@ const FechaCliente = () => {
           Foto: row.foto || "-",
           Firma: row.firma || "-",
           "Imagen Aviso Deuda": "-",
+          Lote: row.lote || "-",
         };
       }
     });
 
-    // Creación y exportación del archivo Excel
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
@@ -303,9 +303,10 @@ const FechaCliente = () => {
                 display="flex"
                 justifyContent="space-between"
                 alignItems="center"
-                flexDirection={{ xs: "column", md: "row" }} // Responsive layout
+                flexDirection={{ xs: "column", md: "row" }}
+                flexWrap="wrap"
+                gap={2}
               >
-
                 <SoftBox>
                   <SoftTypography
                     component="label"
@@ -321,13 +322,12 @@ const FechaCliente = () => {
                   <Controller
                     name="numCliente"
                     control={control}
-                    rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
                       <>
                         <SoftInputBase
                           field={field}
                           placeholder="Inserte nro de cliente"
-                          error={!!errors.numCliente} // Muestra borde rojo si hay error
+                          error={!!errors.numCliente}
                         />
                         {errors.numCliente && (
                           <SoftTypography
@@ -343,13 +343,12 @@ const FechaCliente = () => {
                   />
                 </SoftBox>
 
-                {user &&
-                (user.idGrupoCliente === 1) ? (
+                {user && user.idGrupoCliente === 1 && (
                   <SoftBox
-                  display="flex"
-                  flexDirection="column"
-                  marginTop={{ xs: 2, md: -2 }}
-                  marginLeft={{ md: 3 }}
+                    display="flex"
+                    flexDirection="column"
+                    marginTop={{ xs: 2, md: -2 }}
+                    marginLeft={{ md: 3 }}
                   >
                     <SoftTypography
                       component="label"
@@ -396,10 +395,54 @@ const FechaCliente = () => {
                       />
                     </SoftBox>
                   </SoftBox>
-                ) : null}
-                
-                {user &&
-                (user.idGrupoCliente !== 1) ? (
+                )}
+
+                {user && user.idGrupoCliente === 6 && (
+                  <SoftBox
+                    display="flex"
+                    flexDirection="column"
+                    marginTop={{ xs: 2, md: -2 }}
+                    marginLeft={{ md: 3 }}
+                  >
+                    <SoftTypography
+                      component="label"
+                      variant="caption"
+                      marginTop={2}
+                      fontSize={{ xs: "0.75rem", sm: "1rem" }}
+                    >
+                      Lote
+                    </SoftTypography>
+                    <SoftBox
+                      display="flex"
+                      alignItems="center"
+                      flexDirection={{ xs: "column", md: "row" }}
+                      marginTop={1}
+                    >
+                      <Controller
+                        name="lote"
+                        control={control}
+                        render={({ field }) => (
+                          <>
+                            <DropdownList
+                              width="15vw"
+                              list={lotes}
+                              placeholder="Seleccione un lote"
+                              campoAMostrar="lotes"
+                              campoID="lotes"
+                              inputRef={field.ref}
+                              value={field.value}
+                              onChange={(selectedValue) =>
+                                field.onChange(selectedValue)
+                              }
+                            />
+                          </>
+                        )}
+                      />
+                    </SoftBox>
+                  </SoftBox>
+                )}
+
+                {user && user.idGrupoCliente !== 1 && (
                   <SoftBox
                     display="flex"
                     flexDirection="column"
@@ -433,7 +476,7 @@ const FechaCliente = () => {
                       />
                     </SoftBox>
                   </SoftBox>
-                ) : null}
+                )}
 
                 <SoftBox
                   display="flex"
@@ -459,7 +502,9 @@ const FechaCliente = () => {
           justifyContent="center"
         >
           {user &&
-          (user.idGrupoCliente === 2 || user.idGrupoCliente === 1 || user.idGrupoCliente === null) ? (
+          (user.idGrupoCliente === 2 ||
+            user.idGrupoCliente === 1 ||
+            user.idGrupoCliente === null) ? (
             <SoftBox paddingBottom={3} justifyContent="center">
               <Card>
                 <SoftBox p={3}>
@@ -501,7 +546,8 @@ const FechaCliente = () => {
                   <SoftBox p={3}>
                     {user.idGrupoCliente === 2 ? (
                       <NaturgyTable data={datosFiltrados} columns={columns} />
-                    ) : user.idGrupoCliente === 4 || user.idGrupoCliente === 6 ? (
+                    ) : user.idGrupoCliente === 4 ||
+                      user.idGrupoCliente === 6 ? (
                       <CalleAlturaTable data={datosFiltrados} columns={columns} />
                     ) : (
                       <PRSTable data={datosFiltrados} columns={columns} />
@@ -513,7 +559,10 @@ const FechaCliente = () => {
           </SoftBox>
         </SoftBox>
 
-        {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 1 || user.idGrupoCliente === 2) ? (
+        {user &&
+        (user.idGrupoCliente === 4 ||
+          user.idGrupoCliente === 1 ||
+          user.idGrupoCliente === 2) ? (
           <SoftBox
             paddingBottom={3}
             style={{ width: "90%" }}
@@ -547,7 +596,6 @@ const FechaCliente = () => {
         paddingTopEncabezado={"20px"}
       >
         <Contenido>
-          {/* Contenido del PopUp */}
           <SoftBox display="flex" justifyContent="center" align-items="center">
             <SoftTypography
               varint="button"
@@ -562,7 +610,7 @@ const FechaCliente = () => {
                 alignItems: "center",
               }}
             >
-              No encotramos informacion para este cliente.
+              No encontramos información para este cliente.
             </SoftTypography>
           </SoftBox>
         </Contenido>

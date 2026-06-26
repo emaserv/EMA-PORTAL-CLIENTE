@@ -87,6 +87,7 @@ def tablaFC():
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
     grupoCliente = request.args.get('grupoCliente')
+    lote = request.args.get('lote')  # Nuevo parámetro para el lote
 
     try:
         # Consulta optimizada: ir directamente a las tablas base
@@ -122,7 +123,8 @@ def tablaFC():
                 ie."entreCalles",
                 ie."codigoPostal",
                 ie."fechaAsignacion",
-                ie."fechaIngreso"
+                ie."fechaIngreso",
+                ie.lote  -- Agregar el campo lote
             FROM "itemEmision" ie
             INNER JOIN "grupoCliente" gc ON ie."idGrupoCliente" = gc.id
             WHERE 1=1
@@ -153,6 +155,11 @@ def tablaFC():
         if fechaEmision and fechaEmision != 'null':
             query += ' AND ie."fechaEmision" = :fechaEmision'
             params['fechaEmision'] = fechaEmision
+
+        # Nuevo filtro para el lote
+        if lote and lote != 'null' and lote != '':
+            query += ' AND ie.lote = :lote'
+            params['lote'] = lote
 
         # Agregar ORDER BY
         query += ' ORDER BY ie."nroCliente", ie."fechaDistrib" DESC'
@@ -220,7 +227,8 @@ def tablaFC():
                 'entreCalles': row_dict.get("entreCalles"),
                 'codigoPostal': row_dict.get("codigoPostal"),
                 'comprobante': row_dict.get("comprobante"),
-                'fechaIngreso': format_date(row_dict.get("fechaIngreso"))
+                'fechaIngreso': format_date(row_dict.get("fechaIngreso")),
+                'lote': row_dict.get("lote")  # Agregar lote a la respuesta
             })
         
         keys = list(datosPiezasPostales[0].keys())
@@ -229,7 +237,32 @@ def tablaFC():
 
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+    
+@fechaCliente.route( '/api/lote', methods=['GET'])
+def getLote():
+    
+    try:        
+        query = text('select distinct(lote) from "itemEmision" where "idGrupoCliente" =6')
 
+        with DatabaseSession().get_session() as session:
+            data_query = session.execute(query)
+                
+        lotes = []
+
+        for row in data_query:
+            lotes.append({
+                'lotes': row.lote
+            })
+
+        if not lotes:
+            return '{"message": "Recursos no encontrados"}', 204
+        
+        keys = list(lotes[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataDropDwn": lotes}), 200
+    except Exception as e:
+        print()
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 @fechaCliente.route('/api/fecha/geoMapaItems', methods=['GET'])
 def mapaItems():
