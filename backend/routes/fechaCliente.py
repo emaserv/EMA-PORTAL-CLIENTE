@@ -124,7 +124,11 @@ def tablaFC():
                 ie."codigoPostal",
                 ie."fechaAsignacion",
                 ie."fechaIngreso",
-                ie.lote  -- Agregar el campo lote
+                ie.lote,
+                ie.cabecera,
+                ie."rutaEcogas",
+                ie."facturaControl",
+                ie.importe
             FROM "itemEmision" ie
             INNER JOIN "grupoCliente" gc ON ie."idGrupoCliente" = gc.id
             WHERE 1=1
@@ -228,7 +232,11 @@ def tablaFC():
                 'codigoPostal': row_dict.get("codigoPostal"),
                 'comprobante': row_dict.get("comprobante"),
                 'fechaIngreso': format_date(row_dict.get("fechaIngreso")),
-                'lote': row_dict.get("lote")  # Agregar lote a la respuesta
+                'lote': row_dict.get("lote"),
+                'cabecera': row_dict.get("cabecera"), 
+                'rutaEcogas': row_dict.get("rutaEcogas"), 
+                'facturaControl': row_dict.get("facturaControl"), 
+                'importe': row_dict.get("importe"), 
             })
         
         keys = list(datosPiezasPostales[0].keys())

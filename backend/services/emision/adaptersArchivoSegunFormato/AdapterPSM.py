@@ -48,9 +48,9 @@ class AdapterPSM:
             medidor = entry['Medidor'] if entry['Medidor'] else None,
             entreCalles = entry['Entre Calles'] if entry['Entre Calles'] else None,
             codigoPostal = entry['Codigo Postal'] if entry['Codigo Postal'] else None,
-            #rutaEcogas = entry['Ruta Ecogas'] if entry['Ruta Ecogas'] else None,
-            #cabecera = entry['Cabecera'] if entry['Cabecera'] else None,
-            #facturaControl = entry['Factura Control'] if entry['Factura Control'] else None,
+            rutaEcogas = entry['Ruta Ecogas'] if entry['Ruta Ecogas'] else None,
+            cabecera = entry['Cabecera'] if entry['Cabecera'] else None,
+            facturaControl = entry['Factura Control'] if entry['Factura Control'] else None,
         )
         print('pase el primero')
 

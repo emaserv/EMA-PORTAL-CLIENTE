@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
-import { Tooltip } from "@mui/material";
+import { Tooltip, TablePagination } from "@mui/material"; // 👈 Agregar TablePagination
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
@@ -231,7 +231,6 @@ EnhancedTableHead.propTypes = {
 };
 
 // ─── Función de generación del acuse ────────────────────────────────────────
-// Recibe setLoading para controlar el modal desde afuera
 
 async function abrirAcuseEnNuevaPestaniaConCanvas(itemOriginal, user, setLoading) {
   const { nroCliente, fechaEmision: rawFecha } = itemOriginal;
@@ -254,7 +253,6 @@ async function abrirAcuseEnNuevaPestaniaConCanvas(itemOriginal, user, setLoading
     const result = await response.json();
     const acusesData = result.acusesData || result;
 
-    // Buscar por fecha completa; fallback: solo día/mes
     let acuseData = Array.isArray(acusesData)
       ? acusesData.find((a) => a.fechaEmision === fechaEmision)
       : null;
@@ -455,12 +453,17 @@ export default function CalleAlturaTable({ data, columns }) {
 
   // ── Filas visibles ───────────────────────────────────────────────────────
   const visibleRows = React.useMemo(
-    () =>
-      [...data]
-        .sort(getComparator(order, orderBy))
-        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-        .filter((row) => row.estadoPieza !== "BM"),
-    [data, order, orderBy, page, rowsPerPage]
+    () => {
+      let rows = [...data].sort(getComparator(order, orderBy));
+      
+      // Solo filtrar BM si NO es grupo 6
+      if (idGrupo !== 6) {
+        rows = rows.filter((row) => row.estadoPieza !== "BM");
+      }
+      
+      return rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    },
+    [data, order, orderBy, page, rowsPerPage, idGrupo]
   );
 
   const emptyRows = Math.max(0, (1 + page) * rowsPerPage - data.length);
@@ -563,6 +566,18 @@ export default function CalleAlturaTable({ data, columns }) {
             </TableBody>
           </Table>
         </TableContainer>
+        
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50, 100, { value: -1, label: 'Todos' }]}
+          component="div"
+          count={idGrupo === 6 ? data.length : data.filter(row => row.estadoPieza !== "BM").length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Filas por página:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+        />
       </Paper>
     </Box>
   );

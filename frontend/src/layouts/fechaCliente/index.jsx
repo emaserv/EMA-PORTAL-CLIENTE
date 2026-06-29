@@ -233,11 +233,10 @@ const FechaCliente = () => {
     const regex = /[^/]+ \/ [^/]+ \/ [^/]+/;
 
     const formattedData = data.map((row) => {
-      if (regex.test(row.obsVisita)) {
-        const splitBySlash = (str) => {
-          return str.split("/");
-        };
+      // Verificar si es grupo 6
+      const esGrupo6 = user?.idGrupoCliente === 6;
 
+      if (esGrupo6) {
         return {
           "Fecha Emision": row.fechaEmision || "-",
           "Numero de Cliente": row.nroCliente || "-",
@@ -247,36 +246,60 @@ const FechaCliente = () => {
           "Fecha de Distribucion": row.fecha || "-",
           Hora: row.hora || "-",
           "Estado EMA": row.estadoPieza || "-",
-          "Estado Metrogas": row.estadoMetro || "-",
-          "Observacion de Visita": splitBySlash(row.obsVisita)[2] || "-",
-          DNI: splitBySlash(row.obsVisita)[0] || "-",
-          Nombre: splitBySlash(row.obsVisita)[1] || "-",
+          "Observacion de Visita": row.obsVisita || "-",
           Visita: row.geoVisita || "-",
           Foto: row.foto || "-",
           Firma: row.firma || "-",
-          "Imagen Aviso Deuda": "-",
           Lote: row.lote || "-",
+          Cabecera: row.cabecera || "-",
+          "Ruta Ecogas": row.rutaEcogas || "-",
+          "Factura Control": row.facturaControl || "-",
+          Importe: row.importe || "-",
         };
       } else {
-        return {
-          "Fecha Emision": row.fechaEmision || "-",
-          "Numero de Cliente": row.nroCliente || "-",
-          Titular: row.titular || "-",
-          Direccion: row.direccion || "-",
-          Localidad: row.localidad || "-",
-          "Fecha de Distribucion": row.fecha || "-",
-          Hora: row.hora || "-",
-          "Estado EMA": row.estadoPieza || "-",
-          "Estado Metrogas": row.estadoMetro || "-",
-          "Observacion de Visita": row.obsVisita || "-",
-          DNI: "-",
-          Nombre: "-",
-          Visita: row.geoVisita || "-",
-          Foto: row.foto || "-",
-          Firma: row.firma || "-",
-          "Imagen Aviso Deuda": "-",
-          Lote: row.lote || "-",
-        };
+        if (regex.test(row.obsVisita)) {
+          const splitBySlash = (str) => {
+            return str.split("/");
+          };
+
+          return {
+            "Fecha Emision": row.fechaEmision || "-",
+            "Numero de Cliente": row.nroCliente || "-",
+            Titular: row.titular || "-",
+            Direccion: row.direccion || "-",
+            Localidad: row.localidad || "-",
+            "Fecha de Distribucion": row.fecha || "-",
+            Hora: row.hora || "-",
+            "Estado EMA": row.estadoPieza || "-",
+            "Estado Metrogas": row.estadoMetro || "-",
+            "Observacion de Visita": splitBySlash(row.obsVisita)[2] || "-",
+            DNI: splitBySlash(row.obsVisita)[0] || "-",
+            Nombre: splitBySlash(row.obsVisita)[1] || "-",
+            Visita: row.geoVisita || "-",
+            Foto: row.foto || "-",
+            Firma: row.firma || "-",
+            "Imagen Aviso Deuda": "-",
+          };
+        } else {
+          return {
+            "Fecha Emision": row.fechaEmision || "-",
+            "Numero de Cliente": row.nroCliente || "-",
+            Titular: row.titular || "-",
+            Direccion: row.direccion || "-",
+            Localidad: row.localidad || "-",
+            "Fecha de Distribucion": row.fecha || "-",
+            Hora: row.hora || "-",
+            "Estado EMA": row.estadoPieza || "-",
+            "Estado Metrogas": row.estadoMetro || "-",
+            "Observacion de Visita": row.obsVisita || "-",
+            DNI: "-",
+            Nombre: "-",
+            Visita: row.geoVisita || "-",
+            Foto: row.foto || "-",
+            Firma: row.firma || "-",
+            "Imagen Aviso Deuda": "-",
+          };
+        }
       }
     });
 
