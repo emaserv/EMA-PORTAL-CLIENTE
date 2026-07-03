@@ -204,6 +204,11 @@ def tablaFC():
                 fecha = format_date(row_dict.get("fechaDistrib"))
             else:
                 fecha = format_date(row_dict.get("fechaCertificacion"))
+            
+            # Procesar obsVisita para Metrogas con estado 1°VBPCR
+            obs_visita = row_dict.get("obsVisita")
+            if grupoCliente == '4' and row_dict.get("estadoPieza") == "1°VBPCR" and obs_visita:
+                obs_visita = limpiar_obs_visita(obs_visita)
         
             datosPiezasPostales.append({
                 'id': row_dict.get("idEmision"),
@@ -222,7 +227,7 @@ def tablaFC():
                 'importe': res_imp,
                 'estadoPieza': row_dict.get("estadoPieza"),
                 'estadoMetro': row_dict.get("estadoMetro"),
-                'obsVisita': row_dict.get("obsVisita"),
+                'obsVisita': obs_visita,
                 'geoVisita': row_dict.get("geoVisita"),
                 'foto': row_dict.get("foto"),
                 'firma': row_dict.get("firma"),
@@ -245,6 +250,37 @@ def tablaFC():
 
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+
+
+def limpiar_obs_visita(obs_visita):
+    """
+    Elimina la parte de DNI y NOMBRE Y APELLIDO del campo obsVisita
+    para el estado 1°VBPCR de Metrogas
+    """
+    import re
+    
+    # Patrón mejorado para eliminar DNI y NOMBRE Y APELLIDO
+    # Ahora permite espacios dentro del DNI y captura nombres completos
+    # Coincide con: DNI: 43 662 026, NOMBRE Y APELLIDO: Milagros Castaño,
+    # o DNI: 21700565, NOMBRE Y APELLIDO: Marisa vivas,
+    patron = r',?\s*DNI:\s*[\d\s]+,\s*NOMBRE Y APELLIDO:\s*[^,]+(?:,|$)'
+    
+    # Limpiar el texto
+    obs_limpiada = re.sub(patron, '', obs_visita)
+    
+    # Eliminar comas dobles o espacios extra
+    obs_limpiada = re.sub(r',\s*,', ',', obs_limpiada)
+    obs_limpiada = re.sub(r'\s+', ' ', obs_limpiada).strip()
+    
+    # Si termina con coma, eliminarla
+    if obs_limpiada.endswith(','):
+        obs_limpiada = obs_limpiada[:-1]
+    
+    # Si comienza con espacio, eliminarlo
+    if obs_limpiada.startswith(' '):
+        obs_limpiada = obs_limpiada[1:]
+    
+    return obs_limpiada
     
 @fechaCliente.route( '/api/lote', methods=['GET'])
 def getLote():
@@ -800,6 +836,11 @@ def informeEmisionExtendido():
         datosPiezasPostales = []
         for row in data_query:
             if int(idGrupoCliente) == 4:
+                # Procesar obsVisita para Metrogas
+                obs_visita = row.obsVisita
+                if row.estadoPieza == "1°VBPCR" and obs_visita:
+                    obs_visita = limpiar_obs_visita(obs_visita)
+                
                 datosPiezasPostales.append({
                     'id': row.id,
                     'fechaEmision': format_date(row.fechaEmision),
@@ -815,7 +856,7 @@ def informeEmisionExtendido():
                     'hora': format_time(row.hora),
                     'estadoPieza': row.estadoPieza,
                     'estadoMetro': row.estadoMetro,
-                    'obsVisita': row.obsVisita,
+                    'obsVisita': obs_visita,
                     'geoVisita': row.geoVisita,
                     'foto': row.foto,
                     'firma': row.firma

@@ -156,7 +156,7 @@ const AcuseReciboConFirma = ({ data, onRendered }) => {
         <Grid container spacing={3} mt={2}>
           <Grid item xs={12} sm={6}>
             <TextField label="D.N.I./C.E./L.E." variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={data.dni} /> {/* aca el defaultValue tiene que ser "dni" */} 
-            <TextField label="Aclaración" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={data.aclaracion} /> {/* aca el defaultValue tiene que ser "aclaracion" */} 
+            <TextField label="Nombre y Apellido" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={data.aclaracion} /> {/* aca el defaultValue tiene que ser "aclaracion" */} 
             <TextField label="Vínculo" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={data.vinculo} /> {/* aca el defaultValue tiene que ser "vinculo" */} 
             <Typography variant="body2" fontWeight="bold" mt={1}>
               Descripción NO Entrega:

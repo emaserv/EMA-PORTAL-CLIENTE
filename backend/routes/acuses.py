@@ -134,7 +134,7 @@ def _formatear_fecha_api(fecha_str):
             return f"{partes[2]}-{partes[1]}-{partes[0]}"
     return fecha_str
 
-def _parse_obs_visita(obs):
+def _parse_obs_visita(obs, estado_pieza=None):
     datos = {
         "dni": None, "aclaracion": None, "vinculo": None,
         "referencia1": None, "referencia2": None, "referencia3": None,
@@ -142,9 +142,13 @@ def _parse_obs_visita(obs):
     if not obs:
         return datos
 
+    # Extraer RECIBIÓ para casos de 1°VBPCR
+    recibio_match = re.search(r"\(RECIBIÓ\):\s*([^,]+)", obs)
+    
+    # Extraer VINCULO normal para otros casos
+    vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs)
     dni_match    = re.search(r"DNI:\s*([\d\s]+)", obs)
     nombre_match = re.search(r"NOMBRE Y APELLIDO:\s*([^,]+)", obs)
-    vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs)
 
     def ref_con_color(n):
         ref   = re.search(rf"{n}° REFERENCIA:\s*([^,]+)", obs)
@@ -159,7 +163,11 @@ def _parse_obs_visita(obs):
         datos["dni"] = re.sub(r"\D", "", dni_match.group(1))
     if nombre_match:
         datos["aclaracion"] = nombre_match.group(1).strip()
-    if vinculo_match:
+    
+    # Lógica para vinculo según estado
+    if estado_pieza == '1°VBPCR' and recibio_match:
+        datos["vinculo"] = recibio_match.group(1).strip()
+    elif vinculo_match:
         datos["vinculo"] = vinculo_match.group(1).strip()
 
     datos["referencia1"] = ref_con_color(1)
@@ -205,7 +213,6 @@ def getAcuses():
         with DatabaseSession().get_session() as session:
 
             # ── 1. Un solo query para todos los lotes del cliente ────────────
-            # (antes: query de lotes → loop de queries por lote)
             resultados = (
                 session.query(ItemEmision)
                 .filter(
@@ -257,7 +264,7 @@ def getAcuses():
 
             for item in resultados:
                 estado = item.estadoPieza
-                obs    = _parse_obs_visita(item.obsVisita)
+                obs = _parse_obs_visita(item.obsVisita, item.estadoPieza)
 
                 # Fecha/hora: para bajo puerta usar el registro NR del mismo lote
                 fecha = item.fechaDistrib
@@ -288,6 +295,14 @@ def getAcuses():
                 foto_base64  = encode_image_to_base64(item.foto)  if item.foto  else None
                 firma_base64 = encode_image_to_base64(item.firma) if item.firma else None
 
+                #Para grupo 4 y estado 1°VBPCR, no enviar dni ni aclaracion
+                if es_grupo4 and estado == '1°VBPCR':
+                    dni_valor = None
+                    aclaracion_valor = None
+                else:
+                    dni_valor = obs.get("dni", "")
+                    aclaracion_valor = obs.get("aclaracion", "")
+
                 all_acuses.append({
                     "importe":       importe_valor,
                     "fechaEmision":  _formatear_fecha_salida(item.fechaEmision) if item.fechaEmision else None,
@@ -303,8 +318,8 @@ def getAcuses():
                     "fecha":         _formatear_fecha_db(fecha) if fecha else None,
                     "hora":          _formatear_hora_db(hora)   if hora  else None,
                     "distribuidor":  f"{item.legajo or ''} - {item.distribuidor or ''}".strip(),
-                    "dni":           obs.get("dni",        ""),
-                    "aclaracion":    obs.get("aclaracion", ""),
+                    "dni":           dni_valor, 
+                    "aclaracion":    aclaracion_valor, 
                     "vinculo":       obs.get("vinculo",    ""),
                     "referencia1":   obs.get("referencia1", ""),
                     "referencia2":   obs.get("referencia2", ""),
@@ -430,7 +445,7 @@ def getAcusesPorExcel():
                     ).first()
 
                     # Parsear observaciones
-                    obs = parse_obs_visita(ultimo_acuse.obsVisita)
+                    obs = parse_obs_visita(ultimo_acuse.obsVisita, ultimo_acuse.estadoPieza)
                     estado = ultimo_acuse.estadoPieza
 
                     descripcion = (
