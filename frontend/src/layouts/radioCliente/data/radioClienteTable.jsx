@@ -37,7 +37,7 @@ export default function PRSTable({ data, columns }) {
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(25);
+  const [rowsPerPage, setRowsPerPage] = React.useState(100);
 
   const [startDate, setStartDate] = React.useState(null);
   const [endDate, setEndDate] = React.useState(null);
@@ -242,13 +242,6 @@ export default function PRSTable({ data, columns }) {
       label: "Firma",
       labelComplete: "Firma",
     },
-    {
-      id: "imagenAD",
-      numeric: false,
-      disablePadding: false,
-      label: "Im. AD",
-      labelComplete: "Imagen Aviso Deuda",
-    },
   ];
 
   function Completion({ value, color }) {
@@ -405,8 +398,9 @@ export default function PRSTable({ data, columns }) {
           startDate={startDate}
           endDate={endDate}
         />
-        <TableContainer>
+        <TableContainer sx={{ maxHeight: 600, overflow: "auto" }}>
           <Table
+           stickyHeader  
             sx={{ minWidth: 750 }}
             aria-labelledby="tableTitle"
             size={dense ? "small" : "medium"}
@@ -542,29 +536,6 @@ export default function PRSTable({ data, columns }) {
                       </TableCell>
                     ) : null}
 
-                    {row.estadoPieza !== "NR" ? (
-                      <TableCell
-                        id={`${row.id}-firma-1`}
-                        sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
-                        }}
-                      >
-                        <a
-                          href={row.firma !== "-" ? row.firma : "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            textDecoration: "none",
-                            color: "#D3D3D3",
-                            pointerEvents: "none", // Deshabilita el click si es '-'
-                            cursor: "not-allowed",
-                          }}
-                        >
-                          <ArticleIcon fontSize="medium" />
-                        </a>
-                      </TableCell>
-                    ) : null}
                   </TableRow>
                 );
               })}
@@ -588,7 +559,7 @@ export default function PRSTable({ data, columns }) {
           }}
         >
           <TablePagination
-            rowsPerPageOptions={[5, 15, 25, 50, 75, 100]}
+            rowsPerPageOptions={[100, 500, 1000]}
             component="div"
             count={data.length}
             rowsPerPage={rowsPerPage}

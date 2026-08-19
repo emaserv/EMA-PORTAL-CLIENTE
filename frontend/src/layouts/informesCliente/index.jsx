@@ -35,7 +35,10 @@ const InformesCliente = () => {
   const [alertTitle, setAlertTitle] = useState("");
 
   useEffect(() => {
-    fetch(`/api/tablaInformacion`, { mode: "cors" })
+      fetch(
+        `${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
+          { mode: "cors" }
+        )
       .then((response) => response.json())
       .then((apiData) => {
         if (apiData.dataTabla && apiData.columns) {
@@ -50,7 +53,7 @@ const InformesCliente = () => {
 
   useEffect(() => {
     if (mutex) {
-      fetch(`/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+      fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           if (apiData.multiplesEmision && apiData.columns) {
@@ -76,12 +79,11 @@ const InformesCliente = () => {
 
     try {
       // Primera solicitud: fecha-cliente
-      const url1 = `/api/informe-emision?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`; // La URL base debe configurarse en axios o agregarla completa aquí
-
+      const url1 = `${API_BACK}/api/informe-emision?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`; // La URL base debe configurarse en axios o agregarla completa aquí
       const response1 = await axios.get(url1);
       console.log("Response", response1.status);
       const apiData1 = response1.data;
-
+      console.log("DATAAA: ",apiData1)
       if (apiData1.dataTabla) {
         setDataEmision(apiData1.dataTabla);
         setColumnsEmision(apiData1.columns);
@@ -105,14 +107,50 @@ const InformesCliente = () => {
     
     try {
   
-      const url = `/api/informe-emision-extendido?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`;      
+      const url = `${API_BACK}/api/informe-emision-extendido?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`;      
       const response = await axios.get(url);
       const apiData = response.data;
   
       if (apiData.dataTabla) {
-        // Formatear los datos para exportar
         const formattedData = (() => {
-          if (user.idGrupoCliente === 4) {
+        if (user.idGrupoCliente === 4) {
+          return apiData.dataTabla.map((row) => {
+            // Función para convertir "dd/mm/yy" a Date válido
+            const parseDate = (str) => {
+              if (!str) return null;
+              const [dia, mes, anio] = str.split("/");
+              const fullYear = anio.length === 2 ? 2000 + parseInt(anio) : parseInt(anio);
+              return new Date(fullYear, mes - 1, dia);
+            };
+
+            const fecha = parseDate(row.fecha);
+            const fechaVencimiento = parseDate(row.fechaVencimiento);
+
+            let diferencia = "-";
+            if (fecha && fechaVencimiento && !isNaN(fecha) && !isNaN(fechaVencimiento)) {
+              const diffMs = fechaVencimiento - fecha;
+              diferencia = Math.floor(diffMs / (1000 * 60 * 60 * 24)); 
+            }
+
+              return {
+                "Fecha Emisión": row.fechaEmision || "-",
+                "Número Cliente": row.nroCliente || "-",
+                Titular: row.titular || "-",
+                Dirección: row.direccion || "-",
+                Localidad: row.localidad || "-",
+                Fecha: row.fecha || "-",
+                Hora: row.hora || "-",
+                "Fecha Vencimiento": row.fechaVencimiento || "-",
+                "Diferencia (días)": diferencia,
+                "Estado Pieza": row.estadoPieza || "-",
+                "Estado Metro": row.estadoMetro || "-",
+                "Observación Visita": row.obsVisita || "-",
+                GeoVisita: row.geoVisita || "-",
+                Foto: row.foto || "-",
+                Firma: row.firma || "-",
+              };
+            });
+          } else if (user.idGrupoCliente === 2) {
             return apiData.dataTabla.map((row) => ({
               //ID: row.id || "-",
               "Fecha Emisión": row.fechaEmision || "-",
@@ -124,15 +162,15 @@ const InformesCliente = () => {
               Dirección: row.direccion || "-",
               Localidad: row.localidad || "-",
               Fecha: row.fecha || "-",
-              Hora: row.hora || "-",
+              //Hora: row.hora || "-",
               "Estado Pieza": row.estadoPieza || "-",
-              "Estado Metro": row.estadoMetro || "-",
+              //"Estado Metro": row.estadoMetro || "-",
               "Observación Visita": row.obsVisita || "-",
               GeoVisita: row.geoVisita || "-",
-              Foto: row.foto || "-",
+              Acuse: row.foto || "-",
               Firma: row.firma || "-",
             }));
-          } else if (user.idGrupoCliente === 2) {
+          } else if (user.idGrupoCliente === 6) {
             return apiData.dataTabla.map((row) => ({
               //ID: row.id || "-",
               "Fecha Emisión": row.fechaEmision || "-",
@@ -311,7 +349,7 @@ const InformesCliente = () => {
                         data={dataEmision}
                         columns={columnsEmision}
                       />
-                    ) :  user.idGrupoCliente === 2 ? (
+                    ) :  user.idGrupoCliente === 2 || user.idGrupoCliente === 6 ? (
                       <CalleAlturaTableNaturgy
                         data={dataEmision}
                         columns={columnsEmision}

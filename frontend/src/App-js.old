@@ -10,23 +10,6 @@ import routes from "routes";
 import { useSoftUIController, setMiniSidenav, setOpenImportador, setOpenConfigurator } from "context";
 import ImportadorSideBar from "components/ImportadorSideBar";
 
-// Rutas permitidas por idGrupoCliente
-// Agregar nuevos grupos aqui si se necesitan mas restricciones en el futuro
-const RUTAS_PERMITIDAS_POR_GRUPO = {
-  7: ["/home", "/radio-cliente"],  // EDESUR-RADIO: solo Consulta por Radio
-};
-
-// Obtiene el idGrupoCliente del usuario logueado desde localStorage
-const getUsuarioGrupo = () => {
-  try {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) return null;
-    return JSON.parse(storedUser)?.idGrupoCliente ?? null;
-  } catch {
-    return null;
-  }
-};
-
 export default function App() {
   const [controller, dispatch] = useSoftUIController();
   const { miniSidenav, direction, layout, openImportador, sidenavColor } = controller;
@@ -38,23 +21,11 @@ export default function App() {
     document.body.setAttribute("dir", direction);
   }, [direction]);
 
+
   useEffect(() => {
     document.documentElement.scrollTop = 0;
     document.scrollingElement.scrollTop = 0;
   }, [pathname]);
-
-  // Devuelve el elemento de la ruta o un redirect si el grupo no tiene permiso
-  const getGuardedElement = (route) => {
-    const grupoId = getUsuarioGrupo();
-    const rutasPermitidas = RUTAS_PERMITIDAS_POR_GRUPO[grupoId];
-
-    // Si el grupo tiene restricciones y la ruta no está en la lista, redirigir a /home
-    if (rutasPermitidas && !rutasPermitidas.includes(route.route)) {
-      return <Navigate to="/home" replace />;
-    }
-
-    return route.component;
-  };
 
   const getRoutes = (allRoutes) =>
     allRoutes.map((route) => {
@@ -63,23 +34,17 @@ export default function App() {
       }
 
       if (route.route) {
-        return (
-          <Route
-            exact
-            path={route.route}
-            element={getGuardedElement(route)}
-            key={route.key}
-          />
-        );
+        return <Route exact path={route.route} element={route.component} key={route.key} />;
       }
 
       return null;
     });
 
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-
+      
       <Routes>
         {getRoutes(routes)}
         <Route path="*" element={<Navigate to="/authentication/sign-in" />} />

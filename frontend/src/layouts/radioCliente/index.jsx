@@ -67,7 +67,7 @@ const RadioCliente = () => {
 
   useEffect(() => {
     fetch(
-      `/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
+      `${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
       { mode: "cors" }
     )
       .then((response) => response.json())
@@ -84,7 +84,7 @@ const RadioCliente = () => {
 
   useEffect(() => {
       if (mutex) {
-        fetch(`/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+        fetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
           .then((response) => response.json())
           .then((apiData) => {
             if (apiData.multiplesEmision && apiData.columns) {
@@ -144,7 +144,7 @@ const RadioCliente = () => {
       const formattedRadio = formatToTwoDigits(radio);
 
       const url = new URL(
-        `/api/geoJson/consultarGeoJson`,
+        `${API_BACK}/api/geoJson/consultarGeoJson`,
         window.location.origin
       );
       const params = {
@@ -193,10 +193,17 @@ const RadioCliente = () => {
     idEmision
   ) => {
     try {
+
+      if (user?.idGrupoCliente === 1) {
+        setPuntosMapa([]);
+        setColumns([]);
+        return;
+      }
+
       setLoading(true);
       // Create the base URL object
       const url = new URL(
-        `/api/radio/geoMapaItems`,
+        `${API_BACK}/api/radio/geoMapaItems`,
         window.location.origin
       );
 
@@ -260,7 +267,7 @@ const RadioCliente = () => {
     try {
       setLoading(true);
       const response2 = await fetch(
-        `/api/radio-cliente?plan=${plan || ""}&sucursal=${
+        `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
           sucursal || ""
         }&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${
           fechaDesde || ""
@@ -294,7 +301,7 @@ const RadioCliente = () => {
   // Función para realizar la tercera solicitud: geoMapaCamino
   const fetchGeoMapaCamino = async () => {
     try {
-      const url = new URL(`/api/geo-dai`, window.location.origin);
+      const url = new URL(`${API_BACK}/api/geo-dai`, window.location.origin);
 
       const params = {
         legajo: legajo,
@@ -340,8 +347,8 @@ const RadioCliente = () => {
 
     // Llamadas a las tres funciones
     await fetchGeoJsonData(sucursal, plan, radio);
-    await fetchGeoMapaItems(plan, sucursal, radio, fechaDesde, fechaHasta);
-    await fetchRadioCliente(plan, sucursal, radio, fechaDesde, fechaHasta);
+    await fetchGeoMapaItems(plan, sucursal, radio, fechaDesde, fechaHasta, idEmision);
+    await fetchRadioCliente(plan, sucursal, radio, fechaDesde, fechaHasta, idEmision);
   };
 
   const filtrarDatos = (
@@ -636,9 +643,9 @@ const RadioCliente = () => {
               <SoftBox
                 display="flex"
                 justifyContent="space-between"
-                alignItems="center"
+                alignItems="flex-start"   // ← cambio clave
               >
-
+                {/* Plan */}
                 <SoftBox>
                   <SoftTypography marginTop={-2}>Plan</SoftTypography>
                   <Controller
@@ -646,26 +653,20 @@ const RadioCliente = () => {
                     control={control}
                     rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
-                      <>
-                        <SoftInputBase
-                          field={field}
-                          placeholder="Inserte nro de plan"
-                          error={!!errors.plan} // Muestra borde rojo si hay error
-                        />
-                        {errors.plan && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.plan.message}
-                          </SoftTypography>
-                        )}
-                      </>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de plan"
+                        error={!!errors.plan}
+                      />
                     )}
                   />
+                  <SoftTypography color="error" fontSize="0.75rem"
+                    style={{ minHeight: "1.1rem", display: "block", marginTop: 2 }}>
+                    {errors.plan?.message ?? ""}
+                  </SoftTypography>
                 </SoftBox>
 
+                {/* Sucursal */}
                 <SoftBox>
                   <SoftTypography marginTop={-2}>Sucursal</SoftTypography>
                   <Controller
@@ -673,137 +674,86 @@ const RadioCliente = () => {
                     control={control}
                     rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
-                      <>
-                        <SoftInputBase
-                          field={field}
-                          placeholder="Inserte nro de sucursal"
-                          error={!!errors.sucursal} // Muestra borde rojo si hay error
-                        />
-                        {errors.sucursal && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.sucursal.message}
-                          </SoftTypography>
-                        )}
-                      </>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de sucursal"
+                        error={!!errors.sucursal}
+                      />
                     )}
                   />
+                  <SoftTypography color="error" fontSize="0.75rem"
+                    style={{ minHeight: "1.1rem", display: "block", marginTop: 2 }}>
+                    {errors.sucursal?.message ?? ""}
+                  </SoftTypography>
                 </SoftBox>
 
+                {/* Radio — opcional, sin rules */}
                 <SoftBox>
                   <SoftTypography marginTop={-2}>Radio</SoftTypography>
                   <Controller
                     name="radio"
                     control={control}
-                    rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
-                      <>
-                        <SoftInputBase
-                          field={field}
-                          placeholder="Inserte nro de radio"
-                          error={!!errors.radio} // Muestra borde rojo si hay error
-                        />
-                        {errors.radio && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.radio.message}
-                          </SoftTypography>
-                        )}
-                      </>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte nro de radio"
+                      />
                     )}
                   />
+                  {/* Sin error, pero mismo minHeight para mantener alineación */}
+                  <div style={{ minHeight: "1.1rem", marginTop: 2 }} />
                 </SoftBox>
-                
-                {user &&
-                (user.idGrupoCliente !== 1) ? (
+
+                {/* Fecha (condicional, sin cambios) */}
+                {user && user.idGrupoCliente !== 1 ? (
                   <SoftBox display="flex" flexDirection="column" marginTop={-2}>
                     <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
                     <SoftBox display="flex" alignItems="center">
-                      <Controller
-                        name="fechaDesde"
-                        control={control}
-                        render={({ field }) => <DatePickerValue field={field} />}
-                      />
+                      <Controller name="fechaDesde" control={control}
+                        render={({ field }) => <DatePickerValue field={field} />} />
                       <SoftTypography> - </SoftTypography>
-                      <Controller
-                        name="fechaHasta"
-                        control={control}
-                        render={({ field }) => <DatePickerValue field={field} />}
-                      />
+                      <Controller name="fechaHasta" control={control}
+                        render={({ field }) => <DatePickerValue field={field} />} />
                     </SoftBox>
+                    <div style={{ minHeight: "1.1rem", marginTop: 2 }} />
                   </SoftBox>
                 ) : null}
 
-                <SoftBox
-                  display="flex"
-                  flexDirection="column"
-                  marginTop={{ xs: 2, md: -2 }}
-                  marginLeft={{ md: 3 }}
-                >
-                  <SoftTypography
-                    component="label"
-                    variant="caption"
-                    marginTop={2}
-                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
-                  >
+                {/* Emisión — ahora obligatoria */}
+                <SoftBox display="flex" flexDirection="column" marginTop={{ xs: 2, md: -2 }} marginLeft={{ md: 3 }}>
+                  <SoftTypography component="label" variant="caption" 
+                    fontSize={{ xs: "1rem", sm: "1.3rem" }}>
                     Emision
                   </SoftTypography>
-                  <SoftBox
-                    display="flex"
-                    alignItems="center"
-                    flexDirection={{ xs: "column", md: "row" }}
-                    marginTop={1}
-                  >
+                  <SoftBox display="flex" alignItems="center"
+                    flexDirection={{ xs: "column", md: "row" }} marginTop={1}>
                     <Controller
                       name="idEmision"
                       control={control}
+                      rules={{ required: "Campo obligatorio" }}   // ← nuevo
                       render={({ field }) => (
-                        <>
-                          <DropdownList
-                            width="10vw"
-                            list={multiplesEmision ? multiplesEmision.reverse() : []}
-                            placeholder="Seleccione su emisión"
-                            campoAMostrar="nombre"
-                            campoID="id"
-                            inputRef={field.ref}
-                            value={field.value}
-                            onChange={(selectedValue) =>
-                              field.onChange(selectedValue)
-                            }
-                          />
-                          {errors.idEmision && (
-                            <SoftTypography
-                              color="error"
-                              fontSize="1rem"
-                              marginTop={1}
-                            >
-                              {errors.idEmision.message}
-                            </SoftTypography>
-                          )}
-                        </>
+                        <DropdownList
+                          width="15vw"
+                          list={multiplesEmision ? multiplesEmision.reverse() : []}
+                          placeholder="Seleccione su emisión"
+                          campoAMostrar="nombre"
+                          campoID="id"
+                          inputRef={field.ref}
+                          value={field.value}
+                          onChange={(selectedValue) => field.onChange(selectedValue)}
+                        />
                       )}
                     />
                   </SoftBox>
+                  <SoftTypography color="error" fontSize="0.75rem"
+                    style={{ minHeight: "1.1rem", display: "block", marginTop: 2 }}>
+                    {errors.idEmision?.message ?? ""}
+                  </SoftTypography>
                 </SoftBox>
 
-                <SoftBox
-                  display="flex"
-                  justifyContent="flex-end"
-                  alignItems="center"
-                  pt={2}
-                  px={3}
-                >
-                  <SoftButton
-                    variant="gradient"
-                    color="info"
-                    type="submit" // Asegúrate de incluir el tipo "submit" aquí
-                  >
+                {/* Botón Filtrar */}
+                <SoftBox display="flex" justifyContent="flex-end" alignItems="center" pt={2} px={3}>
+                  <SoftButton variant="gradient" color="info" type="submit">
                     Filtrar
                   </SoftButton>
                 </SoftBox>
@@ -813,35 +763,38 @@ const RadioCliente = () => {
         </Card>
 
         <LoadingModal isOpen={loading} />
-
-        <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
-          <SoftBox justifyContent="center">
-            <Card>
-              <SoftBox p={3}>
-                <MyMap
-                  arrayPuntos={armarArrayCoordenadas(puntosMapa)}
-                  arrayCamino={armarArrayCoordenadas(caminoMapa)}
-                  geoJsonData={geoJsonData}
-                  geoJsonData2={geoJsonData2}
-                />
-              </SoftBox>
-            </Card>
+        
+        {user && (user.idGrupoCliente !== 1) ? (
+          <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
+            <SoftBox justifyContent="center">
+              <Card>
+                <SoftBox p={3}>
+                  <MyMap
+                    arrayPuntos={armarArrayCoordenadas(puntosMapa)}
+                    arrayCamino={armarArrayCoordenadas(caminoMapa)}
+                    geoJsonData={geoJsonData}
+                    geoJsonData2={geoJsonData2}
+                  />
+                </SoftBox>
+              </Card>
+            </SoftBox>
           </SoftBox>
-        </SoftBox>
+          ) : null}
 
-        <SoftBox
-          paddingBottom={3}
-          style={{ width: "90%" }}
-          justifyContent="center"
-        >
-          <SoftBox justifyContent="center">
-            <Card>
-              <SoftBox p={3}>
-                <PRSTable data={datosFiltrados} columns={columns} />
-              </SoftBox>
-            </Card>
+          <SoftBox
+            paddingBottom={3}
+            paddingTop={3}
+            style={{ width: "90%" }}
+            justifyContent="center"
+          >
+            <SoftBox justifyContent="center">
+              <Card>
+                <SoftBox p={3}>
+                  <PRSTable data={datosFiltrados} columns={columns} />
+                </SoftBox>
+              </Card>
+            </SoftBox>
           </SoftBox>
-        </SoftBox>
 
         {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 1) ? (
           <SoftBox

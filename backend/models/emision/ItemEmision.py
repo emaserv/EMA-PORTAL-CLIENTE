@@ -45,3 +45,6 @@ class ItemEmision(db.Model):
     medidor = db.Column(db.Text)
     entreCalles = db.Column(db.Text)
     codigoPostal = db.Column(db.Text)
+    rutaEcogas = db.Column(db.Text)
+    cabecera = db.Column(db.Text)
+    facturaControl = db.Column(db.Text)

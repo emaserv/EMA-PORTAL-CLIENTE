@@ -3,7 +3,6 @@ from flask_cors import CORS
 from flask import Blueprint
 #from flask_jwt_extended import JWTManager
 from db.serverPostgres import db
-
 import os
 import varEntorno 
 
@@ -23,7 +22,6 @@ app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
 from models.usuario.Usuario import Usuario
 from models.cliente.GrupoCliente import GrupoCliente
-from models.emision.Emision import Emision
 
 from routes.RestGenerica import RestGenerica
 from routes.auth import auth
@@ -32,6 +30,7 @@ from routes.radioCliente import radioCliente
 from routes.importador import importador
 from routes.geoJson import geoJson
 from routes.acuses import acuses
+from routes.acuses_async import acuses_async
 
 app.register_blueprint(auth)
 app.register_blueprint(fechaCliente)
@@ -39,22 +38,19 @@ app.register_blueprint(radioCliente)
 app.register_blueprint(importador)
 app.register_blueprint(geoJson)
 app.register_blueprint(acuses)
+app.register_blueprint(acuses_async)
 
 from services.adaptersRest.AdapterUsuario import AdapterUsuario
 from services.adaptersRest.AdapterGrupoCliente import AdapterGrupoCliente
-from services.adaptersRest.AdapterEmision import AdapterEmision
 
 UsuarioRestBluePrint = Blueprint('UserRest', __name__)
 GrupoClienteBluePrint = Blueprint('GrupoClienteRest', __name__)
-EmisionBluePrint = Blueprint('EmisionRest', __name__)
 
 userRest = RestGenerica(Usuario, UsuarioRestBluePrint, AdapterUsuario)
 grupoClienteRest = RestGenerica(GrupoCliente, GrupoClienteBluePrint, AdapterGrupoCliente)
-emisionRest = RestGenerica(Emision, EmisionBluePrint, AdapterEmision)
 
 app.register_blueprint(UsuarioRestBluePrint)
 app.register_blueprint(GrupoClienteBluePrint)
-app.register_blueprint(EmisionBluePrint)
 
 #Esto es para que se creen las tablas. NO TOCAR!
 from models.cliente import GrupoCliente
@@ -62,9 +58,27 @@ from models.emision import Emision, ItemEmision
 from models.usuario import Credencial, Usuario
 from models.dai import Dai
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Endpoint de verificación de salud"""
+    from datetime import datetime
+    return {
+        "status": "healthy",
+        "service": "acuses-optimizado",
+        "timestamp": datetime.now().isoformat(),
+        "directorios": {
+            "temporales": "Usa tempfile.mkdtemp() - no necesita directorio fijo"
+        },
+        "endpoints": {
+            "async_generate": "/api/acuses-async/generate",
+            "async_status": "/api/acuses-async/status/<task_id>",
+            "async_download": "/api/acuses-async/download/<task_id>"
+        }
+    }
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         print("Conexión a la base de datos exitosa")
     
-    app.run(host='127.0.0.1', port=5000)
+    app.run(host='0.0.0.0', port=5000)

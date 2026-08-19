@@ -5,6 +5,7 @@ import Box from "@mui/material/Box";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
+import { Tooltip } from "@mui/material";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
@@ -14,16 +15,14 @@ import Paper from "@mui/material/Paper";
 import SoftBox from "components/SoftBox";
 import SoftTypography from "components/SoftTypography";
 import SoftProgress from "components/SoftProgress";
-import { Link } from "react-router-dom";
 import { HiChevronUp, HiChevronDown } from "react-icons/hi";
 import dayjs from "dayjs";
-import "dayjs/locale/es";
 import PhotoIcon from "@mui/icons-material/Photo";
 import MapIcon from "@mui/icons-material/Map";
 import Edit from "@mui/icons-material/Edit";
 import ArticleIcon from "@mui/icons-material/Article";
-import { Tooltip } from "@mui/material";
 import MobileFriendlyTooltip from "components/TooltipMobile";
+import axios from "axios";
 
 dayjs.locale("ES");
 
@@ -31,13 +30,13 @@ const toDate = (dayjsObject) =>
   new Date(dayjsObject.year(), dayjsObject.month(), dayjsObject.date());
 const todayGMT3 = dayjs().subtract(3, "hour");
 
-export default function PRSTable({ data, columns }) {
+export default function NaturgyTable({ data, columns }) {
   const [order, setOrder] = React.useState("asc");
   const [orderBy, setOrderBy] = React.useState("cantidadDePiezas");
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(100);
+  const [rowsPerPage, setRowsPerPage] = React.useState(25);
 
   const [startDate, setStartDate] = React.useState(null);
   const [endDate, setEndDate] = React.useState(null);
@@ -148,29 +147,37 @@ export default function PRSTable({ data, columns }) {
       id: "fechaEmision",
       numeric: false,
       disablePadding: false,
-      label: "F. Emision",
+      label: "F. Emision",
       labelComplete: "Fecha de Emision",
-    },    
-    {
-      id: "planTurno",
-      numeric: false,
-      disablePadding: false,
-      label: "Plan",
-      labelComplete: "Plan",
     },
     {
-      id: "sucursal",
+      id: "fechaVencimiento",
       numeric: false,
       disablePadding: false,
-      label: "Sucursal",
-      labelComplete: "Sucursal",
+      label: "F. Vencimiento",
+      labelComplete: "Fecha de Vencimiento",
     },
     {
-      id: "radio",
+      id: "nroCliente",
       numeric: false,
       disablePadding: false,
-      label: "Radio",
-      labelComplete: "Radio",
+      label: "Nro. Cliente",
+      labelComplete: "Numero de Cliente",
+    },
+
+    {
+      id: "titular",
+      numeric: false,
+      disablePadding: false,
+      label: "Titular",
+      labelComplete: "Titular",
+    },
+    {
+      id: "direccion",
+      numeric: false,
+      disablePadding: false,
+      label: "Direccion",
+      labelComplete: "Direccion",
     },
     {
       id: "localidad",
@@ -179,11 +186,12 @@ export default function PRSTable({ data, columns }) {
       label: "Localidad",
       labelComplete: "Localidad",
     },
+
     {
       id: "fecha",
       numeric: false,
       disablePadding: false,
-      label: "F. Dist.",
+      label: "F. Dist.",
       labelComplete: "Fecha de Distribucion",
     },
     {
@@ -193,25 +201,70 @@ export default function PRSTable({ data, columns }) {
       label: "Hora",
       labelComplete: "Hora",
     },
+
+
+    {
+      id: "importe",
+      numeric: false,
+      disablePadding: false,
+      label: "Importe",
+      labelComplete: "Importe",
+    },
     {
       id: "estadoPieza",
       numeric: false,
       disablePadding: false,
-      label: "Estado",
-      labelComplete: "Estado",
+      label: "Est E.",
+      labelComplete: "Estado EMA",
     },
+
     {
       id: "obsVisita",
       numeric: false,
       disablePadding: false,
-      label: "Obs. Visita",
+      label: "Obs. Visita",
       labelComplete: "Observacion de Visita",
     },
+    {
+      id: "medidor",
+      numeric: false,
+      disablePadding: false,
+      label: "Medidor",
+      labelComplete: "Medidor",
+    },
+    {
+      id: "entreCalles",
+      numeric: false,
+      disablePadding: false,
+      label: "Entre Calles",
+      labelComplete: "Entre Calles",
+    },
+    {
+      id: "codigoPostal",
+      numeric: false,
+      disablePadding: false,
+      label: "CP",
+      labelComplete: "Código Postal",
+    },
+    {
+      id: "fechaIngreso",
+      numeric: false,
+      disablePadding: false,
+      label: "F. Ing",
+      labelComplete: "Fecha de Ingreso",
+    },
+    //{
+    //  id: "estadoMetro",
+    //  numeric: false,
+    //  disablePadding: false,
+    // label: "Est M.",
+    //  labelComplete: "Estado Metrogas",
+    //},
     {
       id: "geoVisita",
       numeric: false,
       disablePadding: false,
-      label: "Visita",
+      label: "V.",
       labelComplete: "Geoposicion de Visita",
     },
     {
@@ -229,13 +282,12 @@ export default function PRSTable({ data, columns }) {
       labelComplete: "Firma",
     },
     {
-        id: "cant",
-        numeric: false,
-        disablePadding: false,
-        label: "Cant",
-        labelComplete: "Cantidad de Registros",
-      },
-    
+      id: "imagenAD",
+      numeric: false,
+      disablePadding: false,
+      label: "Im. AD",
+      labelComplete: "Imagen Aviso Deuda",
+    },
   ];
 
   function Completion({ value, color }) {
@@ -285,13 +337,13 @@ export default function PRSTable({ data, columns }) {
         <TableRow
           style={{
             background: "linear-gradient(to top, #2152ff, #21d4fd)",
-            borderRadius: "10  px", // Bordes redondeados
+            borderRadius: "10 px", // Bordes redondeados
             minWidth: "auto",
             fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-            fontSize: "0.85rem",
+            fontSize: "0.3rem",
             opacity: 1,
             cursor: "pointer",
-            fontWeight: "700",
+            fontWeight: "500",
             color: "#ffffff", // Texto en blanco para mayor contraste
             textTransform: "uppercase",
             padding: "0px",
@@ -301,8 +353,8 @@ export default function PRSTable({ data, columns }) {
         >
           {headCells.map((headCell) => (
             <TableCell
-              key={headCell.id}              
-              align={headCell.id === "firma" ? "center" : headCell.numeric ? "right" : "left"}
+              key={headCell.id}
+              align={headCell.numeric ? "right" : "left"}
               padding={headCell.disablePadding ? "none" : "normal"}
               sortDirection={orderBy === headCell.id ? order : false}
               sx={{
@@ -323,7 +375,9 @@ export default function PRSTable({ data, columns }) {
               selected={numSelected > 0 && orderBy === headCell.id}
               onClick={createSortHandler(headCell.id)}
             >
-              {headCell.label}
+              <Tooltip title={headCell.labelComplete ? headCell.labelComplete : 'Sin información'}>
+                <span>{headCell.label}</span>
+              </Tooltip>
               {orderBy === headCell.id &&
                 (order == "asc" ? ascendingIcon : descendingIcon)}
             </TableCell>
@@ -359,18 +413,19 @@ export default function PRSTable({ data, columns }) {
     endDate: PropTypes.instanceOf(Date),
   };
 
+  // Función para truncar texto
   const truncarTexto = (texto, limite) => {
     //console.log("WASAAAAAA", texto);
-    if (!texto || typeof texto !== "string") {
-      return ""; // O devuelve otro valor predeterminado si lo prefieres
+    if (!texto || typeof texto !== 'string') {
+      return ''; // O devuelve otro valor predeterminado si lo prefieres
     }
-
+  
     if (texto.length > limite) {
-      return texto.substring(0, limite) + "...";
+      return texto.substring(0, limite) + '...';
     }
     return texto;
   };
-
+    
   const visibleRows = React.useMemo(
     () =>
       data
@@ -382,6 +437,7 @@ export default function PRSTable({ data, columns }) {
     [data, order, orderBy, page, rowsPerPage, startDate, endDate]
   );
 
+
   return (
     <Box sx={{ width: "100%" }}>
       <Paper sx={{ width: "100%", mb: 2 }}>
@@ -392,11 +448,11 @@ export default function PRSTable({ data, columns }) {
           startDate={startDate}
           endDate={endDate}
         />
-        <TableContainer sx={{ maxHeight: 800, overflow: "auto" }}>
-        <Table stickyHeader aria-label="sticky table" style={{ tableLayout: "auto", width: "100%" }}
-            // sx={{ minWidth: 750 }}
-            // aria-labelledby="tableTitle"
-            // size={dense ? "small" : "medium"}
+        <TableContainer>
+          <Table
+            sx={{ minWidth: 750 }}
+            aria-labelledby="tableTitle"
+            size={dense ? "small" : "medium"}
           >
             <EnhancedTableHead
               numSelected={selected.length}
@@ -413,129 +469,119 @@ export default function PRSTable({ data, columns }) {
                 const rowKey = `${row.id}-${index}`;
 
                 return (
-                  <TableRow
-                    key={rowKey} // Proporcionar una clave única
-                    hover
-                    onClick={(event) => handleClick(event, row.id)}
-                    role="checkbox"
-                    aria-checked={isItemSelected}
-                    tabIndex={-1}
-                    selected={isItemSelected}
-                    sx={{ cursor: "pointer" }}
-                  >
-                    {columns.map(
-                      (column) =>
-                        //Con esto oculto la columna que tiene el id
-                        //NO BORRAR LA COLUMNA ID PORQUE SI NO SE ROMPE LA TABLA
-                        column !== "id" &&
-                        column !== "grupoCliente" &&
-                        column !== "geoVisita" &&
-                        column !== "firma" &&
-                        column !== "direccion" &&
-                        column !== "foto" &&
-                        column !== "titular" &&
-                        column !== "nroCliente" &&
-                        column !== "legajo" && (
-                          <TableCell
-                            key={`${row.id}-${column}`}
-                            align="left"
-                            sx={{
-                              fontSize: "0.875rem",
-                              paddingTop: "2px",
-                              paddingBottom: "2px",
-                              whiteSpace: "nowrap",
+                  <>
+                    {/* Primera fila */}
+                    {row.estadoPieza !== "BM" ? (
+                      <TableRow
+                        key={`${rowKey}`} // Proporcionar una clave única para la primera fila
+                        hover
+                        tabIndex={-1}
+                      >
+                        {columns.map(
+                          (column) =>
+                            // Con esto oculto la columna que tiene el id
+                            // NO BORRAR LA COLUMNA ID PORQUE SI NO SE ROMPE LA TABLA
+                            column !== "id" &&
+                            column !== "geoVisita" &&
+                            column !== "grupoCliente" &&
+                            column !== "plan" &&
+                            column !== "radio" &&
+                            column !== "sucursal" &&
+                            column !== "firma" &&
+                            column !== "foto" &&
+                            column !== "foto" &&
+                            column !== "acuseDeDeuda" &&
+                            column !== "estadoMetro" && (
+                              <TableCell
+                                key={`${row.id}-${column}-${index}`}
+                                align="left"
+                                sx={{
+                                  fontSize: "0.875rem",
+                                  paddingTop: "2px",
+                                  paddingBottom: "2px",
+                                }}
+                              >
+                                {column !== "porcentaje" ? (
+                                  <MobileFriendlyTooltip title={row[column] ? row[column] : 'Sin información'}>
+                                    <span>{truncarTexto(row[column], 12)}</span>
+                                  </MobileFriendlyTooltip>
+                                ) : (
+                                  <Completion
+                                    value={row[column]}
+                                    color="info"
+                                  />
+                                )}
+                              </TableCell>
+                            )
+                        )}
+
+                        <TableCell
+                          id={`${row.id}-geoVisita-1`}
+                          sx={{
+                            paddingTop: "2px",
+                            paddingBottom: "0px",
+                            paddingLeft: "0",
+                          }}
+                        >
+                          <a
+                            href={row.geoVisita ? row.geoVisita : "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              textDecoration: "none",
+                              color: row.geoVisita ? "#4682B4" : "#D3D3D3",
                             }}
                           >
-                            {column !== "porcentaje" ? (
-                              <MobileFriendlyTooltip
-                                title={
-                                  row[column] ? row[column] : "Sin información"
-                                }
-                              >
-                                <span>{truncarTexto(row[column], 12)}</span>
-                              </MobileFriendlyTooltip>
-                            ) : (
-                              <Completion value={row[column]} color="info" />
-                            )}
-                          </TableCell>
-                        )
-                    )}
-                    
+                            <MapIcon fontSize="medium" />
+                          </a>
+                        </TableCell>
 
-                    {row.estadoPieza !== "NR" ? (
-                      <TableCell
-                        id={`${row.id}-geoVisita-1`}
-                        sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
-                          paddingLeft: "2.5rem",
-                        }}
-                      >
-                        <a
-                          href={row.geoVisita ? row.geoVisita : "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            textDecoration: "none",
-                            color: row.geoVisita ? "#4682B4" : "#D3D3D3",
-                          }}
-                        >
-                          <MapIcon fontSize="medium" />
-                        </a>
-                      </TableCell>
-                    ) : null}
-
-                    {row.estadoPieza !== "NR" ? (
-                      <TableCell
-                        id={`${row.id}-foto-1`}
-                        sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
-                        }}
-                      >
-                        <a
-                          href={row.foto ? row.foto : "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            textDecoration: "none",
-                            color: row.foto ? "#4682B4" : "#D3D3D3",
-                          }}
-                        >
-                          <PhotoIcon fontSize="medium" />
-                        </a>
-                      </TableCell>
-                    ) : null}
-
-                    {row.estadoPieza !== "NR" ? (
-                      <TableCell
-                        id={`${row.id}-firma-1`}
-                        align="center"
-                        sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
-                        }}
-                      >
-                        {row.firma && row.firma !== "-" ? (
-                        <img
-                            src={row.firma}
-                            alt="Firma"
-                            style={{
-                            width: "50px", // Ajusta el tamaño según tus necesidades
-                            height: "auto",
-                            borderRadius: "4px",
+                          <TableCell
+                            id={`${row.id}-foto-1`}
+                            sx={{
+                              paddingTop: "2px",
+                              paddingBottom: "0px",
                             }}
-                        />
-                        ) : (
-                        <span style={{ color: "#D3D3D3" }}>Sin firma</span>
-                        )}
-                      </TableCell>
-                    ) : null}
+                          >
+                            <a
+                              href={row.foto ? row.foto : "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                textDecoration: "none",
+                                color: row.foto ? "#4682B4" : "#D3D3D3",
+                              }}
+                            >
+                              <PhotoIcon fontSize="medium" />
+                            </a>
+                          </TableCell>
 
-                <TableCell align="left">
-                  {row.count || 1} {/* Muestra el conteo o 1 si no existe */}
-                </TableCell>
-                  </TableRow>
+                          <TableCell
+                            id={`${row.id}-firma-1`}
+                            sx={{
+                              paddingTop: "2px",
+                              paddingBottom: "0px",
+                            }}
+                          >
+                            <a
+                              href={row.firma !== '-' ? row.firma : "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                textDecoration: "none",
+                                color: row.firma !== '-' ? "#4682B4" : "#D3D3D3",
+                                pointerEvents: row.firma !== '-' ? "auto" : "none", // Deshabilita el click si es '-'
+                                cursor: row.firma !== '-' ? "pointer" : "not-allowed",
+                              }}
+                            >
+                              <Edit fontSize="medium" />
+                            </a>
+                          </TableCell>
+                          
+
+                      </TableRow>
+                    ) : null}
+                  </>
                 );
               })}
               {emptyRows > 0 && (
@@ -557,8 +603,9 @@ export default function PRSTable({ data, columns }) {
             marginRight: "10vh",
           }}
         >
+          {/* 
           <TablePagination
-            rowsPerPageOptions={[100, 500, 1000]}
+            rowsPerPageOptions={[5, 15, 25, 50, 75, 100]}
             component="div"
             count={data.length}
             rowsPerPage={rowsPerPage}
@@ -570,13 +617,14 @@ export default function PRSTable({ data, columns }) {
               `${from}-${to} de ${count}`
             }
           />
+          */}
         </div>
       </Paper>
     </Box>
   );
 }
 
-PRSTable.propTypes = {
+NaturgyTable.propTypes = {
   data: PropTypes.array.isRequired,
   columns: PropTypes.array.isRequired,
   control: PropTypes.object.isRequired,

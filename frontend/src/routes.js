@@ -28,6 +28,7 @@ import RutaCliente from "./layouts/radioCliente";
 import ConsultaFirmas from "./layouts/firmasCliente"
 import InformesCliente from "layouts/informesCliente";
 import AcuseCliente from "layouts/acuseCliente";
+import MapaCliente from "layouts/mapaCliente";
 
 const routes = [
   {
@@ -82,6 +83,14 @@ const routes = [
     key: "acuse-cliente",
     route: "/acuse-cliente",
     component: <AcuseCliente />,
+    noCollapse: true,
+  },
+  {
+    type: "collapse",
+    name: "Mapa Cliente",
+    key: "mapa-cliente",
+    route: "/mapa-cliente",
+    component: <MapaCliente />,
     noCollapse: true,
   },
 ];

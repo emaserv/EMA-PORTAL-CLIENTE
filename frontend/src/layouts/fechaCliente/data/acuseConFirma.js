@@ -12,7 +12,7 @@ import {
 import JsBarcode from "jsbarcode";
 import MyMap from "./mapa";
 import LogoEma from "assets/images/Portal-Cliente-Images/Logo-ema.png";
-import LogoNaturgy from "assets/images/Portal-Cliente-Images/Naturgy.png";
+import LogoMetrogas from "assets/images/Portal-Cliente-Images/metrogas.png";
 
 const AcuseReciboConFirma = ({ data, onRendered }) => {
     const ref = useRef(null);
@@ -89,9 +89,9 @@ const AcuseReciboConFirma = ({ data, onRendered }) => {
         </Box>
 
         {/* Datos de Entrega */}
-        <Grid container spacing={2} mt={2} bgcolor="#f0f8fb" p={2}>
+        <Grid container spacing={2} mt={3} bgcolor="#f0f8fb" p={2}>
           <Grid item xs={12} sm={4}>
-            <img src={LogoNaturgy} alt="Logo Naturgy" width={180} />
+            <img src={LogoMetrogas} alt="Logo Naturgy" width={130} />
 
             <Typography variant="body2" fontWeight="bold">Importe: ${data.importe}</Typography>  
             <Typography variant="body2">Emisión: {data.fechaEmision}</Typography> 
@@ -156,7 +156,7 @@ const AcuseReciboConFirma = ({ data, onRendered }) => {
         <Grid container spacing={3} mt={2}>
           <Grid item xs={12} sm={6}>
             <TextField label="D.N.I./C.E./L.E." variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={data.dni} /> {/* aca el defaultValue tiene que ser "dni" */} 
-            <TextField label="Aclaración" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={data.aclaracion} /> {/* aca el defaultValue tiene que ser "aclaracion" */} 
+            <TextField label="Nombre y Apellido" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={data.aclaracion} /> {/* aca el defaultValue tiene que ser "aclaracion" */} 
             <TextField label="Vínculo" variant="outlined" size="small" fullWidth sx={{ mb: 1 }} value={data.vinculo} /> {/* aca el defaultValue tiene que ser "vinculo" */} 
             <Typography variant="body2" fontWeight="bold" mt={1}>
               Descripción NO Entrega:

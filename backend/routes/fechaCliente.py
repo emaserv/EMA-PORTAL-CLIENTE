@@ -6,6 +6,7 @@ from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
 from datetime import datetime
 import requests
+import time
 
 fechaCliente = Blueprint('fechaCliente', __name__)
 
@@ -86,109 +87,226 @@ def tablaFC():
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
     grupoCliente = request.args.get('grupoCliente')
+    lote = request.args.get('lote')  # Nuevo parámetro para el lote
 
     try:
-        queryBase = 'SELECT * FROM "fechaCliente" fc'
+        # Consulta optimizada: ir directamente a las tablas base
+        query = """
+            SELECT 
+                ie."idEmision",
+                ie."idGrupoCliente",
+                gc.nombre as "grupoCliente",
+                ie."nroCliente",
+                ie.titular,
+                ie."planTurno",
+                ie.sucursal,
+                ie.radio,
+                ie."estadoPieza",
+                ie."estadoMetro",
+                ie."geoVisita",
+                (ie.calle || ' ' || ie.altura) as direccion,
+                ie.localidad,
+                ie.foto,
+                ie."obsVisita",
+                ie."fechaDistrib",
+                ie."fechaDistrib" as fecha,
+                ie."horaDistrib" as hora,
+                ie."fechaEmision",
+                ie."fechaCertificacion",
+                ie.firma,
+                ie."avisoMetro",
+                ie."fechaVencimientoMetro",
+                ie.vencimiento,
+                ie.importe,
+                ie.comprobante,
+                ie.medidor,
+                ie."entreCalles",
+                ie."codigoPostal",
+                ie."fechaAsignacion",
+                ie."fechaIngreso",
+                ie.lote,
+                ie.cabecera,
+                ie."rutaEcogas",
+                ie."facturaControl",
+                ie.importe
+            FROM "itemEmision" ie
+            INNER JOIN "grupoCliente" gc ON ie."idGrupoCliente" = gc.id
+            WHERE 1=1
+        """
         
-        where_clauses = []
-        qParams = {}
+        params = {}
         
-        # Verificar y agregar los parámetros condicionalmente
+        # Agregar filtros condicionalmente
         if grupoCliente and grupoCliente != 'null':
-            where_clauses.append('fc."idGrupoCliente" = :grupoCliente')
-            qParams['grupoCliente'] = grupoCliente
+            query += ' AND ie."idGrupoCliente" = :grupoCliente'
+            params['grupoCliente'] = grupoCliente
 
         if numeroCliente:
-            where_clauses.append('fc."nroCliente" = :numeroCliente')
-            qParams['numeroCliente'] = numeroCliente
+            query += ' AND ie."nroCliente" = :numeroCliente'
+            params['numeroCliente'] = numeroCliente
 
         if fechaDesde and fechaHasta:
-            where_clauses.append('fc."fecha" BETWEEN :fechaDesde AND :fechaHasta')
-            qParams['fechaDesde'] = fechaDesde
-            qParams['fechaHasta'] = fechaHasta
+            query += ' AND ie."fechaDistrib" BETWEEN :fechaDesde AND :fechaHasta'
+            params['fechaDesde'] = fechaDesde
+            params['fechaHasta'] = fechaHasta
         elif fechaDesde:
-            where_clauses.append('fc."fecha" >= :fechaDesde')
-            qParams['fechaDesde'] = fechaDesde
+            query += ' AND ie."fechaDistrib" >= :fechaDesde'
+            params['fechaDesde'] = fechaDesde
         elif fechaHasta:
-            where_clauses.append('fc."fecha" <= :fechaHasta')
-            qParams['fechaHasta'] = fechaHasta
+            query += ' AND ie."fechaDistrib" <= :fechaHasta'
+            params['fechaHasta'] = fechaHasta
 
         if fechaEmision and fechaEmision != 'null':
-            where_clauses.append('fc."fechaEmision" = :fechaEmision')
-            qParams['fechaEmision'] = fechaEmision
+            query += ' AND ie."fechaEmision" = :fechaEmision'
+            params['fechaEmision'] = fechaEmision
 
-        # Combinar cláusulas WHERE si existen
-        if where_clauses:
-            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = queryBase + where_clause
-        else:
-            query = queryBase
+        # Nuevo filtro para el lote
+        if lote and lote != 'null' and lote != '':
+            query += ' AND ie.lote = :lote'
+            params['lote'] = lote
 
-        # Agregar cláusula ORDER BY
-        query += ' ORDER BY fc."nroCliente", fc."fecha" DESC'
-
-        # Convertir a TextClause después de armar la consulta completa
-        query = text(query)
-
+        # Agregar ORDER BY
+        query += ' ORDER BY ie."nroCliente", ie."fechaDistrib" DESC'
 
         # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(query, qParams)
+            result = session.execute(text(query), params)
             session.commit()
-
+            
+            # Obtener resultados
+            all_rows = list(result)
+        
+        if not all_rows:
+            return jsonify({"message": "Recursos no encontrados"}), 204
+        
+        # Procesar resultados
         datosPiezasPostales = []
-
-        for row in data_query:
-            res = fetch_data(row.nroCliente, format_date_para_url(row.fechaEmision)) if grupoCliente == '4' else {}
-
-            if not isinstance(res, dict):
-                res = {}
-
-            res_venc = res.get("Vencimiento", "0")
-            res_imp = str("${:,.2f}".format(res.get("Importe", 0)))
-            res_acuse = res.get("Url", "0")
-
+        
+        for row in all_rows:
+            # Obtener diccionario de la fila
+            row_dict = dict(row._mapping)
+            
             if grupoCliente == '4':
-                fecha = format_date(row.fechaDistrib)
+                # Solo para grupo 4 llamar a fetch_data
+                res = fetch_data(row_dict.get("nroCliente"), format_date_para_url(row_dict.get("fechaEmision")))
+                if not isinstance(res, dict):
+                    res = {}
+                
+                res_venc = res.get("Vencimiento", "0")
+                res_imp = str("${:,.2f}".format(res.get("Importe", 0)))
+                res_acuse = res.get("Url", "0")
             else:
-                fecha = format_date(row.fechaCertificacion)
+                res_venc = format_date(row_dict.get("vencimiento"))
+                res_imp = row_dict.get("importe", 0)
+                res_acuse = "0"
+
+            if grupoCliente == '4' or grupoCliente == '6':
+                fecha = format_date(row_dict.get("fechaDistrib"))
+            else:
+                fecha = format_date(row_dict.get("fechaCertificacion"))
+            
+            # Procesar obsVisita para Metrogas con estado 1°VBPCR
+            obs_visita = row_dict.get("obsVisita")
+            if grupoCliente == '4' and row_dict.get("estadoPieza") == "1°VBPCR" and obs_visita:
+                obs_visita = limpiar_obs_visita(obs_visita)
         
             datosPiezasPostales.append({
-                'id': row.id,
-                'fechaEmision': format_date(row.fechaEmision),
+                'id': row_dict.get("idEmision"),
+                'fechaEmision': format_date(row_dict.get("fechaEmision")),
                 'fechaVencimiento': res_venc,
-                'grupoCliente': row.grupoCliente,
-                'nroCliente': row.nroCliente,
-                'titular': row.titular,
-                'plan': row.planTurno,
-                'sucursal': row.sucursal,
-                'radio': row.radio,
-                'direccion': row.direccion,
-                'localidad': row.localidad,
+                'grupoCliente': row_dict.get("grupoCliente"),
+                'nroCliente': row_dict.get("nroCliente"),
+                'titular': row_dict.get("titular"),
+                'plan': row_dict.get("planTurno"),
+                'sucursal': row_dict.get("sucursal"),
+                'radio': row_dict.get("radio"),
+                'direccion': row_dict.get("direccion"),
+                'localidad': row_dict.get("localidad"),
                 'fecha': fecha,
-                'hora': format_time(row.hora), 
+                'hora': format_time(row_dict.get("hora")), 
                 'importe': res_imp,
-                'estadoPieza': row.estadoPieza,
-                'estadoMetro': row.estadoMetro,
-                'obsVisita': row.obsVisita,
-                'geoVisita': row.geoVisita,
-                'foto': row.foto,
-                'firma': row.firma,
+                'estadoPieza': row_dict.get("estadoPieza"),
+                'estadoMetro': row_dict.get("estadoMetro"),
+                'obsVisita': obs_visita,
+                'geoVisita': row_dict.get("geoVisita"),
+                'foto': row_dict.get("foto"),
+                'firma': row_dict.get("firma"),
                 'acuseDeDeuda': res_acuse,
+                'medidor': row_dict.get("medidor"),
+                'entreCalles': row_dict.get("entreCalles"),
+                'codigoPostal': row_dict.get("codigoPostal"),
+                'comprobante': row_dict.get("comprobante"),
+                'fechaIngreso': format_date(row_dict.get("fechaIngreso")),
+                'lote': row_dict.get("lote"),
+                'cabecera': row_dict.get("cabecera"), 
+                'rutaEcogas': row_dict.get("rutaEcogas"), 
+                'facturaControl': row_dict.get("facturaControl"), 
+                'importe': row_dict.get("importe"), 
             })
-            
-        if not datosPiezasPostales:
-            return jsonify({"message": "Recursos no encontrados"}), 204
-
+        
         keys = list(datosPiezasPostales[0].keys())
         
-        print(datosPiezasPostales)
-
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
 
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
+
+def limpiar_obs_visita(obs_visita):
+    """
+    Elimina la parte de DNI y NOMBRE Y APELLIDO del campo obsVisita
+    para el estado 1°VBPCR de Metrogas
+    """
+    import re
+    
+    # Patrón mejorado para eliminar DNI y NOMBRE Y APELLIDO
+    # Ahora permite espacios dentro del DNI y captura nombres completos
+    # Coincide con: DNI: 43 662 026, NOMBRE Y APELLIDO: Milagros Castaño,
+    # o DNI: 21700565, NOMBRE Y APELLIDO: Marisa vivas,
+    patron = r',?\s*DNI:\s*[\d\s]+,\s*NOMBRE Y APELLIDO:\s*[^,]+(?:,|$)'
+    
+    # Limpiar el texto
+    obs_limpiada = re.sub(patron, '', obs_visita)
+    
+    # Eliminar comas dobles o espacios extra
+    obs_limpiada = re.sub(r',\s*,', ',', obs_limpiada)
+    obs_limpiada = re.sub(r'\s+', ' ', obs_limpiada).strip()
+    
+    # Si termina con coma, eliminarla
+    if obs_limpiada.endswith(','):
+        obs_limpiada = obs_limpiada[:-1]
+    
+    # Si comienza con espacio, eliminarlo
+    if obs_limpiada.startswith(' '):
+        obs_limpiada = obs_limpiada[1:]
+    
+    return obs_limpiada
+    
+@fechaCliente.route( '/api/lote', methods=['GET'])
+def getLote():
+    
+    try:        
+        query = text('select distinct(lote) from "itemEmision" where "idGrupoCliente" =6')
+
+        with DatabaseSession().get_session() as session:
+            data_query = session.execute(query)
+                
+        lotes = []
+
+        for row in data_query:
+            lotes.append({
+                'lotes': row.lote
+            })
+
+        if not lotes:
+            return '{"message": "Recursos no encontrados"}', 204
+        
+        keys = list(lotes[0].keys())
+
+        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataDropDwn": lotes}), 200
+    except Exception as e:
+        print()
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 @fechaCliente.route('/api/fecha/geoMapaItems', methods=['GET'])
 def mapaItems():
@@ -196,6 +314,7 @@ def mapaItems():
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
     grupoCliente = request.args.get('grupoCliente')
+    fechaEmision = request.args.get('fechaEmision')
 
     try:        
         queryBase = 'SELECT * FROM "geoItemEmision" gie'
@@ -224,6 +343,9 @@ def mapaItems():
             # Si solo se proporciona fechaHasta, busca hasta esa fecha
             where_clauses.append('gie."fechaDistrib" <= :fechaHasta')
             qParams['fechaHasta'] = fechaHasta
+        elif fechaEmision and fechaEmision != 'null':
+            where_clauses.append('gie."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEmision
 
         if where_clauses:
             where_clause = ' WHERE ' + ' AND '.join(where_clauses)
@@ -258,7 +380,7 @@ def mapaItems():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
-@fechaCliente.route('/api/nroCliente', methods=['GET'])
+@fechaCliente.route( '/api/nroCliente', methods=['GET'])
 def nroClienteFC():
     
     try:        
@@ -286,7 +408,7 @@ def nroClienteFC():
 
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
-@fechaCliente.route('/api/tablaInformacion', methods=['GET'])
+@fechaCliente.route( '/api/tablaInformacion', methods=['GET'])
 def tablaInformacion():
     grupoCliente = request.args.get("grupoCliente")
     
@@ -304,7 +426,7 @@ def tablaInformacion():
                 "6_DEV": "6 DEV"
             },
             {
-                "Empresa": "METROGAS" if grupoCliente == "4" else "EDESUR",
+                "Empresa": "METROGAS" if grupoCliente == "4" else "NATURGY" if grupoCliente == "2" else "EDESUR",
                 "ZP": "BAJO PUERTA",
                 "BP_CR": "BAJO PUERTA",
                 "FAD": "BAJO FIRMA",
@@ -313,14 +435,16 @@ def tablaInformacion():
                 "ZP_CR_2": "BAJO PUERTA",
                 "6_DEV": "DEVOLUCION",
             },
+
+            
         ]
         
         datosPiezasPostales = []
 
         # Corregido: Acceso a los datos en el diccionario utilizando corchetes []
         for row in data_query:
-            datosPiezasPostales.append({
-                'Empresa': row['Empresa'],      # Corregido el acceso a los elementos del diccionario
+            item = {
+                'Empresa': row['Empresa'],
                 'ZP': row['ZP'],
                 'BP_CR': row['BP_CR'],
                 'FAD': row['FAD'],
@@ -328,7 +452,9 @@ def tablaInformacion():
                 'UZP': row['UZP'],
                 'ZP_CR_2': row['ZP_CR_2'],
                 '6_DEV': row['6_DEV'],
-            })
+            }
+
+            datosPiezasPostales.append(item)
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204
@@ -346,7 +472,7 @@ def tablaInformacion():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
 
-@fechaCliente.route('/api/emision-cliente', methods=['GET'])
+@fechaCliente.route( '/api/emision-cliente', methods=['GET'])
 def tablaEmision():
     idEmision = request.args.get('idEmision')
     print(idEmision)
@@ -455,7 +581,7 @@ def tablaEmision():
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
-@fechaCliente.route('/api/emisiones', methods=['GET'])
+@fechaCliente.route( '/api/emisiones', methods=['GET'])
 def get_emisiones():
     idGrupoCliente = request.args.get('idGrupoCliente')
 
@@ -468,6 +594,8 @@ def get_emisiones():
             queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icn GROUP BY "fechaEmision" ORDER BY 1')
         elif int(idGrupoCliente) == 1:
             queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 1 GROUP BY "fechaEmision" ORDER BY 1')
+        elif int(idGrupoCliente) == 6:
+            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 6 GROUP BY "fechaEmision" ORDER BY 1')
 
         if queryBase is None:
             return jsonify({"message": "idGrupoCliente no válido"}), 400
@@ -489,7 +617,7 @@ def get_emisiones():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
 
-@fechaCliente.route('/api/emisiones/radioClienteEdesur', methods=['GET'])
+@fechaCliente.route( '/api/emisiones/radioClienteEdesur', methods=['GET'])
 def get_emisionesEdesur():
     idGrupoCliente = request.args.get('idGrupoCliente')
 
@@ -526,7 +654,7 @@ def buscar_por_id(data, id_buscado):
     return None
 
 
-@fechaCliente.route('/api/informe-emision', methods=['GET'])
+@fechaCliente.route( '/api/informe-emision', methods=['GET'])
 def informeEmision():
     idEmision = request.args.get('idEmision')
     idGrupoCliente = request.args.get('idGrupoCliente')
@@ -536,6 +664,8 @@ def informeEmision():
             queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
         elif int(idGrupoCliente)  == 2:
             queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icm GROUP BY "fechaEmision" ORDER BY 1')
+        elif int(idGrupoCliente) == 6:
+            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 6 GROUP BY "fechaEmision" ORDER BY 1')
         
         with DatabaseSession().get_session() as session:
             data_query_search = session.execute(queryBaseSearch)
@@ -554,6 +684,8 @@ def informeEmision():
             queryBase = 'SELECT * FROM "informeClienteMetrogas" icm'
         elif int(idGrupoCliente) == 2:
             queryBase = 'SELECT * FROM "informeClienteNaturgy" icn'
+        elif int(idGrupoCliente) == 6:
+            queryBase = 'SELECT * FROM "informeClienteEcogas" ie'
         
         where_clauses = []
         qParams = {}
@@ -564,6 +696,9 @@ def informeEmision():
             qParams['fechaEmision'] = fechaEncontrada
         elif idEmision and int(idGrupoCliente) == 2:
             where_clauses.append('icn."fechaEmision" = :fechaEmision')
+            qParams['fechaEmision'] = fechaEncontrada
+        elif idEmision and int(idGrupoCliente) == 6:
+            where_clauses.append('ie."fechaEmision" = :fechaEmision')
             qParams['fechaEmision'] = fechaEncontrada
 
         # Combinar cláusulas WHERE si existen
@@ -600,15 +735,24 @@ def informeEmision():
                     'estadoPieza': row.estadoPieza,
                     'count': str(row.count),
                 })
+            elif int(idGrupoCliente) == 6:
+                datosPiezasPostales.append({
+                    'id': row.id, 
+                    #'idEmision': row.idEmision,
+                    'fechaEmision': row.fechaEmision,
+                    'estadoPieza': row.estadoPieza,
+                    'count': str(row.count),
+                })
 
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204
 
         keys = list(datosPiezasPostales[0].keys())
-
+        print("LLAVES ",keys,"DATOS ", datosPiezasPostales)
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
 
     except Exception as e:
+        print("ERROR: ",e)
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 
@@ -619,59 +763,88 @@ def informeEmisionExtendido():
     
     try:
         if int(idGrupoCliente) == 4:
-            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
+            queryBaseSearch = text('''
+                SELECT DISTINCT("fechaEmision") AS nombre, 
+                       row_number() OVER () AS id 
+                FROM "informeClienteMetrogas" icm 
+                GROUP BY "fechaEmision" 
+                ORDER BY 1
+            ''')
         elif int(idGrupoCliente) == 2:
-            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icn GROUP BY "fechaEmision" ORDER BY 1')
+            queryBaseSearch = text('''
+                SELECT DISTINCT("fechaEmision") AS nombre, 
+                       row_number() OVER () AS id 
+                FROM "informeClienteNaturgy" icn 
+                GROUP BY "fechaEmision" 
+                ORDER BY 1
+            ''')
         
+        # Obtener lista de fechas
         with DatabaseSession().get_session() as session:
             data_query_search = session.execute(queryBaseSearch)
         
         dataQueryBusqueda = []
-        
         for row in data_query_search:
-             dataQueryBusqueda.append({
+            dataQueryBusqueda.append({
                 'id': row.id, 
                 'nombre': row.nombre
             })
         
         fechaEncontrada = buscar_por_id(dataQueryBusqueda, idEmision)
-        
         print(fechaEncontrada)
         
-        queryBase = 'SELECT * FROM "fechaCliente" fc'
-        
-        where_clauses = []
+        # Armar query según grupo de cliente
         qParams = {}
-
-        # Verificar y agregar los parámetros condicionalmente
-        if idEmision:
-            where_clauses.append('fc."fechaEmision" = :fechaEmision')
-            qParams['fechaEmision'] = fechaEncontrada
+        if int(idGrupoCliente) == 4:
+            queryBase = 'SELECT * FROM "fechaCliente" fc'
+            where_clauses = []
             
+            if idEmision:
+                where_clauses.append('fc."fechaEmision" = :fechaEmision')
+                qParams['fechaEmision'] = fechaEncontrada
             where_clauses.append('fc."idGrupoCliente" = :idGrupoCliente')
             qParams['idGrupoCliente'] = int(idGrupoCliente)
-    
-
-        # Combinar cláusulas WHERE si existen
-        if where_clauses:
-            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = queryBase + where_clause
-
-        # Convertir a TextClause después de armar la consulta completa
-        query = text(query)
-
+            
+            if where_clauses:
+                queryBase += ' WHERE ' + ' AND '.join(where_clauses)
+        
+        elif int(idGrupoCliente) == 2:
+            # Para Naturgy, traer solo el último registro por cliente y estado
+            queryBase = '''
+                SELECT *
+                FROM (
+                    SELECT fc.*, 
+                           ROW_NUMBER() OVER (
+                               PARTITION BY fc."nroCliente", fc."estadoPieza" 
+                               ORDER BY fc."fecha" DESC, fc."hora" DESC, fc."id" DESC
+                           ) AS rn
+                    FROM "fechaCliente" fc
+                    WHERE fc."idGrupoCliente" = :idGrupoCliente and "estadoMetro" is null
+            '''
+            qParams['idGrupoCliente'] = int(idGrupoCliente)
+            
+            if idEmision:
+                queryBase += ' AND fc."fechaEmision" = :fechaEmision'
+                qParams['fechaEmision'] = fechaEncontrada
+            
+            queryBase += ') sub WHERE rn = 1'
+        
         # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(query, qParams)
-
-        datosPiezasPostales = []
+            data_query = session.execute(text(queryBase), qParams)
         
+        datosPiezasPostales = []
         for row in data_query:
             if int(idGrupoCliente) == 4:
+                # Procesar obsVisita para Metrogas
+                obs_visita = row.obsVisita
+                if row.estadoPieza == "1°VBPCR" and obs_visita:
+                    obs_visita = limpiar_obs_visita(obs_visita)
+                
                 datosPiezasPostales.append({
                     'id': row.id,
                     'fechaEmision': format_date(row.fechaEmision),
-                    'fechaVencimiento': row.fechaVencimientoMetro,
+                    'fechaVencimiento': format_date(row.vencimiento),
                     'nroCliente': row.nroCliente,
                     'titular': row.titular,
                     'plan': row.planTurno,
@@ -683,7 +856,7 @@ def informeEmisionExtendido():
                     'hora': format_time(row.hora),
                     'estadoPieza': row.estadoPieza,
                     'estadoMetro': row.estadoMetro,
-                    'obsVisita': row.obsVisita,
+                    'obsVisita': obs_visita,
                     'geoVisita': row.geoVisita,
                     'foto': row.foto,
                     'firma': row.firma
@@ -703,12 +876,11 @@ def informeEmisionExtendido():
                     'foto': row.foto,
                     'firma': row.firma
                 })
-
+        
         if not datosPiezasPostales:
             return jsonify({"message": "Recursos no encontrados"}), 204
-
+        
         keys = list(datosPiezasPostales[0].keys())
-
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
 
     except Exception as e:

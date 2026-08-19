@@ -20,7 +20,7 @@
     "dayjs": "^1.11.13",
     "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
-    "jsbarcode": "^3.11.6",
+    "jsbarcode": "^3.12.1",
     "jszip": "^3.10.1",
     "react": "^19.0.0",
     "react-hook-form": "^7.54.2",

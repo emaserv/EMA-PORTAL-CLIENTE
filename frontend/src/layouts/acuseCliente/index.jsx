@@ -1,32 +1,363 @@
-// ✅ AcuseCliente.jsx (versión sin onRenderComplete ni renderQueue)
-
-import { React, useEffect, useState } from "react";
+import { React, useEffect, useState, useCallback } from "react";
 import SoftBox from "components/SoftBox";
 import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
-import { Card } from "@mui/material";
+import { Card, Alert as MuiAlert, Snackbar, Grid } from "@mui/material";
 import SoftTypography from "components/SoftTypography";
 import SoftButton from "components/SoftButton";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "layouts/auth/AuthContext";
 import { API_BACK } from "../../config";
-import LoadingModal from "../../components/loadingModal";
-import DropdownList from "components/DropdownList";
-import AcuseReciboConFirma from "./components/acuseConFirma";
-import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import TablaAcusesCliente from "./data/tablaAcusesCliente.jsx";
+import SoftInputBase from "components/SoftInputBase";
+import CircularProgress from "@mui/material/CircularProgress";
+import CloseIcon from '@mui/icons-material/Close';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PersonIcon from '@mui/icons-material/Person';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
+import { FormControl, Select, MenuItem, IconButton } from "@mui/material";
+import AcuseReciboConFirma from "./components/acuseConFirma";
 import html2canvas from "html2canvas";
 import ReactDOM from "react-dom/client";
 
+const AcuseCliente = () => {
+  const { handleSubmit, control } = useForm();
+  const [lotes, setLotes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [progreso, setProgreso] = useState("");
+  const [dataCliente, setDataCliente] = useState([]);
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
+  const [activeTasks, setActiveTasks] = useState([]);
+  const [showSnackbar, setShowSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("info");
+  const [currentTaskId, setCurrentTaskId] = useState(null);
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelFileName, setExcelFileName] = useState("");
+  const [procesandoExcel, setProcesandoExcel] = useState(false);
+  const { user } = useAuth();
+  const [renderizando, setRenderizando] = useState(false);
 
-const generarZIPDeAcuses = async (dataArray, nombreLote, setProgreso, baseIndex = 0, total = dataArray.length) => {
-  const zip = new JSZip();
-  const concurrencyLimit = 1;
+  // Mostrar snackbar
+  const mostrarSnackbar = (message, severity = "info") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setShowSnackbar(true);
+  };
 
-  const procesarAcuse = (item, index) => {
-    return new Promise(async (resolve) => {
-      const currentIndex = baseIndex + index;
-      setProgreso(`Generando acuse ${currentIndex + 1} de ${total}`);
-      await new Promise((res) => setTimeout(res, 50));
+  // Cargar lotes
+  useEffect(() => {
+    const fetchLotes = async () => {
+      try {
+        const response = await fetch(`${API_BACK}/api/acuses/loteDropDwn`);
+        const data = (await response.ok) ? await response.json() : [];
+        setLotes(
+          data
+            .filter((item) => item !== null)
+            .map((nombre, index) => ({ id: index, nombre }))
+        );
+      } catch (error) {
+        console.error("Error al obtener lotes:", error);
+        setLotes([]);
+      }
+    };
+    fetchLotes();
+  }, []);
+
+  // Obtener tareas activas
+  const obtenerTareasActivas = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BACK}/api/acuses-async/active-tasks`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setActiveTasks(data.active_tasks || []);
+        }
+      }
+    } catch (error) {
+      console.error("Error obteniendo tareas:", error);
+    }
+  }, []);
+
+  // Monitoreo automático
+  useEffect(() => {
+    let intervalo = null;
+    
+    if (activeTasks.length > 0) {
+      intervalo = setInterval(() => {
+        obtenerTareasActivas();
+      }, 5000);
+      
+      return () => {
+        if (intervalo) clearInterval(intervalo);
+      };
+    }
+  }, [activeTasks.length, obtenerTareasActivas]);
+
+  // Iniciar generación
+  const iniciarGeneracionAsync = async (tipo, valor, nombreDescarga) => {
+    try {
+      const checkResponse = await fetch(`${API_BACK}/api/acuses-async/can-generate`);
+      if (checkResponse.ok) {
+        const checkData = await checkResponse.json();
+        if (!checkData.can_generate) {
+          mostrarSnackbar("Ya hay una generación de acuses en curso. Espere a que termine.", "warning");
+          return;
+        }
+      }
+    } catch (checkError) {
+      console.error("Error verificando estado:", checkError);
+    }
+    
+    setLoading(true);
+    setProgreso("⏳ Iniciando generación...");
+    setCurrentTaskId(null);
+    
+    try {
+      const requestData = tipo === 'lote' 
+        ? { lote: valor }
+        : { nroCliente: valor };
+      
+      const response = await fetch(`${API_BACK}/api/acuses-async/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        if (result.error && (
+            result.error.includes("Ya hay una generación") ||
+            result.error.includes("generación en curso") ||
+            result.status === 423
+          )) {
+          throw new Error("⏳ " + result.error);
+        }
+        throw new Error(result.error || 'Error al iniciar generación');
+      }
+      
+      setCurrentTaskId(result.task_id);
+      await obtenerTareasActivas();
+      await monitorearTarea(result.task_id, nombreDescarga);
+      
+    } catch (error) {
+      mostrarSnackbar(` ${error.message}`, "error");
+      setLoading(false);
+      setProgreso("");
+      setCurrentTaskId(null);
+    }
+  };
+
+  // Monitorear tarea
+  const monitorearTarea = async (taskId, nombreDescarga) => {
+    let attempts = 0;
+    const maxAttempts = 4500;
+    let pollingActive = true;
+    let cancelledDetected = false;
+    
+    while (pollingActive && attempts < maxAttempts && !cancelledDetected) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      try {
+        const statusResponse = await fetch(`${API_BACK}/api/acuses-async/status/${taskId}`);
+        const status = await statusResponse.json();
+        
+        if (!status.success) {
+          if (status.status === "expired" || status.status === "gone") {
+            mostrarSnackbar("La tarea ya no está disponible", "info");
+            pollingActive = false;
+            setLoading(false); 
+            setProgreso("");
+            break;
+          }
+          throw new Error(status.error || 'Error al verificar estado');
+        }
+        
+        if (status.status === 'processing') {
+          setProgreso(status.message);
+        }
+        
+        if (status.status === 'cancelled' || status.cancelled) {
+          cancelledDetected = true;
+          mostrarSnackbar("Generación cancelada", "info");
+          setProgreso("Cancelada");
+          setLoading(false);
+          setCurrentTaskId(null);
+          pollingActive = false;
+          break; 
+        } else if (status.status === 'completed') {
+            await descargarResultado(taskId, nombreDescarga);
+            
+            const totalGenerados = status.total_generados || 0;
+            const totalErrores = status.total_con_errores || 0;
+            
+            if (totalErrores > 0) {
+              mostrarSnackbar(
+                `${totalGenerados} acuses generados\n  ${totalErrores} con errores - Revisa el archivo CSV dentro del ZIP`,
+                "warning"
+              );
+            } else {
+              mostrarSnackbar(
+                ` ${totalGenerados} acuses generados correctamente`,
+                "success"
+              );
+            }
+            
+            await obtenerTareasActivas();
+            setProgreso("Completado");
+            setCurrentTaskId(null);
+            setLoading(false);
+            return;
+          
+        } else if (status.status === 'failed') {
+          setCurrentTaskId(null);
+          throw new Error(status.error || 'La generación falló');
+        }
+        
+      } catch (error) {
+        console.error(`Error en monitoreo:`, error);
+      }
+      
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts && pollingActive) {
+      setLoading(false);
+      setProgreso("");
+      mostrarSnackbar(" Tiempo de espera agotado", "warning");
+    }
+  };
+
+  // Descargar resultado
+  const descargarResultado = async (taskId, nombreDescarga) => {
+    try {
+      const downloadResponse = await fetch(`${API_BACK}/api/acuses-async/download/${taskId}`);
+      
+      if (!downloadResponse.ok) {
+        throw new Error('Error al descargar el archivo');
+      }
+      
+      const blob = await downloadResponse.blob();
+      saveAs(blob, `${nombreDescarga}.zip`);
+      
+    } catch (error) {
+      console.error("Error descargando resultado:", error);
+      throw error;
+    }
+  };
+
+  const cancelarTarea = async (taskId) => {
+    try {
+      setProgreso("Cancelando...");
+      
+      const url = `${API_BACK}/api/acuses-async/cancel/${taskId}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setLoading(false);
+        setProgreso("");
+        setCurrentTaskId(null); 
+        mostrarSnackbar(" Tarea cancelada exitosamente", "success");
+        await obtenerTareasActivas();
+      } else {
+        mostrarSnackbar(` Error: ${result.error || "No se pudo cancelar"}`, "error");
+        
+        if (result.error?.includes("no encontrada") || result.error?.includes("finalizada")) {
+          setLoading(false);
+          setProgreso("");
+          setCurrentTaskId(null);
+        }
+      }
+      
+    } catch (error) {
+      console.error(`Error al cancelar:`, error);
+      mostrarSnackbar(" Error al contactar al servidor", "warning");
+      setLoading(false);
+      setProgreso("");
+      setCurrentTaskId(null);
+    }
+  };
+
+  // Descargar por lote
+  const onDescargarPorLote = async (formData) => {
+    if (!formData.loteSeleccionado) {
+      mostrarSnackbar("Por favor seleccione un lote", "warning");
+      return;
+    }
+    
+    const lote = formData.loteSeleccionado;
+    await iniciarGeneracionAsync('lote', lote, `${lote}`);
+  };
+
+  // Descargar por cliente
+  const onDescargarPorCliente = async (formData) => {
+    if (!formData.numCliente) {
+      mostrarSnackbar("Por favor ingrese un número de cliente", "warning");
+      return;
+    }
+    
+    const nroCliente = formData.numCliente;
+    setBuscandoCliente(true);
+    setProgreso("Buscando acuses...");
+    
+    try {
+      const response = await fetch(
+          `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}&idGrupoCliente=${user?.idGrupoCliente}`
+      );
+      const data = await response.json();
+      
+      if (data.acusesData?.length > 0) {
+        setDataCliente(data.acusesData);
+      } else {
+        mostrarSnackbar(`No se encontraron acuses`, "info");
+      }
+    } catch (err) {
+      console.error("Error al buscar por cliente:", err);
+      mostrarSnackbar("Error al buscar acuses", "error");
+    } finally {
+      setBuscandoCliente(false);
+      setProgreso("");
+    }
+  };
+
+  const renderizarAcuseAImagen = async (acuseData, nroCliente) => {
+    return new Promise((resolve, reject) => {
+      const formatearFecha = (date) => {
+        if (!date) return "-";
+        const partes = date.split(/[-/]/);
+        if (partes.length !== 3) return date;
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      };
+
+      const formatearHora = (hora) => {
+        if (!hora) return "-";
+        return hora.slice(0, 5);
+      };
+
+      const item = {
+        ...acuseData,
+        fecha: formatearFecha(acuseData.fecha),
+        hora: formatearHora(acuseData.hora),
+        fechaEmision: formatearFecha(acuseData.fechaEmision),
+        vencimiento: formatearFecha(acuseData.vencimiento),
+        segundaVisita: {
+          ...acuseData.segundaVisita,
+          fecha2: formatearFecha(acuseData.segundaVisita?.fecha2),
+          hora2: formatearHora(acuseData.segundaVisita?.hora2),
+        },
+      };
 
       const contenedor = document.createElement("div");
       contenedor.style.position = "fixed";
@@ -43,314 +374,668 @@ const generarZIPDeAcuses = async (dataArray, nombreLote, setProgreso, baseIndex 
         <AcuseReciboConFirma
           data={item}
           onRendered={async (refElement) => {
-            const canvas = await html2canvas(refElement, {
-              useCORS: true,
-              backgroundColor: "#fff",
-              scrollY: 0,
-              scale: 1.2,
-            });
+            try {
+              const canvas = await html2canvas(refElement, {
+                useCORS: true,
+                backgroundColor: "#fff",
+                scrollY: 0,
+                scale: 1.2,
+              });
 
-            const blob = await new Promise((res) =>
-              canvas.toBlob(res, "image/jpeg", 0.5)
-            );
-
-            if (blob) {
-              zip.file(`_${item.codigoBarras}.jpg`, blob);
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  root.unmount();
+                  document.body.removeChild(contenedor);
+                  resolve(blob);
+                } else {
+                  reject(new Error(`No se pudo generar blob para cliente ${nroCliente}`));
+                }
+              }, "image/jpeg", 0.5);
+              
+            } catch (error) {
+              console.error(`Error en html2canvas para cliente ${nroCliente}:`, error);
+              root.unmount();
+              document.body.removeChild(contenedor);
+              reject(error);
             }
-
-            canvas.width = 0;
-            canvas.height = 0;
-            root.unmount();
-            document.body.removeChild(contenedor);
-            resolve();
           }}
         />
       );
+
+      setTimeout(() => {
+        try {
+          root.unmount();
+          document.body.removeChild(contenedor);
+        } catch (e) {}
+        reject(new Error(`Timeout renderizando cliente ${nroCliente}`));
+      }, 30000);
     });
   };
 
-  for (let i = 0; i < dataArray.length; i++) {
-    await procesarAcuse(dataArray[i], i);
-  }
-
-  const zipBlob = await zip.generateAsync({ type: "blob" });
-  saveAs(zipBlob, `${nombreLote}.zip`);
-};
-
-
-
-
-
-
-const AcuseCliente = () => {
-  const { handleSubmit, control } = useForm();
-  const [lotes, setLotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [progreso, setProgreso] = useState("");
-
-  useEffect(() => {
-    const fetchLotes = async () => {
-      try {
-        const response = await fetch(`/api/acuses/loteDropDwn`);
-        const data = (await response.ok) ? await response.json() : [];
-
-        setLotes(
-          data
-            .filter((item) => item !== null)
-            .map((nombre, index) => ({ id: index, nombre }))
-        );
-      } catch (error) {
-        console.error("Error al obtener lotes:", error);
-        setLotes([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLotes();
-  }, []);
-
-  // const onDescargarAcuses = async (formData) => {
-  //   if (!formData.loteSeleccionado) return;
-  //   setLoading(true);
-
-  //   try {
-  //     const lote = formData.loteSeleccionado;
-
-  //     // Todos los acuses
-  //     const response = await fetch(
-  //       `${API_BACK}/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`, { timeout: 500000 }
-  //     );
-  //     const data = await response.json();
-  //     const allAcuses = data.acusesData || [];
-
-  //     if (allAcuses.length === 0) {
-  //       alert("No se encontraron acuses.");
-  //       return;
-  //     }
-
-  //     // Divide en bloques de 500
-  //     const chunkSize = 500;
-  //     for (let i = 0; i < allAcuses.length; i += chunkSize) {
-  //       const slice = allAcuses.slice(i, i + chunkSize);
-  //       const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
-  //       await generarZIPDeAcuses(slice, nombreZip);
-  //     }
-  //   } catch (err) {
-  //     console.error("Error al obtener acuses:", err);
-  //     alert("Ocurrió un error al descargar los acuses.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  const onDescargarAcuses2 = async (formData) => {
-    if (!formData.loteSeleccionado) return;
-    setLoading(true);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1000000); // 10 minutes
-
-    try {
-      const lote = formData.loteSeleccionado;
-
-      const response = await fetch(
-        `/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`,
-        {
-          signal: controller.signal,
-        }
-      );
-
-      clearTimeout(timeoutId); // clear the timeout if fetch succeeds
-
-      const data = await response.json();
-      const allAcuses = data.acusesData || [];
-
-      if (allAcuses.length === 0) {
-        alert("No se encontraron acuses.");
-        return;
-      }
-
-      const chunkSize = 500;
-      const total = allAcuses.length;
-      for (let i = 0; i < allAcuses.length; i += chunkSize) {
-        const slice = allAcuses.slice(i, i + chunkSize);
-        const nombreZip = `${lote}_parte_${i / chunkSize + 1}`;
-        await generarZIPDeAcuses(slice, nombreZip, setProgreso, i, total);
-      }
-    } catch (err) {
-      if (err.name === "AbortError") {
-        console.error("La solicitud fue abortada por timeout.");
-        alert("La descarga tardó demasiado y fue cancelada.");
-      } else {
-        console.error("Error al obtener acuses:", err);
-        alert("Ocurrió un error al descargar los acuses.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onDescargarJSON = async (formData) => {
-    if (!formData.loteSeleccionado) return;
-    setLoading(true);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1000000); // 10 minutos
-
-    try {
-      const lote = formData.loteSeleccionado;
-
-      const response = await fetch(
-        `/api/acuses/getAcuses?lote=${encodeURIComponent(lote)}`,
-        { signal: controller.signal }
-      );
-
-      clearTimeout(timeoutId); // evita que se dispare si todo salió bien
-
-      if (!response.ok) throw new Error("Error de red o respuesta no OK");
-
-      const data = await response.json();
-      const allAcuses = data.acusesData || [];
-
-      if (!Array.isArray(allAcuses) || allAcuses.length === 0) {
-        alert("No se encontraron acuses.");
-        return;
-      }
-
-      const blobJSON = new Blob([JSON.stringify(allAcuses)], {
-        type: "application/json",
-      });
-      saveAs(blobJSON, `${lote}_acuses.json`);
-    } catch (err) {
-      if (err.name === "AbortError") {
-        console.error("La solicitud fue abortada por timeout.");
-        alert("La descarga tardó demasiado y fue cancelada.");
-      } else {
-        console.error("Error al descargar JSON:", err);
-        alert("Ocurrió un error al descargar el JSON.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  const onCargarJSONLocal = async (event) => {
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
-    if (!file) return;
-
-    setLoading(true);
-    try {
-      const text = await file.text();
-      const acuses = JSON.parse(text);
-
-      if (!Array.isArray(acuses) || acuses.length === 0) {
-        alert("El archivo JSON no contiene datos válidos.");
+    if (file) {
+      const validTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+        'text/csv'
+      ];
+      
+      if (!validTypes.includes(file.type) && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
+        mostrarSnackbar("Por favor seleccione un archivo Excel válido (.xlsx, .xls, .csv)", "warning");
+        event.target.value = '';
+        setExcelFile(null);
+        setExcelFileName("");
         return;
       }
-
-      const chunkSize = 500;
-      for (let i = 0; i < acuses.length; i += chunkSize) {
-        const slice = acuses.slice(i, i + chunkSize);
-        const nombreZip = `acuses_json_parte_${i / chunkSize + 1}`;
-        await generarZIPDeAcuses(slice, nombreZip);
-      }
-    } catch (err) {
-      console.error("Error al procesar el JSON:", err);
-      alert("Error al procesar el archivo JSON.");
-    } finally {
-      setLoading(false);
+      
+      setExcelFile(file);
+      setExcelFileName(file.name);
     }
   };
+
+  const onDescargarPorExcel = async () => {
+    if (!excelFile) {
+      mostrarSnackbar("Por favor seleccione un archivo Excel", "warning");
+      return;
+    }
+
+    setProcesandoExcel(true);
+    setRenderizando(true);
+    setProgreso("📊 Leyendo archivo Excel...");
+
+    try {
+      const data = await excelFile.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      if (jsonData.length === 0) {
+        throw new Error("El archivo está vacío");
+      }
+
+      const nrosClientes = jsonData
+        .map(row => row[0])
+        .filter(cell => cell !== undefined && cell !== null && cell !== "")
+        .map(cell => String(cell).trim())
+        .filter((value, index, self) => self.indexOf(value) === index);
+
+      if (nrosClientes.length > 0 && isNaN(nrosClientes[0])) {
+        nrosClientes.shift(); 
+      }
+
+      if (nrosClientes.length === 0) {
+        throw new Error("No se encontraron números de cliente en el archivo");
+      }
+
+      if (nrosClientes.length > 100) {
+        mostrarSnackbar(`El archivo contiene ${nrosClientes.length} clientes. Se procesarán los primeros 100.`, "warning");
+        nrosClientes.length = 100;
+      }
+
+      setProgreso(`📦 Procesando ${nrosClientes.length} clientes...`);
+
+      const zip = new JSZip();
+      const fecha = new Date().toISOString().split('T')[0];
+      const mainFolder = zip.folder(`acuses_multiples_${fecha}`);
+      
+      const clientesConError = [];
+      let procesados = 0;
+      let exitosos = 0;
+
+      for (const nroCliente of nrosClientes) {
+        procesados++;
+        setProgreso(`Procesando cliente ${procesados} de ${nrosClientes.length}: ${nroCliente}`);
+
+        try {
+          const response = await fetch(
+            `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}&idGrupoCliente=${user?.idGrupoCliente}`
+          );
+          
+          if (!response.ok) {
+            throw new Error(`Error en la respuesta del servidor: ${response.status}`);
+          }
+          
+          const result = await response.json();
+
+          if (result.acusesData && result.acusesData.length > 0) {
+            const acusesOrdenados = [...result.acusesData].sort((a, b) => {
+              const convertirFecha = (fechaStr) => {
+                if (!fechaStr) return '0000-00-00';
+                const partes = fechaStr.split('/');
+                if (partes.length === 3) {
+                  return `${partes[2]}-${partes[1]}-${partes[0]}`; 
+                }
+                return fechaStr;
+              };
+              
+              const fechaA = convertirFecha(a.fechaEmision);
+              const fechaB = convertirFecha(b.fechaEmision);
+              
+              if (fechaA > fechaB) return -1;
+              if (fechaA < fechaB) return 1;
+              return 0;
+            });
+            
+            const acuseData = acusesOrdenados[0];
+            
+            setProgreso(`Renderizando acuse para cliente ${nroCliente}...`);
+            
+            try {
+              const imagenBlob = await renderizarAcuseAImagen(acuseData, nroCliente);
+              mainFolder.file(`${acuseData.codigoBarras}.jpg`, imagenBlob, { binary: true });
+              exitosos++;
+            } catch (renderError) {
+              console.error(`Error renderizando cliente ${nroCliente}:`, renderError);
+              clientesConError.push({
+                nroCliente: nroCliente,
+                motivo: `Error al generar imagen: ${renderError.message || 'Error desconocido'}`
+              });
+            }
+            
+          } else {
+            clientesConError.push({
+              nroCliente: nroCliente,
+              motivo: "No se encontraron acuses para este cliente"
+            });
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+        } catch (error) {
+          console.error(`Error procesando cliente ${nroCliente}:`, error);
+          clientesConError.push({
+            nroCliente: nroCliente,
+            motivo: error.message || "Error en la consulta al servidor"
+          });
+        }
+      }
+
+      // Generar CSV con errores si los hay
+      if (clientesConError.length > 0) {
+        setProgreso(`📝 Generando reporte de errores...`);
+        
+        const csvContent = [
+          ["Nro de Cliente", "Motivo del Error"], 
+          ...clientesConError.map(item => [
+            `="${item.nroCliente}"`, 
+            item.motivo
+          ])
+        ].map(row => row.join(",")).join("\n");
+        
+        mainFolder.file("clientes_con_error.csv", csvContent);
+      }
+
+      setProgreso(`📥 Generando archivo ZIP...`);
+
+      const zipBlob = await zip.generateAsync({ 
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: { level: 6 }
+      });
+      
+      saveAs(zipBlob, `acuses_multiples_${fecha}.zip`);
+
+      if (clientesConError.length > 0) {
+        mostrarSnackbar(
+          `${exitosos} acuses generados\n , ${clientesConError.length} clientes con error - Revisa el CSV dentro del ZIP`,
+          "warning"
+        );
+      } else {
+        mostrarSnackbar(
+          ` ${exitosos} acuses generados correctamente`,
+          "success"
+        );
+      }
+
+      setExcelFile(null);
+      setExcelFileName("");
+      document.getElementById('excel-file-input').value = '';
+
+    } catch (error) {
+      console.error("Error procesando Excel:", error);
+      mostrarSnackbar(`Error: ${error.message}`, "error");
+    } finally {
+      setProcesandoExcel(false);
+      setRenderizando(false);
+      setProgreso("");
+    }
+  };
+
+  const getCardWidth = () => {
+    if (user?.userName === "imorales@emaservicios.com.ar") {
+      return { xs: 12, md: 3 }; 
+    } else {
+      return { xs: 12, md: 4 }; 
+    }
+  };
+
+  const cardWidth = getCardWidth();
 
   return (
     <>
-      {loading && (
-        <SoftBox
-          position="fixed"
-          top="calc(50% + 60px)"
-          left="50%"
-          style={{ transform: "translate(-50%, -50%)", zIndex: 999999999 }}
+      <Snackbar
+        open={showSnackbar}
+        autoHideDuration={4000}
+        onClose={() => setShowSnackbar(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <MuiAlert 
+          onClose={() => setShowSnackbar(false)} 
+          severity={snackbarSeverity}
+          elevation={6}
+          variant="filled"
+          sx={{ width: '100%' }}
         >
-          <SoftTypography variant="h1" color="black" fontWeight="bold">
-            {progreso}
-          </SoftTypography>
-        </SoftBox>
-      )}
-      <LoadingModal isOpen={loading} />
-      <SoftBox display="flex" flexDirection="column" alignItems="center">
+          {snackbarMessage}
+        </MuiAlert>
+      </Snackbar>
+
+    {(loading || procesandoExcel || renderizando) && (
+      <SoftBox 
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(39, 39, 39, 0.82)', 
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          paddingTop: '20vh', 
+        }}
+      >
+        <Card sx={{ 
+          width: '90%',
+          maxWidth: '500px',
+          p: 4,
+          borderRadius: 3,
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
+          border: '1px solid #e0e0e0',
+          backgroundColor: 'white',
+        }}>
+          <SoftBox display="flex" flexDirection="column" alignItems="center" gap={3}>
+            <CircularProgress size={60} thickness={4} color="info" />
+            
+            <SoftBox textAlign="center">
+              <SoftTypography variant="h5" fontWeight="bold" color="info" gutterBottom>
+                {renderizando 
+                  ? "Renderizando Acuses" 
+                  : procesandoExcel 
+                    ? "📊 Procesando Excel" 
+                    : "⚙️ Generando Acuses"}
+              </SoftTypography>
+              <SoftTypography variant="body1" color="text.secondary">
+                {progreso}
+              </SoftTypography>
+            </SoftBox>
+            
+            <SoftBox width="100%">
+              <SoftTypography variant="caption" color="text.secondary" display="block" textAlign="center">
+                {renderizando 
+                  ? "Convirtiendo acuses a imágenes JPG..." 
+                  : procesandoExcel 
+                    ? "Preparando archivos..." 
+                    : "La descarga comenzará automáticamente"}
+              </SoftTypography>
+            </SoftBox>
+            
+            {!renderizando && !procesandoExcel && (
+              <SoftButton
+                variant="gradient"
+                color="info"
+                size="small"
+                onClick={() => {
+                  if (currentTaskId) {
+                    setLoading(false);
+                    setProgreso("");
+                    setCurrentTaskId(null);
+                    cancelarTarea(currentTaskId);
+                  } else if (activeTasks.length > 0) {
+                    const taskToCancel = activeTasks[0]; 
+                    if (taskToCancel) {
+                      setLoading(false);
+                      setProgreso("");
+                      setCurrentTaskId(null);
+                      cancelarTarea(taskToCancel.task_id);
+                    }
+                  } else {
+                    setLoading(false);
+                    setProgreso("");
+                    setCurrentTaskId(null);
+                    mostrarSnackbar("Operación cancelada", "info");
+                  }
+                }}
+                startIcon={<CloseIcon />}
+              >
+                Cancelar
+              </SoftButton>
+            )}
+          </SoftBox>
+        </Card>
+      </SoftBox>
+    )}
+
+      <SoftBox display="flex" flexDirection="column" alignItems="center" minHeight="100vh">
         <SoftBox width="100%">
           <ResponsiveAppBar />
         </SoftBox>
 
-        <Card
-          sx={{
-            mt: 12,
-            width: { xs: "90%", md: "60%" },
-            p: 4,
-            boxShadow: 4,
-            borderRadius: 3,
-          }}
+        {/* CONTENEDOR PRINCIPAL - MÁS AMPLIO */}
+        <SoftBox 
+          width="100%" 
+          maxWidth="1800px"
+          px={4}
+          mt={{ xs: '8rem', md: '10rem' }}
+          mb={4}
         >
-          <SoftTypography variant="h5" fontWeight="bold" mb={3}>
-            Selección de Lote
-          </SoftTypography>
 
-          <SoftBox
-            display="flex"
-            flexDirection={{ xs: "column", sm: "row" }}
-            gap={2}
-            alignItems="center"
+          {/* Grid de cards */}
+          <Grid 
+            container
+            spacing={4}
+            justifyContent="center"
+            alignItems="stretch"
           >
-            <SoftBox flex={1}>
-              <Controller
-                name="loteSeleccionado"
-                control={control}
-                render={({ field }) => (
-                  <DropdownList
-                    width="30vw"
-                    list={lotes}
-                    campoAMostrar="nombre"
-                    campoID="nombre"
-                    placeholder="Seleccione un Lote"
-                    {...field}
-                  />
-                )}
-              />
+            {/* Card Lote (solo para usuario específico) */}
+            {user?.userName === "imorales@emaservicios.com.ar" && (
+              <Grid item {...cardWidth}>
+                <Card
+                  sx={{
+                    height: '445px',
+                    p: 3,
+                    boxShadow: 3,
+                    borderRadius: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6,
+                    }
+                  }}
+                >
+                  <SoftBox display="flex" alignItems="center" mb={2}>
+                    <InventoryIcon sx={{ fontSize: 36, color: '#1A73E8', mr: 1.5 }} />
+                    <SoftTypography variant="h5" fontWeight="bold">
+                      Acuse por Lote
+                    </SoftTypography>
+                  </SoftBox>
+                  
+                  <SoftTypography variant="body2" color="text.secondary" mb={3}>
+                    Genere acuses para todos los comprobantes de un lote específico
+                  </SoftTypography>
+
+                  <SoftBox flex={1}>
+                    <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
+                      Seleccionar Lote
+                    </SoftTypography>
+                    <Controller
+                      name="loteSeleccionado"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                          <Select
+                            {...field}
+                            value={field.value || ""}
+                            displayEmpty
+                            renderValue={(selected) => {
+                              if (!selected) {
+                                return <p style={{ color: '#9e9e9e' }}>Seleccione un Lote</p>;
+                              }
+                              const item = lotes.find(item => item.nombre === selected);
+                              return item ? item.nombre : selected;
+                            }}
+                            sx={{
+                              height: '40px',
+                              '& .MuiSelect-select': {
+                                py: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }
+                            }}
+                            MenuProps={{
+                              PaperProps: {
+                                sx: {
+                                  maxWidth: '300px !important',
+                                  width: 'auto',
+                                  maxHeight: '400px !important',
+                                }
+                              }
+                            }}
+                            endAdornment={
+                              field.value ? (
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    field.onChange("");
+                                  }}
+                                  sx={{
+                                    position: 'absolute',
+                                    right: 30,
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    zIndex: 10,
+                                  }}
+                                >
+                                  <CloseIcon fontSize="small" sx={{ color: '#9e9e9e' }} />
+                                </IconButton>
+                              ) : null
+                            }
+                          >
+                            {lotes.map((item) => (
+                              <MenuItem key={item.nombre} value={item.nombre}>
+                                {item.nombre}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+                  </SoftBox>
+
+                  <SoftBox mt={3} display="flex" justifyContent="flex-end">
+                    <SoftButton
+                      variant="gradient"
+                      color="info"
+                      onClick={handleSubmit(onDescargarPorLote)}
+                      disabled={loading || buscandoCliente || procesandoExcel}
+                      sx={{ minWidth: '140px', py: 1.5 }}
+                    >
+                      {loading ? "PROCESANDO..." : "GENERAR"}
+                    </SoftButton>
+                  </SoftBox>
+                </Card>
+              </Grid>
+            )}
+
+            {/* Card Cliente */}
+            <Grid item {...cardWidth}>
+              <Card
+                sx={{
+                  height: '445px',
+                  p: 3,
+                  boxShadow: 3,
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 6,
+                  }
+                }}
+              >
+                <SoftBox display="flex" alignItems="center" mb={2}>
+                  <PersonIcon sx={{ fontSize: 36, color: '#1A73E8', mr: 1.5 }} />
+                  <SoftTypography variant="h5" fontWeight="bold">
+                    Acuse por Cliente
+                  </SoftTypography>
+                </SoftBox>
+                
+                <SoftTypography variant="body2" color="text.secondary" mb={3}>
+                  Busque y visualice los acuses de un cliente específico
+                </SoftTypography>
+
+                <form onSubmit={handleSubmit(onDescargarPorCliente)} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <SoftBox flex={1}>
+                    <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
+                      Número de Cliente
+                    </SoftTypography>
+                    <Controller
+                      name="numCliente"
+                      control={control}
+                      render={({ field }) => (
+                        <SoftBox sx={{ mt: 1 }}>
+                          <SoftInputBase
+                            field={field}
+                            placeholder="Ej: 12345"
+                            autoComplete="off"
+                            fullWidth
+                          />
+                        </SoftBox>
+                      )}
+                    />
+                  </SoftBox>
+
+                  <SoftBox mt={3} display="flex" justifyContent="flex-end">
+                    <SoftButton 
+                      variant="gradient" 
+                      color="info" 
+                      type="submit"
+                      disabled={buscandoCliente || loading || procesandoExcel}
+                      sx={{ minWidth: '140px', py: 1.5 }}
+                    >
+                      {buscandoCliente ? "BUSCANDO..." : "FILTRAR"}
+                    </SoftButton>
+                  </SoftBox>
+                </form>
+              </Card>
+            </Grid>
+
+            {/* Card Excel */}
+            <Grid item {...cardWidth}>
+              <Card
+                sx={{
+                  height: '445px',
+                  p: 3,
+                  boxShadow: 3,
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 6,
+                  }
+                }}
+              >
+                <SoftBox display="flex" alignItems="center" mb={2}>
+                  <DescriptionIcon sx={{ fontSize: 36, color: '#1A73E8', mr: 1.5 }} />
+                  <SoftTypography variant="h5" fontWeight="bold">
+                    Acuse por Excel
+                  </SoftTypography>
+                </SoftBox>
+                
+                <SoftTypography variant="body2" color="text.secondary" mb={3}>
+                  Genere acuses para múltiples clientes desde un archivo Excel
+                </SoftTypography>
+
+                <SoftBox flex={1}>
+                  <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
+                    Archivo Excel
+                  </SoftTypography>
+                  
+                  <SoftBox
+                    sx={{
+                      border: '2px dashed',
+                      borderColor: excelFile ? '#1A73E8' : '#e0e0e0',
+                      borderRadius: 2,
+                      p: 2,
+                      mt: 1,
+                      textAlign: 'center',
+                      backgroundColor: excelFile ? 'rgba(26, 115, 232, 0.04)' : '#f8f9fa',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        borderColor: '#1A73E8',
+                        backgroundColor: 'rgba(26, 115, 232, 0.04)',
+                      }
+                    }}
+                    onClick={() => document.getElementById('excel-file-input').click()}
+                  >
+                    <input
+                      type="file"
+                      id="excel-file-input"
+                      accept=".xlsx,.xls,.csv"
+                      style={{ display: 'none' }}
+                      onChange={handleFileChange}
+                    />
+                    <CloudUploadIcon sx={{ 
+                      fontSize: 40,
+                      color: excelFile ? '#1A73E8' : '#9e9e9e',
+                      mb: 0.5 
+                    }} />
+                    <SoftTypography 
+                      variant="body2"
+                      color={excelFile ? 'info' : 'text.secondary'}
+                      fontWeight={excelFile ? 'medium' : 'regular'}
+                    >
+                      {excelFileName || "Haga clic para seleccionar archivo"}
+                    </SoftTypography>
+                    <SoftTypography variant="body2" color="text.secondary" display="block" sx={{ mt: 0.5, fontSize: '0.75rem' }}>
+                      Formatos: .xlsx, .xls, .csv (máx. 100 clientes)
+                    </SoftTypography>
+                    {excelFile && (
+                      <SoftTypography variant="caption" color="info" display="block" sx={{ mt: 1 }}>
+                        ✓ Archivo listo para procesar
+                      </SoftTypography>
+                    )}
+                  </SoftBox>
+
+                  <SoftTypography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5, fontSize: '0.75rem' }}>
+                    El archivo debe tener los números de cliente en la primera columna
+                  </SoftTypography>
+                </SoftBox>
+
+                <SoftBox mt={3} display="flex" justifyContent="flex-end">
+                  <SoftButton 
+                    variant="gradient" 
+                    color="info"
+                    onClick={onDescargarPorExcel}
+                    disabled={!excelFile || procesandoExcel || loading || buscandoCliente}
+                    startIcon={<CloudUploadIcon />}
+                    sx={{ minWidth: '160px', py: 1.5 }}
+                  >
+                    {procesandoExcel ? "PROCESANDO..." : "GENERAR ZIP"}
+                  </SoftButton>
+                </SoftBox>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Tabla de resultados */}
+          {dataCliente.length > 0 && (
+            <SoftBox mt={4}>
+              <Card sx={{ p: 3, borderRadius: 2 }}>
+                <SoftBox mb={2} px={1}>
+                  <SoftTypography variant="h6" fontWeight="bold" color="info">
+                    Resultados de búsqueda
+                  </SoftTypography>
+                  <SoftTypography variant="body2" color="text.secondary">
+                    Se encontraron {dataCliente.length} acuses para el cliente
+                  </SoftTypography>
+                </SoftBox>
+                <TablaAcusesCliente data={dataCliente} />
+              </Card>
             </SoftBox>
-
-            <SoftButton
-              variant="gradient"
-              color="info"
-              onClick={handleSubmit(onDescargarAcuses2)}
-            >
-              DESCARGAR ACUSES
-            </SoftButton>
-
-            {/* <SoftButton
-              variant="outlined"
-              color="secondary"
-              onClick={handleSubmit(onDescargarJSON)}
-            >
-              DESCARGAR JSON
-            </SoftButton>
-
-            <SoftBox mt={1}>
-              <label htmlFor="jsonUpload">
-                <SoftButton variant="outlined" color="success" component="span">
-                  CARGAR JSON LOCAL
-                </SoftButton>
-              </label>
-              <input
-                id="jsonUpload"
-                type="file"
-                accept=".json"
-                style={{ display: "none" }}
-                onChange={onCargarJSONLocal}
-              />
-            </SoftBox> */}
-          </SoftBox>
-        </Card>
+          )}
+        </SoftBox>
       </SoftBox>
     </>
   );
