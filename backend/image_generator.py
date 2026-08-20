@@ -552,7 +552,7 @@ class AcuseImageGenerator:
         barcode_bottom = y
         if barcode_text:
             try:
-                barcode_img = self.generate_barcode_code39(barcode_text)
+                 barcode_img = self.generate_barcode(barcode_text)
                 if barcode_img:
                     barcode_x = (self.image_width - barcode_img.width) // 2
                     img.paste(barcode_img, (barcode_x, y))
@@ -585,23 +585,24 @@ class AcuseImageGenerator:
         return max(y + 100, barcode_bottom)  # Altura usada
     
 
-    def generate_barcode_code39(self, text):
+    def generate_barcode(self, text):
         """
-        Genera un código de barras Code 39 real con python-barcode.
-        Sin dependencia de fuentes especiales instaladas en el SO.
+        Genera un código de barras CODE128 (mismo formato que usa el frontend
+        con JsBarcode). Mucho más compacto que Code39 para códigos numéricos
+        largos, y sin depender de fuentes especiales instaladas en el SO.
         """
         try:
-            from barcode.codex import Code39
+            from barcode.codex import Code128
             from barcode.writer import ImageWriter
 
-            max_width = 480  # px disponibles en el header sin invadir logo/texto
+            max_width = 500  # px disponibles en el header sin invadir logo/texto
             module_width = 0.3  # mm por módulo angosto: valor seguro para lectores
 
             def render(mw):
-                return Code39(text, writer=ImageWriter(), add_checksum=False).render(
+                return Code128(text, writer=ImageWriter()).render(
                     writer_options={
                         "write_text": False,
-                        "module_height": 8,
+                        "module_height": 4,
                         "module_width": mw,
                         "quiet_zone": 2,
                     }
@@ -612,7 +613,7 @@ class AcuseImageGenerator:
             # Si el código es muy largo, angostar módulos (sin resize post-render,
             # que difumina las barras y las vuelve ilegibles para el lector)
             if img.width > max_width:
-                module_width = max(0.15, module_width * (max_width / img.width))
+                module_width = max(0.2, module_width * (max_width / img.width))
                 img = render(module_width)
 
             return img
