@@ -585,39 +585,25 @@ class AcuseImageGenerator:
 
     def generate_barcode_code39(self, text):
         """
-        Versión CORREGIDA - mantiene los asteriscos visibles
+        Genera un código de barras Code 39 real con python-barcode.
+        Sin dependencia de fuentes especiales instaladas en el SO.
         """
-        import os
-        
-        # Ruta directa
-        font_path = r"C:\Users\lboldrini\AppData\Local\Microsoft\Windows\Fonts\code3-9.ttf"
-        
         try:
-            font = ImageFont.truetype(font_path, 40)
-            
-            barcode_text = f"*{text}*"
-            
-            temp_img = Image.new('RGB', (1, 1))
-            temp_draw = ImageDraw.Draw(temp_img)
-            left, top, right, bottom = temp_draw.textbbox((0, 0), barcode_text, font=font)
-            
-            text_width = right - left
-            text_height = bottom - top
-            
-            padding = 50 
-            width = text_width + (padding * 2) 
-            height = 50
-            
-            img = Image.new('RGB', (width, height), 'white')
-            draw = ImageDraw.Draw(img)
-            
-            x = padding  
-            y = (height - text_height) // 2
-            
-            draw.text((x, y), barcode_text, 'black', font)
-            
-            return img
-            
+            from barcode.codex import Code39
+            from barcode.writer import ImageWriter
+
+            code39 = Code39(text, writer=ImageWriter(), add_checksum=False)
+            img = code39.render(writer_options={
+                "write_text": False,
+                "module_height": 15,
+                "quiet_zone": 2,
+            })
+
+            target_height = 50
+            ratio = target_height / img.height
+            new_width = max(1, int(img.width * ratio))
+            return img.resize((new_width, target_height), Image.Resampling.LANCZOS)
+
         except Exception as e:
             width = 200
             height = 50
