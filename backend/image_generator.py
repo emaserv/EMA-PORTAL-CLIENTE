@@ -8,7 +8,6 @@ import os
 import re
 from datetime import datetime
 import requests
-import reportlab
 import time
 import cv2
 import numpy as np
