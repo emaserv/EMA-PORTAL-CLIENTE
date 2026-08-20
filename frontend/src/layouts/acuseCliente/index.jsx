@@ -169,18 +169,20 @@ const AcuseCliente = () => {
         if (!status.success) {
           if (status.status === "expired" || status.status === "gone") {
             mostrarSnackbar("La tarea ya no está disponible", "info");
-            pollingActive = false;
-            setLoading(false); 
-            setProgreso("");
-            break;
+          } else {
+            mostrarSnackbar(` ${status.error || 'Error al verificar estado'}`, "error");
           }
-          throw new Error(status.error || 'Error al verificar estado');
+          pollingActive = false;
+          setLoading(false);
+          setProgreso("");
+          setCurrentTaskId(null);
+          break;
         }
-        
+
         if (status.status === 'processing') {
           setProgreso(status.message);
         }
-        
+
         if (status.status === 'cancelled' || status.cancelled) {
           cancelledDetected = true;
           mostrarSnackbar("Generación cancelada", "info");
@@ -188,13 +190,13 @@ const AcuseCliente = () => {
           setLoading(false);
           setCurrentTaskId(null);
           pollingActive = false;
-          break; 
+          break;
         } else if (status.status === 'completed') {
             await descargarResultado(taskId, nombreDescarga);
-            
+
             const totalGenerados = status.total_generados || 0;
             const totalErrores = status.total_con_errores || 0;
-            
+
             if (totalErrores > 0) {
               mostrarSnackbar(
                 `${totalGenerados} acuses generados\n  ${totalErrores} con errores - Revisa el archivo CSV dentro del ZIP`,
@@ -206,18 +208,22 @@ const AcuseCliente = () => {
                 "success"
               );
             }
-            
+
             await obtenerTareasActivas();
             setProgreso("Completado");
             setCurrentTaskId(null);
             setLoading(false);
             return;
-          
+
         } else if (status.status === 'failed') {
+          mostrarSnackbar(` ${status.error || 'La generación falló'}`, "error");
+          pollingActive = false;
+          setLoading(false);
+          setProgreso("");
           setCurrentTaskId(null);
-          throw new Error(status.error || 'La generación falló');
+          break;
         }
-        
+
       } catch (error) {
         console.error(`Error en monitoreo:`, error);
       }

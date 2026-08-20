@@ -233,10 +233,12 @@ class AcuseImageGenerator:
             img = img.crop((0, 0, self.image_width, y_position + 50))
             
             buffer = BytesIO()
-            img.save(buffer, format='JPEG', quality=quality, optimize=True)
-            
+            # subsampling=0 (4:4:4): evita que la compresión JPEG difumine los
+            # bordes del código de barras, que es lo que más afecta la lectura
+            img.save(buffer, format='JPEG', quality=quality, optimize=True, subsampling=0)
+
             return buffer.getvalue()
-            
+
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -552,7 +554,7 @@ class AcuseImageGenerator:
         barcode_bottom = y
         if barcode_text:
             try:
-                 barcode_img = self.generate_barcode(barcode_text)
+                barcode_img = self.generate_barcode(barcode_text)
                 if barcode_img:
                     barcode_x = (self.image_width - barcode_img.width) // 2
                     img.paste(barcode_img, (barcode_x, y))
@@ -596,13 +598,17 @@ class AcuseImageGenerator:
             from barcode.writer import ImageWriter
 
             max_width = 500  # px disponibles en el header sin invadir logo/texto
-            module_width = 0.3  # mm por módulo angosto: valor seguro para lectores
+            # Mismas proporciones que el código de barras del frontend (JsBarcode
+            # width:2 height:60, capturado por html2canvas a scale 1.2): a 300dpi
+            # equivale a ~0.17mm de módulo y 5mm de alto.
+            module_width = 0.17
+            module_height = 5
 
             def render(mw):
                 return Code128(text, writer=ImageWriter()).render(
                     writer_options={
                         "write_text": False,
-                        "module_height": 4,
+                        "module_height": module_height,
                         "module_width": mw,
                         "quiet_zone": 2,
                     }
@@ -613,7 +619,7 @@ class AcuseImageGenerator:
             # Si el código es muy largo, angostar módulos (sin resize post-render,
             # que difumina las barras y las vuelve ilegibles para el lector)
             if img.width > max_width:
-                module_width = max(0.2, module_width * (max_width / img.width))
+                module_width = max(0.13, module_width * (max_width / img.width))
                 img = render(module_width)
 
             return img
