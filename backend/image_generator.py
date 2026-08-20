@@ -538,7 +538,7 @@ class AcuseImageGenerator:
                     logo_resized = logo.resize((new_width, max_height), Image.Resampling.LANCZOS)
                 else:
                     logo_resized = logo
-                
+
                 x1 = 40
                 if logo_resized.mode == 'RGBA':
                     img.paste(logo_resized, (x1, y), logo_resized)
@@ -546,23 +546,25 @@ class AcuseImageGenerator:
                     img.paste(logo_resized, (x1, y))
             except Exception as e:
                 print(f" Error pegando logo EMA: {e}")
-        
+
         # Columna 2: Código de barras CENTRADO (como React)
         barcode_text = data.get('codigoBarras', '')
+        barcode_bottom = y
         if barcode_text:
             try:
                 barcode_img = self.generate_barcode_code39(barcode_text)
                 if barcode_img:
                     barcode_x = (self.image_width - barcode_img.width) // 2
                     img.paste(barcode_img, (barcode_x, y))
-                    
+
                     # Texto del código debajo (opcional)
                     text_y = y + barcode_img.height + 5
                     draw.text((self.image_width // 2, text_y), barcode_text,
                             fill=self.colors['text'], font=self.fonts['body2'], anchor="mm")
+                    barcode_bottom = text_y + 15
             except Exception as e:
                 print(f" Error código de barras: {e}")
-        
+
         # Columna 3: Info EMA (derecha) - TEXTUAL como React
         ema_info = [
             ("EMA Servicios S.A.", True),      # NEGRITA
@@ -572,15 +574,15 @@ class AcuseImageGenerator:
             ("CUIT: 30-69845547-7", False),    # Regular
             ("www.emaservicios.com.ar", False)  # NEGRITA
         ]
-        
+
         right_margin = self.image_width - 40
         for i, (line, is_bold) in enumerate(ema_info):
             if line:
                 font = self.fonts['body1_bold'] if is_bold else self.fonts['body1']
                 draw.text((right_margin, y + (i * 15)), str(line),
                         fill=self.colors['text'], font=font, anchor="ra")
-        
-        return y + 100  # Altura usada
+
+        return max(y + 100, barcode_bottom)  # Altura usada
     
 
     def generate_barcode_code39(self, text):
@@ -592,17 +594,28 @@ class AcuseImageGenerator:
             from barcode.codex import Code39
             from barcode.writer import ImageWriter
 
-            code39 = Code39(text, writer=ImageWriter(), add_checksum=False)
-            img = code39.render(writer_options={
-                "write_text": False,
-                "module_height": 15,
-                "quiet_zone": 2,
-            })
+            max_width = 480  # px disponibles en el header sin invadir logo/texto
+            module_width = 0.3  # mm por módulo angosto: valor seguro para lectores
 
-            target_height = 50
-            ratio = target_height / img.height
-            new_width = max(1, int(img.width * ratio))
-            return img.resize((new_width, target_height), Image.Resampling.LANCZOS)
+            def render(mw):
+                return Code39(text, writer=ImageWriter(), add_checksum=False).render(
+                    writer_options={
+                        "write_text": False,
+                        "module_height": 8,
+                        "module_width": mw,
+                        "quiet_zone": 2,
+                    }
+                )
+
+            img = render(module_width)
+
+            # Si el código es muy largo, angostar módulos (sin resize post-render,
+            # que difumina las barras y las vuelve ilegibles para el lector)
+            if img.width > max_width:
+                module_width = max(0.15, module_width * (max_width / img.width))
+                img = render(module_width)
+
+            return img
 
         except Exception as e:
             width = 200
