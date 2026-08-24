@@ -2,15 +2,26 @@ import * as React from 'react';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
+import Checkbox from '@mui/material/Checkbox';
 import PropTypes from "prop-types";
 import Popper from '@mui/material/Popper';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import './styles.css';
 
-export default function DropdownList({ width, list, placeholder, campoAMostrar, campoID, inputRef, defaultValue, isDisabled, ...field }) {
-  
+const iconoSinMarcar = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const iconoMarcado = <CheckBoxIcon fontSize="small" />;
+
+export default function DropdownList({ width, list, placeholder, campoAMostrar, campoID, inputRef, defaultValue, isDisabled, multiple, ...field }) {
+
   const handleOnChange = (event, newValue) => {
     if (isDisabled) {
       event.preventDefault();
+      return;
+    }
+    if (multiple) {
+      const selectedIDs = (newValue || []).map((item) => item[campoID]);
+      field.onChange(selectedIDs);
       return;
     }
     const selectedID = newValue ? newValue[campoID] : null;
@@ -19,24 +30,51 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
 
   const stackRef = React.useRef(null);
 
-  
+  const multipleValue = Array.isArray(field.value)
+    ? field.value.map((id) => list.find((item) => item[campoID] === id)).filter(Boolean)
+    : [];
 
   return (
-    <Stack 
-      ref={stackRef} 
-      sx={{ 
-        width: width, 
-        position: 'relative', 
-        pointerEvents: isDisabled ? 'none' : 'auto' 
+    <Stack
+      ref={stackRef}
+      sx={{
+        width: width,
+        position: 'relative',
+        pointerEvents: isDisabled ? 'none' : 'auto'
       }}
     >
       <Autocomplete
+        multiple={multiple}
+        disableCloseOnSelect={multiple}
         options={list}
-        getOptionLabel={(option) => option[campoAMostrar]}        
+        getOptionLabel={(option) => option[campoAMostrar]}
+        isOptionEqualToValue={(option, value) => option[campoID] === value?.[campoID]}
         defaultValue={list.find(item => item.id === defaultValue)}
         onChange={handleOnChange}
         onBlur={field.onBlur}
-        value={field.value}
+        value={multiple ? multipleValue : field.value}
+        renderTags={(selected) => (
+          <span
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {selected.length
+              ? `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}`
+              : ''}
+          </span>
+        )}
+        sx={{
+          '& .MuiAutocomplete-inputRoot': {
+            flexWrap: 'nowrap',
+            overflow: 'hidden',
+          },
+          '& .MuiAutocomplete-input': {
+            minWidth: '0 !important',
+          },
+        }}
         renderInput={(params) => (
           <TextField
             {...params}
@@ -57,8 +95,16 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
             onChange={handleOnChange}
           />
         )}
-        renderOption={(props, option) => (
+        renderOption={(props, option, { selected }) => (
           <li {...props} style={{ fontSize: '0.875rem', fontWeight: '400' }}>
+            {multiple && (
+              <Checkbox
+                icon={iconoSinMarcar}
+                checkedIcon={iconoMarcado}
+                checked={selected}
+                style={{ marginRight: 8, padding: 0 }}
+              />
+            )}
             {option[campoAMostrar]}
           </li>
         )}
@@ -82,8 +128,10 @@ DropdownList.propTypes = {
   children: PropTypes.object,
   inputRef: PropTypes.func,
   isDisabled: PropTypes.bool,
-}; 
+  multiple: PropTypes.bool,
+};
 
 DropdownList.defaultProps = {
   isDisabled: false,
+  multiple: false,
 };

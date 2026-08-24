@@ -1,10 +1,10 @@
-import { React, useEffect, useState } from "react";
+import { React, useEffect, useMemo, useState } from "react";
 import SoftBox from "components/SoftBox";
 import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
 import { Card, Divider } from "@mui/material";
 import SoftTypography from "components/SoftTypography";
 import SoftButton from "components/SoftButton";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { useAuth } from "layouts/auth/AuthContext";
 import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
@@ -27,6 +27,7 @@ const MapaCliente = () => {
   const {
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm();
 
@@ -34,9 +35,57 @@ const MapaCliente = () => {
   const [dataInfo, setDataInfo] = useState([]);
   const [columnsInfo, setColumnsInfo] = useState([]);
   const [multiplesEmision, setMultiplesEmision] = useState([]);
+  const [radiosDisponibles, setRadiosDisponibles] = useState([]);
   const [mutex, setMutex] = useState(false);
   const [loading, setLoading] = useState(false);
   const [estadoPopUp1, cambiarEstadoPopUp1] = useState(false);
+
+  const planValue = useWatch({ control, name: "plan" });
+  const sucursalValue = useWatch({ control, name: "sucursal" });
+  const radioValue = useWatch({ control, name: "radio" });
+
+  // Filtrar en el mapa solo los radios seleccionados (si hay alguno seleccionado)
+  const geoJsonDataMapa = useMemo(() => {
+    if (!geoJsonData2 || !geoJsonData2.metadata || !geoJsonData2.geoData) {
+      return geoJsonData2;
+    }
+    if (!radioValue || radioValue.length === 0) {
+      return geoJsonData2;
+    }
+
+    const metadata = [];
+    const geoData = [];
+    geoJsonData2.metadata.forEach((meta, index) => {
+      if (radioValue.includes(meta.radio)) {
+        metadata.push(meta);
+        geoData.push(geoJsonData2.geoData[index]);
+      }
+    });
+
+    return { metadata, geoData };
+  }, [geoJsonData2, radioValue]);
+
+  // Cargar radios disponibles según plan/sucursal (en cascada, con debounce)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const url = new URL(`${API_BACK}/api/geoJson/radiosDisponibles`, window.location.origin);
+      if (planValue) url.searchParams.append("plan", planValue);
+      if (sucursalValue) url.searchParams.append("sucursal", sucursalValue);
+
+      fetch(url, { mode: "cors" })
+        .then((response) => response.json())
+        .then((apiData) => {
+          setRadiosDisponibles(apiData.radios || []);
+          setValue("radio", []);
+        })
+        .catch((error) => {
+          console.error("Error cargando radios disponibles:", error);
+          setRadiosDisponibles([]);
+        });
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [planValue, sucursalValue, setValue]);
 
   // Cargar datos de información metro
   useEffect(() => {
@@ -72,14 +121,13 @@ const MapaCliente = () => {
   }, [mutex, user]);
 
   // Función para obtener datos geoJson
-  const fetchGeoJsonData = async (sucursal, plan, radio, antiguedad) => {
+  const fetchGeoJsonData = async (sucursal, plan, radios, antiguedad) => {
     try {
       setLoading(true);
-      
+
       const params = {};
       if (sucursal) params.sucursal = sucursal;
       if (plan) params.plan = plan;
-      if (radio) params.radio = radio;
       if (antiguedad) params.antiguedad = antiguedad;
 
       const url = new URL(
@@ -89,6 +137,10 @@ const MapaCliente = () => {
 
       Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, value);
+      });
+
+      (radios || []).forEach((radio) => {
+        url.searchParams.append("radio", radio);
       });
 
       const response = await fetch(url, {
@@ -123,15 +175,15 @@ const MapaCliente = () => {
     const antiguedad = data.antiguedad || null;
     const plan = data.plan || null;
     const sucursal = data.sucursal || null;
-    const radio = data.radio || null;
+    const radios = Array.isArray(data.radio) ? data.radio : [];
     const idEmisionSeleccionada = data.idEmision;
-    
+
     const emisionSeleccionada = multiplesEmision.find(
       (emision) => emision.id === idEmisionSeleccionada
     );
     const nombreEmision = emisionSeleccionada ? emisionSeleccionada.nombre : "";
 
-    await fetchGeoJsonData(sucursal, plan, radio, antiguedad);
+    await fetchGeoJsonData(sucursal, plan, radios, antiguedad);
   };
 
   // Función para convertir coordenadas a array
@@ -263,10 +315,19 @@ const MapaCliente = () => {
                   <Controller
                     name="radio"
                     control={control}
+                    defaultValue={[]}
                     render={({ field }) => (
-                      <SoftInputBase
-                        field={field}
-                        placeholder="Inserte nro de radio"
+                      <DropdownList
+                        width="10vw"
+                        list={radiosDisponibles}
+                        placeholder="Seleccione radio(s)"
+                        campoAMostrar="radio"
+                        campoID="radio"
+                        multiple
+                        isDisabled={radiosDisponibles.length === 0}
+                        inputRef={field.ref}
+                        value={field.value}
+                        onChange={(selectedValue) => field.onChange(selectedValue)}
                       />
                     )}
                   />
@@ -358,7 +419,7 @@ const MapaCliente = () => {
                   arrayPuntos={[]}
                   arrayCamino={[]}
                   geoJsonData={[]}
-                  geoJsonData2={geoJsonData2}
+                  geoJsonData2={geoJsonDataMapa}
                 />
               </SoftBox>
             </Card>

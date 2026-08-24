@@ -3,46 +3,78 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import text, cast, Text
 from db.masterRepo import DatabaseSession
 from models.geoJson.GeoJson import GeoJson
+from models.emision.ItemEmision import ItemEmision
+import pandas as pd
+from sqlalchemy import and_, or_
 
 geoJson = Blueprint('geoJson', __name__)
+
+@geoJson.route('/api/geoJson/radiosDisponibles', methods=['GET'])
+def getRadiosDisponibles():
+    try:
+        plan = request.args.get('plan')
+        sucursal = request.args.get('sucursal')
+
+        with DatabaseSession().get_session() as session:
+            query = session.query(GeoJson.nombre)
+
+            if sucursal and plan:
+                query = query.filter(GeoJson.nombre.like(f"{sucursal}-{plan}-%"))
+            elif sucursal:
+                query = query.filter(GeoJson.nombre.like(f"{sucursal}-%"))
+            elif plan:
+                query = query.filter(GeoJson.nombre.like(f"%-{plan}-%"))
+
+            nombres = query.all()
+
+            radios = set()
+            for (nombre,) in nombres:
+                partes = nombre.split('-')
+                if len(partes) >= 3:
+                    radios.add(partes[2])
+
+            radios_ordenados = sorted(radios)
+
+            return jsonify({"radios": [{"radio": r} for r in radios_ordenados]})
+
+    except Exception as e:
+        print(f"❌ ERROR: {str(e)}")
+        import traceback
+        print(f"❌ TRACEBACK: {traceback.format_exc()}")
+        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
+
 
 @geoJson.route('/api/geoJson/consultarGeoJson', methods=['POST'])
 def getGeoJson():
     try:
         plan = request.args.get('plan')
         sucursal = request.args.get('sucursal')
-        radio = request.args.get('radio')
+        radios = request.args.getlist('radio')
         antiguedad = request.args.get('antiguedad')
 
         # Validar que al menos un parámetro esté presente
-        if not any([plan, sucursal, radio]):
+        if not any([plan, sucursal, radios]):
             return jsonify({"message": "Se requiere al menos un parámetro: 'plan', 'sucursal' o 'radio'"}), 400
 
         with DatabaseSession().get_session() as session:
             # Construir query dinámicamente según los parámetros proporcionados
             query = session.query(GeoJson)
-            
+
             # Construir filtros basados en los parámetros proporcionados
             filters = []
-            
-            if sucursal and plan and radio:
-                # Caso: todos los parámetros - búsqueda exacta
-                nombre_buscar = f"{sucursal}-{plan}-{radio}"
-                filters.append(GeoJson.nombre == nombre_buscar)
+
+            if sucursal and plan and radios:
+                # Caso: todos los parámetros - búsqueda exacta por uno o más radios
+                nombres_buscar = [f"{sucursal}-{plan}-{r}" for r in radios]
+                filters.append(GeoJson.nombre.in_(nombres_buscar))
             else:
                 # Caso: combinaciones parciales - búsqueda con LIKE
                 if sucursal:
                     filters.append(GeoJson.nombre.like(f"{sucursal}-%"))
                 if plan:
-                    if sucursal:
-                        filters.append(GeoJson.nombre.like(f"%-{plan}-%"))
-                    else:
-                        filters.append(GeoJson.nombre.like(f"%-{plan}-%"))
-                if radio:
-                    if sucursal or plan:
-                        filters.append(GeoJson.nombre.like(f"%-{radio}"))
-                    else:
-                        filters.append(GeoJson.nombre.like(f"%-{radio}"))
+                    filters.append(GeoJson.nombre.like(f"%-{plan}-%"))
+                if radios:
+                    filters.append(or_(*[GeoJson.nombre.like(f"%-{r}") for r in radios]))
 
             # Aplicar filtro de antigüedad si está presente
             if antiguedad:
@@ -99,7 +131,6 @@ def getGeoJson():
 def agregarGeoJson():
     try:
         import os
-
         CARPETA = "./GEO"
 
         nuevos = 0
@@ -109,7 +140,6 @@ def agregarGeoJson():
         with DatabaseSession().get_session() as session:
             archivos = os.listdir(CARPETA)
             total_archivos = len(archivos)
-            
             for archivo in archivos:
                 contador += 1
                 print(f"Procesando archivo {contador} de {total_archivos}: {archivo}")
@@ -134,7 +164,6 @@ def agregarGeoJson():
                     nuevos += 1
 
             session.commit()
-
         return jsonify({
             "message": "Proceso finalizado",
             "archivos_agregados": nuevos,
