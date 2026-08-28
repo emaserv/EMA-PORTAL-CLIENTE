@@ -22,6 +22,7 @@ import { FormControl, Select, MenuItem, IconButton } from "@mui/material";
 import AcuseReciboConFirma from "./components/acuseConFirma";
 import html2canvas from "html2canvas";
 import ReactDOM from "react-dom/client";
+import { apiFetch } from 'services/api';
 
 const AcuseCliente = () => {
   const { handleSubmit, control } = useForm();
@@ -52,7 +53,7 @@ const AcuseCliente = () => {
   useEffect(() => {
     const fetchLotes = async () => {
       try {
-        const response = await fetch(`${API_BACK}/api/acuses/loteDropDwn`);
+        const response = await apiFetch(`${API_BACK}/api/acuses/loteDropDwn`);
         const data = (await response.ok) ? await response.json() : [];
         setLotes(
           data
@@ -70,7 +71,7 @@ const AcuseCliente = () => {
   // Obtener tareas activas
   const obtenerTareasActivas = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BACK}/api/acuses-async/active-tasks`);
+      const response = await apiFetch(`${API_BACK}/api/acuses-async/active-tasks`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -100,7 +101,7 @@ const AcuseCliente = () => {
   // Iniciar generación
   const iniciarGeneracionAsync = async (tipo, valor, nombreDescarga) => {
     try {
-      const checkResponse = await fetch(`${API_BACK}/api/acuses-async/can-generate`);
+      const checkResponse = await apiFetch(`${API_BACK}/api/acuses-async/can-generate`);
       if (checkResponse.ok) {
         const checkData = await checkResponse.json();
         if (!checkData.can_generate) {
@@ -121,7 +122,7 @@ const AcuseCliente = () => {
         ? { lote: valor }
         : { nroCliente: valor };
       
-      const response = await fetch(`${API_BACK}/api/acuses-async/generate`, {
+      const response = await apiFetch(`${API_BACK}/api/acuses-async/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData)
@@ -163,7 +164,7 @@ const AcuseCliente = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       try {
-        const statusResponse = await fetch(`${API_BACK}/api/acuses-async/status/${taskId}`);
+        const statusResponse = await apiFetch(`${API_BACK}/api/acuses-async/status/${taskId}`);
         const status = await statusResponse.json();
         
         if (!status.success) {
@@ -241,7 +242,7 @@ const AcuseCliente = () => {
   // Descargar resultado
   const descargarResultado = async (taskId, nombreDescarga) => {
     try {
-      const downloadResponse = await fetch(`${API_BACK}/api/acuses-async/download/${taskId}`);
+      const downloadResponse = await apiFetch(`${API_BACK}/api/acuses-async/download/${taskId}`);
       
       if (!downloadResponse.ok) {
         throw new Error('Error al descargar el archivo');
@@ -262,7 +263,7 @@ const AcuseCliente = () => {
       
       const url = `${API_BACK}/api/acuses-async/cancel/${taskId}`;
       
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -319,7 +320,7 @@ const AcuseCliente = () => {
     setProgreso("Buscando acuses...");
     
     try {
-      const response = await fetch(
+      const response = await apiFetch(
           `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}&idGrupoCliente=${user?.idGrupoCliente}`
       );
       const data = await response.json();
@@ -494,7 +495,7 @@ const AcuseCliente = () => {
         setProgreso(`Procesando cliente ${procesados} de ${nrosClientes.length}: ${nroCliente}`);
 
         try {
-          const response = await fetch(
+          const response = await apiFetch(
             `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}&idGrupoCliente=${user?.idGrupoCliente}`
           );
           

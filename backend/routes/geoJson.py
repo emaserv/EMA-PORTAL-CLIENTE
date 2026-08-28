@@ -6,10 +6,12 @@ from models.geoJson.GeoJson import GeoJson
 from models.emision.ItemEmision import ItemEmision
 import pandas as pd
 from sqlalchemy import and_, or_
+from flask_jwt_extended import jwt_required
 
 geoJson = Blueprint('geoJson', __name__)
 
 @geoJson.route('/api/geoJson/radiosDisponibles', methods=['GET'])
+@jwt_required()
 def getRadiosDisponibles():
     try:
         plan = request.args.get('plan')
@@ -45,6 +47,7 @@ def getRadiosDisponibles():
 
 
 @geoJson.route('/api/geoJson/consultarGeoJson', methods=['POST'])
+@jwt_required()
 def getGeoJson():
     try:
         plan = request.args.get('plan')
@@ -128,6 +131,7 @@ def getGeoJson():
 
 
 @geoJson.route('/api/geoJson/agregarGeoJson', methods=['POST'])
+@jwt_required()
 def agregarGeoJson():
     try:
         import os

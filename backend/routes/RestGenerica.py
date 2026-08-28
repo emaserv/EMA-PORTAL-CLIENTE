@@ -1,4 +1,5 @@
 from flask import request, jsonify
+from flask_jwt_extended import jwt_required
 from db import masterRepo
 
 class RestGenerica:
@@ -18,11 +19,11 @@ class RestGenerica:
         return className
 
     def registerURL(self):
-        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName(), 'getAll', self.getAll, methods=['GET'])
-        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName() + '/<int:id>', 'getById', self.getById, methods=['GET'])
-        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName(), 'create', self.create, methods=['POST'])
-        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName() + '/<int:id>', 'update', self.update, methods=['PUT'])
-        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName() + '/<int:id>', 'delete', self.delete, methods=['DELETE'])
+        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName(), 'getAll', jwt_required()(self.getAll), methods=['GET'])
+        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName() + '/<int:id>', 'getById', jwt_required()(self.getById), methods=['GET'])
+        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName(), 'create', jwt_required()(self.create), methods=['POST'])
+        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName() + '/<int:id>', 'update', jwt_required()(self.update), methods=['PUT'])
+        self.blueprint.add_url_rule(self.rutaInicial + self.getClassName() + '/<int:id>', 'delete', jwt_required()(self.delete), methods=['DELETE'])
 
     def getAll(self):
         try:

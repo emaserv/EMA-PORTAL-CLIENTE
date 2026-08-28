@@ -7,6 +7,8 @@ from db.masterRepo import DatabaseSession
 from datetime import datetime
 import requests
 import time
+from flask_jwt_extended import jwt_required
+from utils.auth_helpers import get_current_grupo_cliente
 
 fechaCliente = Blueprint('fechaCliente', __name__)
 
@@ -81,12 +83,13 @@ def fetch_data(nroCliente, fechaEmision):
 
 
 @fechaCliente.route('/api/fecha-cliente', methods=['GET'])
+@jwt_required()
 def tablaFC():
     fechaEmision = request.args.get('fechaEmision')
     numeroCliente = request.args.get('cliente')
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
-    grupoCliente = request.args.get('grupoCliente')
+    grupoCliente = get_current_grupo_cliente()
     lote = request.args.get('lote')  # Nuevo parámetro para el lote
 
     try:
@@ -283,6 +286,7 @@ def limpiar_obs_visita(obs_visita):
     return obs_limpiada
     
 @fechaCliente.route( '/api/lote', methods=['GET'])
+@jwt_required()
 def getLote():
     
     try:        
@@ -309,11 +313,12 @@ def getLote():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 @fechaCliente.route('/api/fecha/geoMapaItems', methods=['GET'])
+@jwt_required()
 def mapaItems():
     numeroCliente = request.args.get('cliente')
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
-    grupoCliente = request.args.get('grupoCliente')
+    grupoCliente = get_current_grupo_cliente()
     fechaEmision = request.args.get('fechaEmision')
 
     try:        
@@ -381,6 +386,7 @@ def mapaItems():
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @fechaCliente.route( '/api/nroCliente', methods=['GET'])
+@jwt_required()
 def nroClienteFC():
     
     try:        
@@ -409,8 +415,9 @@ def nroClienteFC():
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @fechaCliente.route( '/api/tablaInformacion', methods=['GET'])
+@jwt_required()
 def tablaInformacion():
-    grupoCliente = request.args.get("grupoCliente")
+    grupoCliente = get_current_grupo_cliente()
     
     try:
         # Datos de ejemplo en la consulta
@@ -473,6 +480,7 @@ def tablaInformacion():
     
 
 @fechaCliente.route( '/api/emision-cliente', methods=['GET'])
+@jwt_required()
 def tablaEmision():
     idEmision = request.args.get('idEmision')
     print(idEmision)
@@ -582,8 +590,9 @@ def tablaEmision():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 @fechaCliente.route( '/api/emisiones', methods=['GET'])
+@jwt_required()
 def get_emisiones():
-    idGrupoCliente = request.args.get('idGrupoCliente')
+    idGrupoCliente = get_current_grupo_cliente()
 
     try:
         queryBase = None
@@ -618,8 +627,9 @@ def get_emisiones():
     
 
 @fechaCliente.route( '/api/emisiones/radioClienteEdesur', methods=['GET'])
+@jwt_required()
 def get_emisionesEdesur():
-    idGrupoCliente = request.args.get('idGrupoCliente')
+    idGrupoCliente = get_current_grupo_cliente()
 
     try:
         queryBase = None
@@ -655,10 +665,11 @@ def buscar_por_id(data, id_buscado):
 
 
 @fechaCliente.route( '/api/informe-emision', methods=['GET'])
+@jwt_required()
 def informeEmision():
     idEmision = request.args.get('idEmision')
-    idGrupoCliente = request.args.get('idGrupoCliente')
-    
+    idGrupoCliente = get_current_grupo_cliente()
+
     try:
         if int(idGrupoCliente)  == 4:
             queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
@@ -757,9 +768,10 @@ def informeEmision():
 
 
 @fechaCliente.route('/api/informe-emision-extendido', methods=['GET'])
+@jwt_required()
 def informeEmisionExtendido():
     idEmision = request.args.get('idEmision')
-    idGrupoCliente = request.args.get('idGrupoCliente')    
+    idGrupoCliente = get_current_grupo_cliente()
     
     try:
         if int(idGrupoCliente) == 4:

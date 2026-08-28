@@ -1,6 +1,13 @@
 import json
-from flask import Blueprint, jsonify, request, json
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask import Blueprint, jsonify, request, json, current_app
+from flask_jwt_extended import (
+    create_access_token,
+    jwt_required,
+    get_jwt_identity,
+    get_jwt,
+    set_access_cookies,
+    unset_jwt_cookies,
+)
 from sqlalchemy import text, cast, Text
 from db.masterRepo import DatabaseSession
 import hashlib
@@ -48,17 +55,48 @@ def login():
                     'found': bool(row[4])
                 })
             except (ValueError, TypeError) as e:
-                app.logger.error(f"Error converting data types: {e}")
+                current_app.logger.error(f"Error converting data types: {e}")
                 continue
 
         if dataQueryJson and dataQueryJson[0]['found']:
-            return jsonify({"data": dataQueryJson}), 200
+            usuario = dataQueryJson[0]
+            additional_claims = {
+                'nombre': usuario['nombre'],
+                'apellido': usuario['apellido'],
+                'idGrupoCliente': usuario['idGrupoCliente'],
+            }
+            access_token = create_access_token(
+                identity=usuario['userName'],
+                additional_claims=additional_claims,
+            )
+
+            response = jsonify({"data": dataQueryJson})
+            set_access_cookies(response, access_token)
+            return response, 200
         else:
             return jsonify({"message": "Bad username or password"}), 401
 
     except Exception as e:
-        return jsonify({"message": f"Error al ejecutar la consulta de mierda!: {str(e)}"}), 401
-    
+        current_app.logger.error(f"Error en /api/login: {e}")
+        return jsonify({"message": "Error al iniciar sesion"}), 500
+
+@auth.route('/api/logout', methods=['POST'])
+def logout():
+    response = jsonify({"message": "Sesion cerrada"})
+    unset_jwt_cookies(response)
+    return response, 200
+
+@auth.route('/api/me', methods=['GET'])
+@jwt_required()
+def me():
+    claims = get_jwt()
+    return jsonify({
+        "userName": get_jwt_identity(),
+        "nombre": claims.get('nombre'),
+        "apellido": claims.get('apellido'),
+        "idGrupoCliente": claims.get('idGrupoCliente'),
+    }), 200
+
 @auth.route('/protected', methods=['GET'])
 @jwt_required()
 def protected():

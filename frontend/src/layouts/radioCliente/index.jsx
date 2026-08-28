@@ -18,6 +18,7 @@ import LoadingModal from "../../components/loadingModal";
 import DropdownList from "components/DropdownList";
 
 import L from "leaflet";
+import { apiFetch } from 'services/api';
 
 
 const DataConverter = (fechaDeSincronizacion) => {
@@ -66,7 +67,7 @@ const RadioCliente = () => {
 
 
   useEffect(() => {
-    fetch(
+    apiFetch(
       `${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
       { mode: "cors" }
     )
@@ -84,7 +85,7 @@ const RadioCliente = () => {
 
   useEffect(() => {
       if (mutex) {
-        fetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+        apiFetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
           .then((response) => response.json())
           .then((apiData) => {
             if (apiData.multiplesEmision && apiData.columns) {
@@ -159,7 +160,7 @@ const RadioCliente = () => {
         }
       });
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -226,7 +227,7 @@ const RadioCliente = () => {
       });
 
       // Fetch data from the API with the constructed URL
-      const response = await fetch(url);
+      const response = await apiFetch(url);
       const apiData1 = await response.json();
 
       // Check for data and update the state accordingly
@@ -266,7 +267,7 @@ const RadioCliente = () => {
   ) => {
     try {
       setLoading(true);
-      const response2 = await fetch(
+      const response2 = await apiFetch(
         `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${
           sucursal || ""
         }&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${
@@ -318,7 +319,7 @@ const RadioCliente = () => {
         }
       });
 
-      const response3 = await fetch(url);
+      const response3 = await apiFetch(url);
       const apiData3 = await response3.json();
 
       if (apiData3.dataGeoCamino) {

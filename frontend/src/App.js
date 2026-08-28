@@ -1,14 +1,11 @@
-import { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import Icon from "@mui/material/Icon";
-import SoftBox from "components/SoftBox";
-import Sidenav from "components/Sidenav";
 import theme from "assets/theme";
 import routes from "routes";
-import { useSoftUIController, setMiniSidenav, setOpenImportador, setOpenConfigurator } from "context";
-import ImportadorSideBar from "components/ImportadorSideBar";
+import { useAuth } from "layouts/auth/AuthContext";
+import ProtectedRoute from "layouts/auth/protectedRoute";
 
 // Rutas permitidas por idGrupoCliente
 // Agregar nuevos grupos aqui si se necesitan mas restricciones en el futuro
@@ -16,44 +13,30 @@ const RUTAS_PERMITIDAS_POR_GRUPO = {
   7: ["/home", "/radio-cliente"],  // EDESUR-RADIO: solo Consulta por Radio
 };
 
-// Obtiene el idGrupoCliente del usuario logueado desde localStorage
-const getUsuarioGrupo = () => {
-  try {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) return null;
-    return JSON.parse(storedUser)?.idGrupoCliente ?? null;
-  } catch {
-    return null;
-  }
-};
+const SIGN_IN_ROUTE = "/authentication/sign-in";
 
 export default function App() {
-  const [controller, dispatch] = useSoftUIController();
-  const { miniSidenav, direction, layout, openImportador, sidenavColor } = controller;
-  const [onMouseEnter, setOnMouseEnter] = useState(false);
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    document.body.setAttribute("dir", direction);
-  }, [direction]);
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     document.documentElement.scrollTop = 0;
     document.scrollingElement.scrollTop = 0;
   }, [pathname]);
 
-  // Devuelve el elemento de la ruta o un redirect si el grupo no tiene permiso
+  // Devuelve el elemento de la ruta protegido por login y, si corresponde,
+  // por la restriccion de rutas del grupo del usuario logueado.
   const getGuardedElement = (route) => {
-    const grupoId = getUsuarioGrupo();
-    const rutasPermitidas = RUTAS_PERMITIDAS_POR_GRUPO[grupoId];
+    if (route.route === SIGN_IN_ROUTE) {
+      return route.component;
+    }
 
-    // Si el grupo tiene restricciones y la ruta no está en la lista, redirigir a /home
+    const rutasPermitidas = RUTAS_PERMITIDAS_POR_GRUPO[user?.idGrupoCliente];
     if (rutasPermitidas && !rutasPermitidas.includes(route.route)) {
       return <Navigate to="/home" replace />;
     }
 
-    return route.component;
+    return <ProtectedRoute element={route.component} />;
   };
 
   const getRoutes = (allRoutes) =>
@@ -76,13 +59,17 @@ export default function App() {
       return null;
     });
 
+  if (loading) {
+    return null;
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
 
       <Routes>
         {getRoutes(routes)}
-        <Route path="*" element={<Navigate to="/authentication/sign-in" />} />
+        <Route path="*" element={<Navigate to={SIGN_IN_ROUTE} />} />
       </Routes>
     </ThemeProvider>
   );

@@ -11,10 +11,13 @@ import requests
 import asyncio
 import aiohttp
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from flask_jwt_extended import jwt_required
+from utils.auth_helpers import get_current_grupo_cliente
 
 acuses = Blueprint('acuses', __name__)
 
 @acuses.route('/api/acuses/loteDropDwn', methods=['GET'])
+@jwt_required()
 def getLoteDropDwn():
     try: 
         with DatabaseSession().get_session() as session:
@@ -197,10 +200,11 @@ DESCRIPCION_MAP = {
 }
 
 @acuses.route('/api/acuses/getAcuses', methods=['GET'])
+@jwt_required()
 def getAcuses():
     try:
         nroCliente    = request.args.get('nroCliente')
-        idGrupoCliente = request.args.get('idGrupoCliente')
+        idGrupoCliente = get_current_grupo_cliente()
 
         if not nroCliente:
             return jsonify({"message": "Debe proporcionar 'nroCliente'."}), 400
@@ -340,6 +344,7 @@ def getAcuses():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 @acuses.route('/api/acuses/getAcusesPorExcel', methods=['POST'])
+@jwt_required()
 def getAcusesPorExcel():
     try:
         data = request.get_json()

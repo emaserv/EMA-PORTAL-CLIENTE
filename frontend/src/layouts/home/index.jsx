@@ -19,13 +19,13 @@ import SoftTypography from "components/SoftTypography";
 import DropFileInput from "components/DropFileInput";
 import DropdownList from "components/DropdownList";
 
-import axios from "axios";
 
 //IMPORTO URL BACK
 import { useAuth } from "layouts/auth/AuthContext";
 
 
 import {API_BACK} from '../../config'
+import { apiClient } from 'services/api';
 
 
 const Home = () => {
@@ -65,7 +65,7 @@ const Home = () => {
         //console.log(`${key}:`, value);
       }
 
-      const response = await axios.post(`/api/upload`, formData);
+      const response = await apiClient.post(`/api/upload`, formData);
       //console.log("response", response)
 
       if(response.status === 200){

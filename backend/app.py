@@ -1,17 +1,36 @@
 from flask import Flask
 from flask_cors import CORS
 from flask import Blueprint
-#from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager
+from datetime import timedelta
 from db.serverPostgres import db
 import os
-import varEntorno 
+import secrets
+import varEntorno
 
 app = Flask(__name__)
-#jwt = JWTManager(app)
-CORS(app)
+
+FRONTEND_ORIGIN = os.environ.get('FRONTEND_ORIGIN', 'http://localhost:3001')
+CORS(app, supports_credentials=True, origins=[FRONTEND_ORIGIN])
+
+jwt_secret_key = os.environ.get('JWT_SECRET_KEY')
+if not jwt_secret_key:
+    jwt_secret_key = secrets.token_hex(32)
+    print("ADVERTENCIA: JWT_SECRET_KEY no esta definida en el entorno. "
+          "Se genero una clave temporal para esta ejecucion: todas las "
+          "sesiones se invalidaran al reiniciar el servidor. "
+          "Definir JWT_SECRET_KEY como variable de entorno real en produccion.")
+
+app.config['JWT_SECRET_KEY'] = jwt_secret_key
+app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+app.config['JWT_COOKIE_SECURE'] = os.environ.get('JWT_COOKIE_SECURE', 'False').lower() == 'true'
+app.config['JWT_COOKIE_SAMESITE'] = os.environ.get('JWT_COOKIE_SAMESITE', 'Lax')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=8)
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True
+app.config['JWT_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
+jwt = JWTManager(app)
 
 try:
-    #app.config['JWT_SECRET_KEY'] = 'prueba1'
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("URL_DB")
     db.init_app(app)
 except Exception as e:

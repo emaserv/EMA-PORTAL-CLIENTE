@@ -7,7 +7,6 @@ import SoftButton from "components/SoftButton";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth } from "layouts/auth/AuthContext";
 import * as XLSX from "xlsx";
-import axios from "axios";
 import InformacionMetroTable from "./data/informacionMetroTable";
 import { API_BACK } from "../../config";
 import LoadingModal from "../../components/loadingModal";
@@ -15,6 +14,7 @@ import DropdownList from "components/DropdownList";
 import AlertDlg from "components/AlertDlg";
 import CalleAlturaTableMetro from "./data/fechaClienteCalleAlturaTableMetro";
 import CalleAlturaTableNaturgy from "./data/fechaClienteCalleAlturaTableNaturgy";
+import { apiFetch, apiClient } from 'services/api';
 
 const InformesCliente = () => {
   const { user } = useAuth();
@@ -35,7 +35,7 @@ const InformesCliente = () => {
   const [alertTitle, setAlertTitle] = useState("");
 
   useEffect(() => {
-      fetch(
+      apiFetch(
         `${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
           { mode: "cors" }
         )
@@ -53,7 +53,7 @@ const InformesCliente = () => {
 
   useEffect(() => {
     if (mutex) {
-      fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+      apiFetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           if (apiData.multiplesEmision && apiData.columns) {
@@ -80,7 +80,7 @@ const InformesCliente = () => {
     try {
       // Primera solicitud: fecha-cliente
       const url1 = `${API_BACK}/api/informe-emision?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`; // La URL base debe configurarse en axios o agregarla completa aquí
-      const response1 = await axios.get(url1);
+      const response1 = await apiClient.get(url1);
       console.log("Response", response1.status);
       const apiData1 = response1.data;
       console.log("DATAAA: ",apiData1)
@@ -108,7 +108,7 @@ const InformesCliente = () => {
     try {
   
       const url = `${API_BACK}/api/informe-emision-extendido?idEmision=${idEmision}&idGrupoCliente=${user.idGrupoCliente}`;      
-      const response = await axios.get(url);
+      const response = await apiClient.get(url);
       const apiData = response.data;
   
       if (apiData.dataTabla) {

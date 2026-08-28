@@ -24,6 +24,7 @@ import html2canvas from "html2canvas";
 import ReactDOM from "react-dom/client";
 import AcuseReciboConFirma from "./acuseConFirma.js";
 import { API_BACK } from "../../../config.js";
+import { apiFetch } from 'services/api';
 
 dayjs.locale("ES");
 
@@ -245,7 +246,7 @@ async function abrirAcuseEnNuevaPestaniaConCanvas(itemOriginal, user, setLoading
   setLoading(true);
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${API_BACK}/api/acuses/getAcuses?nroCliente=${nroCliente}&idGrupoCliente=${idGrupoCliente}`
     );
     if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);

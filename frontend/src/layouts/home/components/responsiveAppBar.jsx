@@ -40,9 +40,9 @@ function ResponsiveAppBar() {
     setAnchorElUser(null);
   };
 
-  const handleLogout = () => {
-    logout(); // Llama a la función de logout
-    navigate('/authentication/login'); // Redirige a la página de login
+  const handleLogout = async () => {
+    await logout(); // Llama a la función de logout (limpia la cookie de sesión)
+    navigate('/authentication/sign-in');
   };
 
   return (

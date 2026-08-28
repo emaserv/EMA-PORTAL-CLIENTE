@@ -18,6 +18,7 @@ import DropdownList from "components/DropdownList";
 
 
 import L from 'leaflet';
+import { apiFetch } from 'services/api';
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -54,7 +55,7 @@ const FirmasCliente = () => {
 
   useEffect(() => {
     if (user) {
-      fetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user.idGrupoCliente}`, { mode: "cors" })
+      apiFetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user.idGrupoCliente}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           if (apiData.multiplesEmision && apiData.columns) {
@@ -97,7 +98,7 @@ const FirmasCliente = () => {
 // Función para realizar la segunda solicitud: radio-cliente
 const fetchFirmaCliente = async (plan, sucursal, radio, fechaDesde, fechaHasta, idEmision) => {
   try {
-    const response2 = await fetch(
+    const response2 = await apiFetch(
       `${API_BACK}/api/radio-cliente?plan=${plan || ""}&sucursal=${sucursal || ""}&radio=${radio || ""}&grupoCliente=${user ? user.idGrupoCliente : null}&fechaDesde=${fechaDesde || ""}&fechaHasta=${fechaHasta || ""}&fechaEmision=${idEmision || ""}`
     );
 

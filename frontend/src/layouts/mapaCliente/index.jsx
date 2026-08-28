@@ -13,6 +13,7 @@ import { API_BACK } from "../../config";
 import LoadingModal from "../../components/loadingModal";
 import DropdownList from "components/DropdownList";
 import SoftInputBase from "components/SoftInputBase";
+import { apiFetch } from 'services/api';
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -72,7 +73,7 @@ const MapaCliente = () => {
       if (planValue) url.searchParams.append("plan", planValue);
       if (sucursalValue) url.searchParams.append("sucursal", sucursalValue);
 
-      fetch(url, { mode: "cors" })
+      apiFetch(url, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           setRadiosDisponibles(apiData.radios || []);
@@ -89,7 +90,7 @@ const MapaCliente = () => {
 
   // Cargar datos de información metro
   useEffect(() => {
-    fetch(
+    apiFetch(
       `${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`,
       { mode: "cors" }
     )
@@ -107,7 +108,7 @@ const MapaCliente = () => {
   // Cargar emisiones disponibles
   useEffect(() => {
     if (mutex) {
-      fetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, 
+      apiFetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, 
         { mode: "cors" }
       )
         .then((response) => response.json())
@@ -143,7 +144,7 @@ const MapaCliente = () => {
         url.searchParams.append("radio", radio);
       });
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

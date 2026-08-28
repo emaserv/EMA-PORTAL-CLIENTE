@@ -15,11 +15,11 @@ import MyMap from "./components/mapa";
 import PopUp from "components/PopUp";
 import styled from "styled-components";
 import * as XLSX from "xlsx";
-import axios from "axios";
 import InformacionMetroTable from "./data/informacionMetroTable";
 import { API_BACK } from "../../config";
 import LoadingModal from "../../components/loadingModal";
 import DropdownList from "components/DropdownList";
+import { apiFetch, apiClient } from 'services/api';
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -56,7 +56,7 @@ const FechaCliente = () => {
   const [lotes, setLotes] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+    apiFetch(`${API_BACK}/api/tablaInformacion?grupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
       .then((response) => response.json())
       .then((apiData) => {
         if (apiData.dataTabla && apiData.columns) {
@@ -71,7 +71,7 @@ const FechaCliente = () => {
 
   useEffect(() => {
     if (mutex) {
-      fetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+      apiFetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           if (apiData.multiplesEmision && apiData.columns) {
@@ -85,7 +85,7 @@ const FechaCliente = () => {
 
   useEffect(() => {
     if (user && user.idGrupoCliente === 6) {
-      fetch(`${API_BACK}/api/lote`, { mode: "cors" })
+      apiFetch(`${API_BACK}/api/lote`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
           if (apiData.dataDropDwn) {
@@ -150,7 +150,7 @@ const FechaCliente = () => {
         lote: lote || "",
       };
 
-      const response1 = await axios.get(url1, { params: params1 });
+      const response1 = await apiClient.get(url1, { params: params1 });
       console.log("Response", response1.status);
       const apiData1 = response1.data;
 
@@ -180,7 +180,7 @@ const FechaCliente = () => {
         lote: lote || "",
       };
 
-      const response2 = await axios.get(url2, { params: params2 });
+      const response2 = await apiClient.get(url2, { params: params2 });
       const apiData2 = response2.data;
 
       if (apiData2.dataTabla) {

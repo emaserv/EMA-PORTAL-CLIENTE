@@ -8,6 +8,7 @@ import uuid
 import json
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_file, current_app
+from flask_jwt_extended import jwt_required
 
 current_file = os.path.abspath(__file__)          
 routes_dir = os.path.dirname(current_file)        
@@ -271,6 +272,7 @@ class AsyncTask:
         return info
     
 @acuses_async.route('/api/acuses-async/can-generate', methods=['GET'])
+@jwt_required()
 def can_generate():
     """
     Verifica si se puede iniciar una nueva generación
@@ -283,6 +285,7 @@ def can_generate():
     })
 
 @acuses_async.route('/api/acuses-async/generate', methods=['POST'])
+@jwt_required()
 def generate_async():
     """
     Inicia generación asíncrona de acuses 
@@ -346,6 +349,7 @@ def generate_async():
         }), 500
 
 @acuses_async.route('/api/acuses-async/status/<task_id>', methods=['GET'])
+@jwt_required()
 def get_status(task_id):
     
     task = tasks.get(task_id)
@@ -364,6 +368,7 @@ def get_status(task_id):
     return jsonify({"success": True, **info})
 
 @acuses_async.route('/api/acuses-async/download/<task_id>', methods=['GET'])
+@jwt_required()
 def download_result(task_id):
     """
     Descarga el ZIP generado
@@ -403,6 +408,7 @@ def download_result(task_id):
         }), 500
 
 @acuses_async.route('/api/acuses-async/cancel/<task_id>', methods=['POST'])
+@jwt_required()
 def cancel_task(task_id):
     
     task = tasks.get(task_id)
@@ -432,6 +438,7 @@ def cancel_task(task_id):
 
 
 @acuses_async.route('/api/acuses-async/cleanup', methods=['POST'])
+@jwt_required()
 def cleanup_tasks():
     """
     Limpia tareas antiguas completadas
@@ -482,6 +489,7 @@ def cleanup_tasks():
         }), 500
 
 @acuses_async.route('/api/acuses-async/active-tasks', methods=['GET'])
+@jwt_required()
 def get_active_tasks():
     """
     Obtiene lista de tareas activas

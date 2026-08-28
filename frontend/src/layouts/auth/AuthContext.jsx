@@ -1,5 +1,6 @@
 // AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiClient } from 'services/api';
 
 // Crear el contexto
 const AuthContext = createContext();
@@ -7,33 +8,35 @@ const AuthContext = createContext();
 // Proveedor del contexto
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); // Estado para almacenar el usuario
+  const [loading, setLoading] = useState(true); // Mientras se valida la sesion existente
 
   useEffect(() => {
-    // Inicializa el estado del usuario desde localStorage si está disponible
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    // La sesion vive en una cookie httpOnly (no accesible desde JS), asi
+    // que para saber si ya hay un login vigente le preguntamos al backend.
+    apiClient
+      .get('/api/me')
+      .then((response) => setUser(response.data))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   // Función para iniciar sesión
   const login = (userData) => {
     setUser(userData);
-    //console.log("PASE X ACA", JSON.stringify(userData));
-    // Aquí puedes agregar lógica para guardar el token en localStorage o cookies
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
   };
 
   // Función para cerrar sesión
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiClient.post('/api/logout');
+    } catch (e) {
+      // Si falla igual limpiamos el estado local
+    }
     setUser(null);
-    // Limpia cualquier token o dato de sesión
-    localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

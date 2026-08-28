@@ -6,6 +6,8 @@ from sqlalchemy.sql import text
 from db.masterRepo import DatabaseSession
 from datetime import datetime, timedelta
 import pymysql
+from flask_jwt_extended import jwt_required
+from utils.auth_helpers import get_current_grupo_cliente
 
 radioCliente = Blueprint('radioCliente', __name__)
 
@@ -47,6 +49,7 @@ def format_date(date_str):
     return nuevaFecha
 
 @radioCliente.route('/api/radio-cliente', methods=['GET'])
+@jwt_required()
 def tablaRC():
     fechaEmision  = request.args.get('fechaEmision',  '')
     plan          = request.args.get('plan',          '')
@@ -54,7 +57,7 @@ def tablaRC():
     radio         = request.args.get('radio',         '')
     fechaDesde    = request.args.get('fechaDesde',    '')
     fechaHasta    = request.args.get('fechaHasta',    '')
-    grupoCliente  = request.args.get('grupoCliente',  '')
+    grupoCliente  = get_current_grupo_cliente() or ''
 
     try:
         # 1. SELECT solo las columnas necesarias, directo sobre la tabla base
@@ -159,13 +162,14 @@ def tablaRC():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 @radioCliente.route( '/api/radio/geoMapaItems', methods=['GET'])
+@jwt_required()
 def mapaItems():
     plan = request.args.get('plan')
     sucursal = request.args.get('sucursal')
     radio = request.args.get('radio')
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
-    grupoCliente = request.args.get('grupoCliente')
+    grupoCliente = get_current_grupo_cliente()
     fechaEmision = request.args.get('fechaEmision')
 
     try:        
@@ -244,6 +248,7 @@ def mapaItems():
 
 
 @radioCliente.route( '/api/get-presentismo', methods=['GET'])
+@jwt_required()
 def obtener_presentismo():
     hini = request.args.get('hini') 
     hfin = request.args.get('hfin')
@@ -278,6 +283,7 @@ def obtener_presentismo():
     
 
 @radioCliente.route( '/api/geoMapaCamino', methods=['GET'])
+@jwt_required()
 def mapaCamino():
     # Obtén los parámetros de la solicitud GET
     plan = request.args.get('plan')
@@ -285,7 +291,7 @@ def mapaCamino():
     radio = request.args.get('radio')
     fechaDesde = request.args.get('fechaDesde')
     fechaHasta = request.args.get('fechaHasta')
-    grupoCliente = request.args.get('grupoCliente')
+    grupoCliente = get_current_grupo_cliente()
 
     try:
         # Query base
@@ -367,6 +373,7 @@ def mapaCamino():
 
 
 @radioCliente.route( '/api/geo-dai', methods=['GET'])
+@jwt_required()
 def get_dai_data():
     fechaini = request.args.get('hini')
     fechafin = request.args.get('hfin')
@@ -427,6 +434,7 @@ def get_dai_data():
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route( '/api/plan', methods=['GET'])
+@jwt_required()
 def planRC():
     
     try:        
@@ -455,6 +463,7 @@ def planRC():
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route( '/api/sucursal', methods=['GET'])
+@jwt_required()
 def sucursalRC():
     
     try:        
@@ -483,6 +492,7 @@ def sucursalRC():
 
 #jsonify lo que hace es convierte lo que trae de la base de datos a json
 @radioCliente.route( '/api/radio', methods=['GET'])
+@jwt_required()
 def radioRC():
     try:        
         query = text('SELECT DISTINCT("radio") FROM "itemEmision"')
