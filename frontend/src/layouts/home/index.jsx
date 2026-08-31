@@ -252,7 +252,28 @@ const Home = () => {
                   </Grid>
                   ) : null}
 
-              </Grid>             
+                {user && user.esAdmin ? (
+                  <Grid
+                    sx={{ textAlign: "left", marginTop: "1rem" }}
+                    item
+                    xs={12}
+                  >
+                    <div className="content" display="flex">
+                      <Link to="/admin/usuarios">
+                        <SoftButton
+                          variant="gradient"
+                          color="info"
+                          size="large"
+                          sx={{ width: "30rem" }}
+                        >
+                          Administrar Usuarios
+                        </SoftButton>
+                      </Link>
+                    </div>
+                  </Grid>
+                ) : null}
+
+              </Grid>
               
             ) : null}
           </SoftBox>

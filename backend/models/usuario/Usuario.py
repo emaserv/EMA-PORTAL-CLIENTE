@@ -8,3 +8,4 @@ class Usuario(db.Model):
     apellido = db.Column(db.String(45))
     idGrupoCliente = db.Column(db.Integer, db.ForeignKey('grupoCliente.id'))
     idCredencial = db.Column(db.Integer, db.ForeignKey('credencial.id'))
+    esAdmin = db.Column(db.Boolean, nullable=False, server_default='false')

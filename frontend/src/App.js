@@ -31,6 +31,10 @@ export default function App() {
       return route.component;
     }
 
+    if (route.adminOnly && user && !user.esAdmin) {
+      return <Navigate to="/home" replace />;
+    }
+
     const rutasPermitidas = RUTAS_PERMITIDAS_POR_GRUPO[user?.idGrupoCliente];
     if (rutasPermitidas && !rutasPermitidas.includes(route.route)) {
       return <Navigate to="/home" replace />;

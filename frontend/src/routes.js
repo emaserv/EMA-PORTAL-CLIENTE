@@ -29,6 +29,7 @@ import ConsultaFirmas from "./layouts/firmasCliente"
 import InformesCliente from "layouts/informesCliente";
 import AcuseCliente from "layouts/acuseCliente";
 import MapaCliente from "layouts/mapaCliente";
+import AdminUsuarios from "layouts/adminUsuarios";
 
 const routes = [
   {
@@ -92,6 +93,15 @@ const routes = [
     route: "/mapa-cliente",
     component: <MapaCliente />,
     noCollapse: true,
+  },
+  {
+    type: "collapse",
+    name: "Administrar Usuarios",
+    key: "admin-usuarios",
+    route: "/admin/usuarios",
+    component: <AdminUsuarios />,
+    noCollapse: true,
+    adminOnly: true,
   },
 ];
 

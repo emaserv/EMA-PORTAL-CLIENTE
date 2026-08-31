@@ -1,6 +1,5 @@
 from flask import Flask
 from flask_cors import CORS
-from flask import Blueprint
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 from db.serverPostgres import db
@@ -39,10 +38,6 @@ except Exception as e:
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-from models.usuario.Usuario import Usuario
-from models.cliente.GrupoCliente import GrupoCliente
-
-from routes.RestGenerica import RestGenerica
 from routes.auth import auth
 from routes.fechaCliente import fechaCliente
 from routes.radioCliente import radioCliente
@@ -50,6 +45,7 @@ from routes.importador import importador
 from routes.geoJson import geoJson
 from routes.acuses import acuses
 from routes.acuses_async import acuses_async
+from routes.usuarios import usuarios
 
 app.register_blueprint(auth)
 app.register_blueprint(fechaCliente)
@@ -58,18 +54,13 @@ app.register_blueprint(importador)
 app.register_blueprint(geoJson)
 app.register_blueprint(acuses)
 app.register_blueprint(acuses_async)
+app.register_blueprint(usuarios)
 
-from services.adaptersRest.AdapterUsuario import AdapterUsuario
-from services.adaptersRest.AdapterGrupoCliente import AdapterGrupoCliente
-
-UsuarioRestBluePrint = Blueprint('UserRest', __name__)
-GrupoClienteBluePrint = Blueprint('GrupoClienteRest', __name__)
-
-userRest = RestGenerica(Usuario, UsuarioRestBluePrint, AdapterUsuario)
-grupoClienteRest = RestGenerica(GrupoCliente, GrupoClienteBluePrint, AdapterGrupoCliente)
-
-app.register_blueprint(UsuarioRestBluePrint)
-app.register_blueprint(GrupoClienteBluePrint)
+# Nota: antes aca se exponia un CRUD generico (RestGenerica) para Usuario y
+# GrupoCliente protegido solo con @jwt_required(), sin scoping por
+# idGrupoCliente ni por rol. Cualquier usuario autenticado podia listar,
+# editar o borrar usuarios de OTROS clientes. Se reemplazo por las rutas
+# admin-only de routes/usuarios.py.
 
 #Esto es para que se creen las tablas. NO TOCAR!
 from models.cliente import GrupoCliente

@@ -10,20 +10,14 @@ from flask_jwt_extended import (
 )
 from sqlalchemy import text, cast, Text
 from db.masterRepo import DatabaseSession
-import hashlib
+from models.usuario.Usuario import Usuario
+from models.usuario.Credencial import Credencial
+from utils.auth_helpers import get_sha256_hash
 
 auth = Blueprint('auth', __name__)
 
 def get_column_names(model):
     return [column.name for column in model._table_.columns]
-
-def get_sha256_hash(input_string: str) -> str:
-    # Crea un objeto hash SHA-256
-    sha256 = hashlib.sha256()
-    # Actualiza el objeto hash con el string codificado en bytes
-    sha256.update(input_string.encode('utf-8'))
-    # Devuelve el hash en formato hexadecimal
-    return sha256.hexdigest()
 
 @auth.route('/api/login', methods=['POST'])
 def login():
@@ -60,10 +54,30 @@ def login():
 
         if dataQueryJson and dataQueryJson[0]['found']:
             usuario = dataQueryJson[0]
+
+            # get_credenciales() no devuelve el id de usuario ni si es admin,
+            # asi que lo buscamos aparte por el nombre de usuario ya validado.
+            with DatabaseSession().get_session() as session:
+                credencial = session.query(Credencial).filter(
+                    Credencial.nomUsuario == usuario['userName']
+                ).first()
+                usuario_db = (
+                    session.query(Usuario).filter(Usuario.idCredencial == credencial.id).first()
+                    if credencial else None
+                )
+
+            id_usuario = usuario_db.id if usuario_db else None
+            es_admin = bool(usuario_db.esAdmin) if usuario_db else False
+
+            usuario['idUsuario'] = id_usuario
+            usuario['esAdmin'] = es_admin
+
             additional_claims = {
                 'nombre': usuario['nombre'],
                 'apellido': usuario['apellido'],
                 'idGrupoCliente': usuario['idGrupoCliente'],
+                'idUsuario': id_usuario,
+                'esAdmin': es_admin,
             }
             access_token = create_access_token(
                 identity=usuario['userName'],
@@ -95,6 +109,8 @@ def me():
         "nombre": claims.get('nombre'),
         "apellido": claims.get('apellido'),
         "idGrupoCliente": claims.get('idGrupoCliente'),
+        "idUsuario": claims.get('idUsuario'),
+        "esAdmin": claims.get('esAdmin', False),
     }), 200
 
 @auth.route('/protected', methods=['GET'])
