@@ -19,6 +19,8 @@ import DropdownList from "components/DropdownList";
 
 import L from "leaflet";
 import { apiFetch } from 'services/api';
+import { GRADIENT_MODAL_HEADER } from "assets/uiConstants";
+import FilterField from "components/FilterField";
 
 
 const DataConverter = (fechaDeSincronizacion) => {
@@ -61,9 +63,8 @@ const RadioCliente = () => {
   const [columnsInfo, setColumnsInfo] = useState([]);
   const [filtroEmision, setFiltroEmision] = useState(null);
   const [multiplesEmision, setMultiplesEmision] = useState([])
-  const [mutex, setMutex] = useState(false);
 
-  
+
 
 
   useEffect(() => {
@@ -76,7 +77,6 @@ const RadioCliente = () => {
         if (apiData.dataTabla && apiData.columns) {
           setDataInfo(apiData.dataTabla);
           setColumnsInfo(apiData.columns);
-          setMutex(true);
         } else {
         }
       })
@@ -84,7 +84,7 @@ const RadioCliente = () => {
   }, []);
 
   useEffect(() => {
-      if (mutex) {
+      if (user) {
         apiFetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
           .then((response) => response.json())
           .then((apiData) => {
@@ -95,7 +95,7 @@ const RadioCliente = () => {
           })
           .catch((error) => {});
       }
-    }, [mutex, user]);
+    }, [user]);
 
   const onSubmit = async (data) => {
       setCaminoMapa([]);
@@ -643,12 +643,12 @@ const RadioCliente = () => {
             <form onSubmit={handleSubmit(onSubmit)}>
               <SoftBox
                 display="flex"
-                justifyContent="space-between"
-                alignItems="flex-start"   // ← cambio clave
+                flexWrap="wrap"
+                alignItems="flex-start"
+                columnGap={3}
+                rowGap={1}
               >
-                {/* Plan */}
-                <SoftBox>
-                  <SoftTypography marginTop={-2}>Plan</SoftTypography>
+                <FilterField label="Plan" width="200px" error={errors.plan?.message}>
                   <Controller
                     name="plan"
                     control={control}
@@ -656,20 +656,14 @@ const RadioCliente = () => {
                     render={({ field }) => (
                       <SoftInputBase
                         field={field}
-                        placeholder="Inserte nro de plan"
+                        placeholder="Inserte plan"
                         error={!!errors.plan}
                       />
                     )}
                   />
-                  <SoftTypography color="error" fontSize="0.75rem"
-                    style={{ minHeight: "1.1rem", display: "block", marginTop: 2 }}>
-                    {errors.plan?.message ?? ""}
-                  </SoftTypography>
-                </SoftBox>
+                </FilterField>
 
-                {/* Sucursal */}
-                <SoftBox>
-                  <SoftTypography marginTop={-2}>Sucursal</SoftTypography>
+                <FilterField label="Sucursal" width="200px" error={errors.sucursal?.message}>
                   <Controller
                     name="sucursal"
                     control={control}
@@ -677,87 +671,67 @@ const RadioCliente = () => {
                     render={({ field }) => (
                       <SoftInputBase
                         field={field}
-                        placeholder="Inserte nro de sucursal"
+                        placeholder="Inserte sucursal"
                         error={!!errors.sucursal}
                       />
                     )}
                   />
-                  <SoftTypography color="error" fontSize="0.75rem"
-                    style={{ minHeight: "1.1rem", display: "block", marginTop: 2 }}>
-                    {errors.sucursal?.message ?? ""}
-                  </SoftTypography>
-                </SoftBox>
+                </FilterField>
 
-                {/* Radio — opcional, sin rules */}
-                <SoftBox>
-                  <SoftTypography marginTop={-2}>Radio</SoftTypography>
+                <FilterField label="Radio" width="200px">
                   <Controller
                     name="radio"
                     control={control}
                     render={({ field }) => (
                       <SoftInputBase
                         field={field}
-                        placeholder="Inserte nro de radio"
+                        placeholder="Inserte radio"
                       />
                     )}
                   />
-                  {/* Sin error, pero mismo minHeight para mantener alineación */}
-                  <div style={{ minHeight: "1.1rem", marginTop: 2 }} />
-                </SoftBox>
+                </FilterField>
 
-                {/* Fecha (condicional, sin cambios) */}
                 {user && user.idGrupoCliente !== 1 ? (
-                  <SoftBox display="flex" flexDirection="column" marginTop={-2}>
-                    <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
-                    <SoftBox display="flex" alignItems="center">
+                  <>
+                    <FilterField label="Desde" width="200px">
                       <Controller name="fechaDesde" control={control}
                         render={({ field }) => <DatePickerValue field={field} />} />
-                      <SoftTypography> - </SoftTypography>
+                    </FilterField>
+                    <FilterField label="Hasta" width="200px">
                       <Controller name="fechaHasta" control={control}
                         render={({ field }) => <DatePickerValue field={field} />} />
-                    </SoftBox>
-                    <div style={{ minHeight: "1.1rem", marginTop: 2 }} />
-                  </SoftBox>
+                    </FilterField>
+                  </>
                 ) : null}
 
-                {/* Emisión — ahora obligatoria */}
-                <SoftBox display="flex" flexDirection="column" marginTop={{ xs: 2, md: -2 }} marginLeft={{ md: 3 }}>
-                  <SoftTypography component="label" variant="caption" 
-                    fontSize={{ xs: "1rem", sm: "1.3rem" }}>
-                    Emision
-                  </SoftTypography>
-                  <SoftBox display="flex" alignItems="center"
-                    flexDirection={{ xs: "column", md: "row" }} marginTop={1}>
-                    <Controller
-                      name="idEmision"
-                      control={control}
-                      rules={{ required: "Campo obligatorio" }}   // ← nuevo
-                      render={({ field }) => (
-                        <DropdownList
-                          width="15vw"
-                          list={multiplesEmision ? multiplesEmision.reverse() : []}
-                          placeholder="Seleccione su emisión"
-                          campoAMostrar="nombre"
-                          campoID="id"
-                          inputRef={field.ref}
-                          value={field.value}
-                          onChange={(selectedValue) => field.onChange(selectedValue)}
-                        />
-                      )}
-                    />
-                  </SoftBox>
-                  <SoftTypography color="error" fontSize="0.75rem"
-                    style={{ minHeight: "1.1rem", display: "block", marginTop: 2 }}>
-                    {errors.idEmision?.message ?? ""}
-                  </SoftTypography>
-                </SoftBox>
+                <FilterField label="Emision" width="200px" error={errors.idEmision?.message}>
+                  <Controller
+                    name="idEmision"
+                    control={control}
+                    rules={{ required: "Campo obligatorio" }}   // ← nuevo
+                    render={({ field }) => (
+                      <DropdownList
+                        width="200px"
+                        list={multiplesEmision ? multiplesEmision.reverse() : []}
+                        placeholder="Seleccione emisión"
+                        campoAMostrar="nombre"
+                        campoID="id"
+                        inputRef={field.ref}
+                        value={field.value}
+                        onChange={(selectedValue) => field.onChange(selectedValue)}
+                      />
+                    )}
+                  />
+                </FilterField>
 
-                {/* Botón Filtrar */}
-                <SoftBox display="flex" justifyContent="flex-end" alignItems="center" pt={2} px={3}>
-                  <SoftButton variant="gradient" color="info" type="submit">
-                    Filtrar
-                  </SoftButton>
-                </SoftBox>
+                <SoftButton
+                  variant="gradient"
+                  color="info"
+                  type="submit"
+                  sx={{ alignSelf: "center", marginLeft: "auto" }}
+                >
+                  Filtrar
+                </SoftButton>
               </SoftBox>
             </form>
           </SoftBox>
@@ -827,7 +801,7 @@ const RadioCliente = () => {
         padding={"0px"}
         width={"40vw"}
         height={"15vh"}
-        background={"#085397"}
+        background={GRADIENT_MODAL_HEADER}
         paddingTopEncabezado={"20px"}
       >
         <Contenido>

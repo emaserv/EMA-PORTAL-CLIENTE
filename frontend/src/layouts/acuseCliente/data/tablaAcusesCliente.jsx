@@ -22,6 +22,7 @@ import ReactDOMServer from 'react-dom/server';
 import AcuseReciboConFirma from "../components/acuseConFirma";
 import ReactDOM from "react-dom/client";
 import html2canvas from "html2canvas";
+import { TABLE_HEADER_CELL_SX, GRADIENT_MODAL_HEADER, COLOR_ICON_ACTIVE, COLOR_ICON_DISABLED } from "assets/uiConstants";
 
 const formatearFecha = (date) => {
   if (!date) return "-";
@@ -256,14 +257,10 @@ const TablaAcusesCliente = ({ data }) => {
                 <Tooltip key={headCell.id} title={headCell.labelComplete || ""}>
                   <TableCell
                     sx={{
+            ...TABLE_HEADER_CELL_SX,
             position: "sticky",
             top: 0,
             zIndex: 10,
-            background: "linear-gradient(to top, #2152ff, #21d4fd)",
-            color: "#ffffff",
-            fontWeight: 700,
-            fontSize: "0.85rem",
-            textTransform: "uppercase",
             textAlign: "center",
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -367,10 +364,10 @@ const TablaAcusesCliente = ({ data }) => {
                           }
                         }}
                       >
-                        <MapIcon sx={{ color: "#2152ff" }} />
+                        <MapIcon sx={{ color: COLOR_ICON_ACTIVE }} />
                       </button>
                     ) : (
-                      <MapIcon sx={{ color: "#ccc" }} />
+                      <MapIcon sx={{ color: COLOR_ICON_DISABLED }} />
                     )}
                   </TableCell>
 
@@ -383,10 +380,10 @@ const TablaAcusesCliente = ({ data }) => {
                           setPopupFotoAbierto(true);
                         }}
                       >
-                        <PhotoIcon sx={{ color: "#2152ff" }} />
+                        <PhotoIcon sx={{ color: COLOR_ICON_ACTIVE }} />
                       </button>
                     ) : (
-                      <PhotoIcon sx={{ color: "#ccc" }} />
+                      <PhotoIcon sx={{ color: COLOR_ICON_DISABLED }} />
                     )}
                   </TableCell>
 
@@ -399,10 +396,10 @@ const TablaAcusesCliente = ({ data }) => {
                           setPopupFirmaAbierta(true);
                         }}
                       >
-                        <EditIcon sx={{ color: "#2152ff" }} />
+                        <EditIcon sx={{ color: COLOR_ICON_ACTIVE }} />
                       </button>
                     ) : (
-                      <EditIcon sx={{ color: "#ccc" }} />
+                      <EditIcon sx={{ color: COLOR_ICON_DISABLED }} />
                     )}
                   </TableCell>
                   
@@ -411,7 +408,7 @@ const TablaAcusesCliente = ({ data }) => {
                       style={{ background: "none", border: "none", cursor: "pointer" }}
                       onClick={() => abrirAcuseEnNuevaPestaniaConCanvas(item)}
                     >
-                      <ArticleIcon sx={{ color: "#2152ff" }} />
+                      <ArticleIcon sx={{ color: COLOR_ICON_ACTIVE }} />
                     </button>
                   </TableCell>
 
@@ -427,7 +424,7 @@ const TablaAcusesCliente = ({ data }) => {
         estado={popupAbierto}
         cambiarEstado={setPopupAbierto}
         titulo="Ubicación en Mapa"
-        background="#2152ff"
+        background={GRADIENT_MODAL_HEADER}
       >
         <div style={{ flexGrow: 1, height: '100%' }}>
           <MyMap
@@ -443,7 +440,7 @@ const TablaAcusesCliente = ({ data }) => {
         estado={popupFotoAbierto}
         cambiarEstado={setPopupFotoAbierto}
         titulo="Foto del Cliente"
-        background="#2152ff"
+        background={GRADIENT_MODAL_HEADER}
         customSize="popup-imagen"
       >
         <img
@@ -457,7 +454,7 @@ const TablaAcusesCliente = ({ data }) => {
         estado={popupFirmaAbierta}
         cambiarEstado={setPopupFirmaAbierta}
         titulo="Firma del Cliente"
-        background="#2152ff"
+        background={GRADIENT_MODAL_HEADER}
         customSize="popup-imagen"
       >
         <img

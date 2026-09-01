@@ -80,14 +80,16 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
             {...params}
             placeholder={placeholder}
             sx={{
-              '& div': {
+              margin: 0,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                padding: '0.5rem 0.75rem !important',
+              },
+              '& .MuiOutlinedInput-input': {
                 fontSize: '0.875rem',
                 fontWeight: '400',
-                borderRadius: '8px',
-                margin: '0',
-              },
-              'input': {
                 padding: '0 !important',
+                height: '1.375rem',
                 width: width,
               },
             }}
@@ -109,7 +111,7 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
           </li>
         )}
         PopperComponent={(props) => (
-          <Popper {...props} style={{ width: width, zIndex: 9999, position: 'relative'}}>
+          <Popper {...props} style={{ ...props.style, zIndex: 9999 }}>
             {props.children}
           </Popper>
         )}

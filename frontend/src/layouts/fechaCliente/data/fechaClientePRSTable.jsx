@@ -25,6 +25,7 @@ import ArticleIcon from "@mui/icons-material/Article";
 import { Tooltip } from "@mui/material";
 import MobileFriendlyTooltip from "components/TooltipMobile";
 import { useAuth } from "layouts/auth/AuthContext";
+import { TABLE_HEADER_CELL_SX, COLOR_ICON_ACTIVE, COLOR_ICON_DISABLED } from "assets/uiConstants";
 
 dayjs.locale("ES");
 
@@ -306,44 +307,14 @@ export default function PRSTable({ data, columns }) {
 
     return (
       <TableHead style={{ height: "40px" }}>
-        <TableRow
-          style={{
-            background: "linear-gradient(to top, #2152ff, #21d4fd)",
-            borderRadius: "10px", // Bordes redondeados
-            minWidth: "auto",
-            fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-            fontSize: "0.85rem",
-            opacity: 1,
-            cursor: "pointer",
-            fontWeight: "700",
-            color: "#ffffff", // Texto en blanco para mayor contraste
-            textTransform: "uppercase",
-            padding: "0px",
-            paddingLeft: "16px",
-            //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
-          }}
-        >
+        <TableRow style={{ height: "40px" }}>
           {columnasFiltradas.map((headCell) => (
             <TableCell
               key={headCell.id}
               align={headCell.numeric ? "right" : "left"}
               padding={headCell.disablePadding ? "none" : "normal"}
               sortDirection={orderBy === headCell.id ? order : false}
-              sx={{
-                background: "linear-gradient(to top, #2152ff, #21d4fd)",
-                borderRadius: "1px", // Bordes redondeados
-                minWidth: "auto",
-                fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                fontSize: "0.85rem",
-                opacity: 1,
-                cursor: "pointer",
-                fontWeight: "700",
-                color: "#ffffff", // Texto en blanco para mayor contraste
-                textTransform: "uppercase",
-                padding: "0px",
-                paddingLeft: "10px",
-                //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
-              }}
+              sx={{ ...TABLE_HEADER_CELL_SX, cursor: "pointer" }}
               selected={numSelected > 0 && orderBy === headCell.id}
               onClick={createSortHandler(headCell.id)}
             >
@@ -524,7 +495,7 @@ export default function PRSTable({ data, columns }) {
                           rel="noopener noreferrer"
                           style={{
                             textDecoration: "none",
-                            color: row.geoVisita ? "#4682B4" : "#D3D3D3",
+                            color: row.geoVisita ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
                           }}
                         >
                           <MapIcon fontSize="medium" />
@@ -546,7 +517,7 @@ export default function PRSTable({ data, columns }) {
                           rel="noopener noreferrer"
                           style={{
                             textDecoration: "none",
-                            color: row.foto ? "#4682B4" : "#D3D3D3",
+                            color: row.foto ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
                           }}
                         >
                           <PhotoIcon fontSize="medium" />
@@ -568,7 +539,7 @@ export default function PRSTable({ data, columns }) {
                           rel="noopener noreferrer"
                           style={{
                             textDecoration: "none",
-                            color: row.firma !== "-" ? "#4682B4" : "#D3D3D3",
+                            color: row.firma !== "-" ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
                             pointerEvents: row.firma !== "-" ? "auto" : "none", // Deshabilita el click si es '-'
                             cursor:
                               row.firma !== "-" ? "pointer" : "not-allowed",
@@ -593,7 +564,7 @@ export default function PRSTable({ data, columns }) {
                           rel="noopener noreferrer"
                           style={{
                             textDecoration: "none",
-                            color: "#D3D3D3",
+                            color: COLOR_ICON_DISABLED,
                             pointerEvents: "none", // Deshabilita el click si es '-'
                             cursor: "not-allowed",
                           }}

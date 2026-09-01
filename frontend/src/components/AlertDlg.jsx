@@ -6,12 +6,9 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import PropTypes from 'prop-types';
+import { GRADIENT_MODAL_HEADER, COLOR_ICON_ACTIVE } from 'assets/uiConstants';
 
 export default function AlertDlg({titulo, open, setOpen}) {
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
 
   const handleClose = () => {
     setOpen(false);
@@ -24,17 +21,23 @@ export default function AlertDlg({titulo, open, setOpen}) {
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
+        PaperProps={{ sx: { borderRadius: "15px", overflow: "hidden" } }}
       >
-        <DialogTitle id="alert-dialog-title">
-          {"PSM Web"}
+        <DialogTitle
+          id="alert-dialog-title"
+          sx={{ background: GRADIENT_MODAL_HEADER, color: "#ffffff", fontWeight: "bold" }}
+        >
+          EMA Servicios
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ mt: 2 }}>
           <DialogContentText id="alert-dialog-description">
             {titulo}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Aceptar</Button>
+          <Button onClick={handleClose} sx={{ color: COLOR_ICON_ACTIVE, fontWeight: "bold" }}>
+            Aceptar
+          </Button>
         </DialogActions>
       </Dialog>
     </React.Fragment>

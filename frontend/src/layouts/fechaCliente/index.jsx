@@ -20,6 +20,8 @@ import { API_BACK } from "../../config";
 import LoadingModal from "../../components/loadingModal";
 import DropdownList from "components/DropdownList";
 import { apiFetch, apiClient } from 'services/api';
+import { GRADIENT_MODAL_HEADER } from "assets/uiConstants";
+import FilterField from "components/FilterField";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -51,7 +53,6 @@ const FechaCliente = () => {
   const [dataInfo, setDataInfo] = useState([]);
   const [columnsInfo, setColumnsInfo] = useState([]);
   const [loading, SetLoading] = useState(false);
-  const [mutex, setMutex] = useState(false);
   const [multiplesEmision, setMultiplesEmision] = useState([]);
   const [lotes, setLotes] = useState([]);
 
@@ -62,7 +63,6 @@ const FechaCliente = () => {
         if (apiData.dataTabla && apiData.columns) {
           setDataInfo(apiData.dataTabla);
           setColumnsInfo(apiData.columns);
-          setMutex(true);
         } else {
         }
       })
@@ -70,7 +70,7 @@ const FechaCliente = () => {
   }, []);
 
   useEffect(() => {
-    if (mutex) {
+    if (user) {
       apiFetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
@@ -81,7 +81,7 @@ const FechaCliente = () => {
         })
         .catch((error) => {});
     }
-  }, [mutex, user]);
+  }, [user]);
 
   useEffect(() => {
     if (user && user.idGrupoCliente === 6) {
@@ -324,194 +324,98 @@ const FechaCliente = () => {
             <form onSubmit={handleSubmit(onSubmit)}>
               <SoftBox
                 display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                flexDirection={{ xs: "column", md: "row" }}
                 flexWrap="wrap"
-                gap={2}
+                alignItems="flex-start"
+                columnGap={3}
+                rowGap={1}
               >
-                <SoftBox>
-                  <SoftTypography
-                    component="label"
-                    variant="caption"
-                    sx={{
-                      marginTop: "1",
-                      marginBottom: "-1",
-                      fontSize: { xs: "0.75rem", sm: "1rem" },
-                    }}
-                  >
-                    N° de Cliente
-                  </SoftTypography>
+                <FilterField label="N° de Cliente" width="200px" error={errors.numCliente?.message}>
                   <Controller
                     name="numCliente"
                     control={control}
                     render={({ field }) => (
-                      <>
-                        <SoftInputBase
-                          field={field}
-                          placeholder="Inserte nro de cliente"
-                          error={!!errors.numCliente}
-                        />
-                        {errors.numCliente && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.numCliente.message}
-                          </SoftTypography>
-                        )}
-                      </>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte cliente"
+                        error={!!errors.numCliente}
+                      />
                     )}
                   />
-                </SoftBox>
+                </FilterField>
 
                 {user && user.idGrupoCliente === 1 && (
-                  <SoftBox
-                    display="flex"
-                    flexDirection="column"
-                    marginTop={{ xs: 2, md: -2 }}
-                    marginLeft={{ md: 3 }}
-                  >
-                    <SoftTypography
-                      component="label"
-                      variant="caption"
-                      marginTop={2}
-                      fontSize={{ xs: "0.75rem", sm: "1rem" }}
-                    >
-                      Emision
-                    </SoftTypography>
-                    <SoftBox
-                      display="flex"
-                      alignItems="center"
-                      flexDirection={{ xs: "column", md: "row" }}
-                      marginTop={1}
-                    >
-                      <Controller
-                        name="idEmision"
-                        control={control}
-                        render={({ field }) => (
-                          <>
-                            <DropdownList
-                              width="10vw"
-                              list={multiplesEmision ? multiplesEmision.reverse() : []}
-                              placeholder="Seleccione su emisión"
-                              campoAMostrar="nombre"
-                              campoID="id"
-                              inputRef={field.ref}
-                              value={field.value}
-                              onChange={(selectedValue) =>
-                                field.onChange(selectedValue)
-                              }
-                            />
-                            {errors.idEmision && (
-                              <SoftTypography
-                                color="error"
-                                fontSize="1rem"
-                                marginTop={1}
-                              >
-                                {errors.idEmision.message}
-                              </SoftTypography>
-                            )}
-                          </>
-                        )}
-                      />
-                    </SoftBox>
-                  </SoftBox>
+                  <FilterField label="Emision" width="200px" error={errors.idEmision?.message}>
+                    <Controller
+                      name="idEmision"
+                      control={control}
+                      render={({ field }) => (
+                        <DropdownList
+                          width="200px"
+                          list={multiplesEmision ? multiplesEmision.reverse() : []}
+                          placeholder="Seleccione emisión"
+                          campoAMostrar="nombre"
+                          campoID="id"
+                          inputRef={field.ref}
+                          value={field.value}
+                          onChange={(selectedValue) =>
+                            field.onChange(selectedValue)
+                          }
+                        />
+                      )}
+                    />
+                  </FilterField>
                 )}
 
                 {user && user.idGrupoCliente === 6 && (
-                  <SoftBox
-                    display="flex"
-                    flexDirection="column"
-                    marginTop={{ xs: 2, md: -2 }}
-                    marginLeft={{ md: 3 }}
-                  >
-                    <SoftTypography
-                      component="label"
-                      variant="caption"
-                      marginTop={2}
-                      fontSize={{ xs: "0.75rem", sm: "1rem" }}
-                    >
-                      Lote
-                    </SoftTypography>
-                    <SoftBox
-                      display="flex"
-                      alignItems="center"
-                      flexDirection={{ xs: "column", md: "row" }}
-                      marginTop={1}
-                    >
-                      <Controller
-                        name="lote"
-                        control={control}
-                        render={({ field }) => (
-                          <>
-                            <DropdownList
-                              width="15vw"
-                              list={lotes}
-                              placeholder="Seleccione un lote"
-                              campoAMostrar="lotes"
-                              campoID="lotes"
-                              inputRef={field.ref}
-                              value={field.value}
-                              onChange={(selectedValue) =>
-                                field.onChange(selectedValue)
-                              }
-                            />
-                          </>
-                        )}
-                      />
-                    </SoftBox>
-                  </SoftBox>
+                  <FilterField label="Lote" width="200px">
+                    <Controller
+                      name="lote"
+                      control={control}
+                      render={({ field }) => (
+                        <DropdownList
+                          width="200px"
+                          list={lotes}
+                          placeholder="Seleccione un lote"
+                          campoAMostrar="lotes"
+                          campoID="lotes"
+                          inputRef={field.ref}
+                          value={field.value}
+                          onChange={(selectedValue) =>
+                            field.onChange(selectedValue)
+                          }
+                        />
+                      )}
+                    />
+                  </FilterField>
                 )}
 
                 {user && user.idGrupoCliente !== 1 && (
-                  <SoftBox
-                    display="flex"
-                    flexDirection="column"
-                    marginTop={{ xs: 2, md: -2 }}
-                    marginLeft={{ md: 3 }}
-                  >
-                    <SoftTypography
-                      component="label"
-                      variant="caption"
-                      marginTop={2}
-                      marginBottom={0}
-                      fontSize={{ xs: "0.75rem", sm: "1rem" }}
-                    >
-                      Fecha de Distribucion/Rendicion
-                    </SoftTypography>
-                    <SoftBox
-                      display="flex"
-                      alignItems="center"
-                      flexDirection={{ xs: "column", md: "row" }}
-                    >
+                  <>
+                    <FilterField label="Desde" width="200px">
                       <Controller
                         name="fechaDesde"
                         control={control}
                         render={({ field }) => <DatePickerValue field={field} />}
                       />
-                      <SoftTypography> - </SoftTypography>
+                    </FilterField>
+                    <FilterField label="Hasta" width="200px">
                       <Controller
                         name="fechaHasta"
                         control={control}
                         render={({ field }) => <DatePickerValue field={field} />}
                       />
-                    </SoftBox>
-                  </SoftBox>
+                    </FilterField>
+                  </>
                 )}
 
-                <SoftBox
-                  display="flex"
-                  justifyContent="flex-end"
-                  alignItems="center"
-                  pt={3}
-                  px={3}
+                <SoftButton
+                  variant="gradient"
+                  color="info"
+                  type="submit"
+                  sx={{ alignSelf: "center", marginLeft: "auto" }}
                 >
-                  <SoftButton variant="gradient" color="info" type="submit">
-                    Filtrar
-                  </SoftButton>
-                </SoftBox>
+                  Filtrar
+                </SoftButton>
               </SoftBox>
             </form>
           </SoftBox>
@@ -615,7 +519,7 @@ const FechaCliente = () => {
         padding={"0px"}
         width={"30vw"}
         height={"15vh"}
-        background={"#085397"}
+        background={GRADIENT_MODAL_HEADER}
         paddingTopEncabezado={"20px"}
       >
         <Contenido>

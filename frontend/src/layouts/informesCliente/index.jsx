@@ -15,6 +15,7 @@ import AlertDlg from "components/AlertDlg";
 import CalleAlturaTableMetro from "./data/fechaClienteCalleAlturaTableMetro";
 import CalleAlturaTableNaturgy from "./data/fechaClienteCalleAlturaTableNaturgy";
 import { apiFetch, apiClient } from 'services/api';
+import FilterField from "components/FilterField";
 
 const InformesCliente = () => {
   const { user } = useAuth();
@@ -30,7 +31,6 @@ const InformesCliente = () => {
   const [multiplesEmision, setMultiplesEmision] = useState([]);
   const [columnsEmision, setColumnsEmision] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [mutex, setMutex] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertTitle, setAlertTitle] = useState("");
 
@@ -44,7 +44,6 @@ const InformesCliente = () => {
         if (apiData.dataTabla && apiData.columns) {
           setDataInfo(apiData.dataTabla);
           setColumnsInfo(apiData.columns);
-          setMutex(true);
         } else {
         }
       })
@@ -52,7 +51,7 @@ const InformesCliente = () => {
   }, []);
 
   useEffect(() => {
-    if (mutex) {
+    if (user) {
       apiFetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
         .then((response) => response.json())
         .then((apiData) => {
@@ -63,7 +62,7 @@ const InformesCliente = () => {
         })
         .catch((error) => {});
     }
-  }, [mutex, user]);
+  }, [user]);
 
   const onSubmit = async (data) => {
     fetchData(data.idEmision);
@@ -232,71 +231,37 @@ const InformesCliente = () => {
             <form onSubmit={handleSubmit(onSubmit)}>
               <SoftBox
                 display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                flexDirection={{ xs: "column", md: "row" }} // Responsive layout
+                flexWrap="wrap"
+                alignItems="flex-start"
+                gap={3}
               >
-                {/* Fila de Emisión y DropdownList */}
-                <SoftBox
-                  display="flex"
-                  alignItems="center" // Centra verticalmente
-                  gap={2} // Espacio horizontal entre etiqueta y dropdown
-                  flexDirection={{ xs: "column", md: "row" }} // Responsive
-                >
-                  {/* Etiqueta */}
-                  <SoftTypography
-                    component="label"
-                    variant="caption"
-                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
-                    style={{ marginBottom: "0px" }} // Elimina margen inferior
-                  >
-                    Emisión:
-                  </SoftTypography>
-
-                  {/* DropdownList */}
+                <FilterField label="Emisión" width="200px" error={errors.idEmision?.message}>
                   <Controller
                     name="idEmision"
                     control={control}
                     rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
-                      <>
-                        <DropdownList
-                          width="70vw"
-                          list={multiplesEmision ? multiplesEmision.reverse() : []}
-                          placeholder="Seleccione su emisión"
-                          campoAMostrar="nombre"
-                          campoID="id"
-                          inputRef={field.ref}
-                          value={field.value}
-                          onChange={(selectedValue) =>
-                            field.onChange(selectedValue)
-                          }
-                        />
-                        {errors.idEmision && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.idEmision.message}
-                          </SoftTypography>
-                        )}
-                      </>
+                      <DropdownList
+                        width="200px"
+                        list={multiplesEmision ? multiplesEmision.reverse() : []}
+                        placeholder="Seleccione emisión"
+                        campoAMostrar="nombre"
+                        campoID="id"
+                        inputRef={field.ref}
+                        value={field.value}
+                        onChange={(selectedValue) =>
+                          field.onChange(selectedValue)
+                        }
+                      />
                     )}
                   />
-                </SoftBox>
+                </FilterField>
 
-                {/* Botón de Filtrar */}
-                <SoftBox
-                  display="flex"
-                  justifyContent="flex-end"
-                  alignItems="center"
-                  px={3}
-                >
+                <FilterField label="Filtrar" hideLabel>
                   <SoftButton variant="gradient" color="info" type="submit">
                     Filtrar
                   </SoftButton>
-                </SoftBox>
+                </FilterField>
               </SoftBox>
             </form>
           </SoftBox>

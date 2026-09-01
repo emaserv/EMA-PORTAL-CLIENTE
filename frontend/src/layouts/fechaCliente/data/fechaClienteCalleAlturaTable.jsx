@@ -23,6 +23,7 @@ import { useAuth } from "layouts/auth/AuthContext";
 import html2canvas from "html2canvas";
 import ReactDOM from "react-dom/client";
 import AcuseReciboConFirma from "./acuseConFirma.js";
+import { TABLE_HEADER_CELL_SX, COLOR_ICON_ACTIVE, COLOR_ICON_DISABLED } from "assets/uiConstants";
 import { API_BACK } from "../../../config.js";
 import { apiFetch } from 'services/api';
 
@@ -144,7 +145,7 @@ function IconLinkCell({ href, icon: Icon }) {
         rel="noopener noreferrer"
         style={{
           textDecoration: "none",
-          color: active ? "#4682B4" : "#D3D3D3",
+          color: active ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
           pointerEvents: active ? "auto" : "none",
           cursor: active ? "pointer" : "not-allowed",
         }}
@@ -178,20 +179,7 @@ Completion.propTypes = {
   color: PropTypes.string.isRequired,
 };
 
-const HEAD_CELL_SX = {
-  background: "linear-gradient(to top, #2152ff, #21d4fd)",
-  borderRadius: "1px",
-  minWidth: "auto",
-  fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-  fontSize: "0.85rem",
-  opacity: 1,
-  cursor: "pointer",
-  fontWeight: "700",
-  color: "#ffffff",
-  textTransform: "uppercase",
-  padding: "0px",
-  paddingLeft: "10px",
-};
+const HEAD_CELL_SX = { ...TABLE_HEADER_CELL_SX, cursor: "pointer" };
 
 function EnhancedTableHead({ order, orderBy, onRequestSort, headCells }) {
   const createSortHandler = (property) => (event) => onRequestSort(event, property);
@@ -482,7 +470,7 @@ export default function CalleAlturaTable({ data, columns }) {
                 href={row.geoVisita || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ textDecoration: "none", color: row.geoVisita ? "#4682B4" : "#D3D3D3" }}
+                style={{ textDecoration: "none", color: row.geoVisita ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED }}
               >
                 <MapIcon fontSize="medium" />
               </a>
@@ -514,7 +502,7 @@ export default function CalleAlturaTable({ data, columns }) {
                 style={{ background: "none", border: "none", cursor: "pointer" }}
                 onClick={() => handleAcuse(row)}
               >
-                <ArticleIcon sx={{ color: "#4682B4" }} fontSize="medium" />
+                <ArticleIcon sx={{ color: COLOR_ICON_ACTIVE }} fontSize="medium" />
               </button>
             </TableCell>
           );

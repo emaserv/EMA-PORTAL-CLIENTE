@@ -26,6 +26,7 @@ import { useAuth } from "layouts/auth/AuthContext";
 
 import {API_BACK} from '../../config'
 import { apiClient } from 'services/api';
+import { COLOR_MODAL_ERROR, COLOR_MODAL_SUCCESS } from "assets/uiConstants";
 
 
 const Home = () => {
@@ -462,7 +463,7 @@ const Home = () => {
         padding={"0px"}
         width={"30vw"}
         height={"15vh"}
-        background={"#FF0000"}
+        background={COLOR_MODAL_ERROR}
         paddingTopEncabezado={'20px'}
       >
         <Contenido>
@@ -490,7 +491,7 @@ const Home = () => {
         padding={"0px"}
         width={"30vw"}
         height={"10vh"}
-        background={"#00FF00"}
+        background={COLOR_MODAL_SUCCESS}
         paddingTopEncabezado={'20px'}
       >
         <Contenido>

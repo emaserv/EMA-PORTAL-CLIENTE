@@ -15,6 +15,8 @@ import styled from "styled-components";
 import {API_BACK} from '../../config'
 import LoadingModal from '../../components/loadingModal';
 import DropdownList from "components/DropdownList";
+import { GRADIENT_MODAL_HEADER } from "assets/uiConstants";
+import FilterField from "components/FilterField";
 
 
 import L from 'leaflet';
@@ -51,7 +53,6 @@ const FirmasCliente = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [filtroEmision, setFiltroEmision] = useState(null);
   const [multiplesEmision, setMultiplesEmision] = useState([])
-  const [mutex, setMutex] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -186,178 +187,105 @@ const filtrarDatos = (data, plan, sucursal, radio, fechaDesde, fechaHasta) => {
             <form onSubmit={handleSubmit(onSubmit)}>
               <SoftBox
                 display="flex"
-                justifyContent="space-between"
-                alignItems="center"
+                flexWrap="wrap"
+                alignItems="flex-start"
+                columnGap={3}
+                rowGap={1}
               >
-
-                <SoftBox>
-                  <SoftTypography marginTop={-2}>Plan</SoftTypography>
+                <FilterField label="Plan" width="200px" error={errors.plan?.message}>
                   <Controller
                     name="plan"
                     control={control}
                     rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
-                      <>
-                        <SoftInputBase
-                          field={field}
-                          placeholder="Inserte nro de plan"
-                          error={!!errors.plan} // Muestra borde rojo si hay error
-                        />
-                        {errors.plan && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.plan.message}
-                          </SoftTypography>
-                        )}
-                      </>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte plan"
+                        error={!!errors.plan}
+                      />
                     )}
                   />
-                </SoftBox>
+                </FilterField>
 
-                <SoftBox>
-                  <SoftTypography marginTop={-2}>Sucursal</SoftTypography>
+                <FilterField label="Sucursal" width="200px" error={errors.sucursal?.message}>
                   <Controller
                     name="sucursal"
                     control={control}
                     rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
-                      <>
-                        <SoftInputBase
-                          field={field}
-                          placeholder="Inserte nro de sucursal"
-                          error={!!errors.sucursal} // Muestra borde rojo si hay error
-                        />
-                        {errors.sucursal && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.sucursal.message}
-                          </SoftTypography>
-                        )}
-                      </>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte sucursal"
+                        error={!!errors.sucursal}
+                      />
                     )}
                   />
-                </SoftBox>
+                </FilterField>
 
-                <SoftBox>
-                  <SoftTypography marginTop={-2}>Radio</SoftTypography>
+                <FilterField label="Radio" width="200px" error={errors.radio?.message}>
                   <Controller
                     name="radio"
                     control={control}
                     rules={{ required: "Campo obligatorio" }}
                     render={({ field }) => (
-                      <>
-                        <SoftInputBase
-                          field={field}
-                          placeholder="Inserte nro de radio"
-                          error={!!errors.radio} // Muestra borde rojo si hay error
-                        />
-                        {errors.radio && (
-                          <SoftTypography
-                            color="error"
-                            fontSize="1rem"
-                            marginTop={1}
-                          >
-                            {errors.radio.message}
-                          </SoftTypography>
-                        )}
-                      </>
+                      <SoftInputBase
+                        field={field}
+                        placeholder="Inserte radio"
+                        error={!!errors.radio}
+                      />
                     )}
                   />
-                </SoftBox>
-                
+                </FilterField>
+
                 {user &&
                 (user.idGrupoCliente !== 1) ? (
-                  <SoftBox display="flex" flexDirection="column" marginTop={-2}>
-                    <SoftTypography marginBottom={-1}>Fecha</SoftTypography>
-                    <SoftBox display="flex" alignItems="center">
+                  <>
+                    <FilterField label="Desde" width="200px">
                       <Controller
                         name="fechaDesde"
                         control={control}
                         render={({ field }) => <DatePickerValue field={field} />}
                       />
-                      <SoftTypography> - </SoftTypography>
+                    </FilterField>
+                    <FilterField label="Hasta" width="200px">
                       <Controller
                         name="fechaHasta"
                         control={control}
                         render={({ field }) => <DatePickerValue field={field} />}
                       />
-                    </SoftBox>
-                  </SoftBox>
+                    </FilterField>
+                  </>
                 ) : null}
 
-                <SoftBox
-                  display="flex"
-                  flexDirection="column"
-                  marginTop={{ xs: 2, md: -2 }}
-                  marginLeft={{ md: 3 }}
-                >
-                  <SoftTypography
-                    component="label"
-                    variant="caption"
-                    marginTop={2}
-                    fontSize={{ xs: "0.75rem", sm: "1rem" }}
-                  >
-                    Emision
-                  </SoftTypography>
-                  <SoftBox
-                    display="flex"
-                    alignItems="center"
-                    flexDirection={{ xs: "column", md: "row" }}
-                    marginTop={1}
-                  >
-                    <Controller
-                      name="idEmision"
-                      control={control}
-                      render={({ field }) => (
-                        <>
-                          <DropdownList
-                            width="10vw"
-                            list={multiplesEmision ? multiplesEmision.reverse() : []}
-                            placeholder="Seleccione su emisión"
-                            campoAMostrar="nombre"
-                            campoID="id"
-                            inputRef={field.ref}
-                            value={field.value}
-                            onChange={(selectedValue) =>
-                              field.onChange(selectedValue)
-                            }
-                          />
-                          {errors.idEmision && (
-                            <SoftTypography
-                              color="error"
-                              fontSize="1rem"
-                              marginTop={1}
-                            >
-                              {errors.idEmision.message}
-                            </SoftTypography>
-                          )}
-                        </>
-                      )}
-                    />
-                  </SoftBox>
-                </SoftBox>
+                <FilterField label="Emision" width="200px" error={errors.idEmision?.message}>
+                  <Controller
+                    name="idEmision"
+                    control={control}
+                    render={({ field }) => (
+                      <DropdownList
+                        width="200px"
+                        list={multiplesEmision ? multiplesEmision.reverse() : []}
+                        placeholder="Seleccione emisión"
+                        campoAMostrar="nombre"
+                        campoID="id"
+                        inputRef={field.ref}
+                        value={field.value}
+                        onChange={(selectedValue) =>
+                          field.onChange(selectedValue)
+                        }
+                      />
+                    )}
+                  />
+                </FilterField>
 
-                <SoftBox
-                  display="flex"
-                  justifyContent="flex-end"
-                  alignItems="center"
-                  pt={2}
-                  px={3}
+                <SoftButton
+                  variant="gradient"
+                  color="info"
+                  type="submit"
+                  sx={{ alignSelf: "center", marginLeft: "auto" }}
                 >
-                  <SoftButton 
-                    variant="gradient" 
-                    color="info" 
-                    type="submit" // Asegúrate de incluir el tipo "submit" aquí
-                  >
-                    Filtrar
-                  </SoftButton>
-                </SoftBox>
+                  Filtrar
+                </SoftButton>
               </SoftBox>
             </form>
           </SoftBox>
@@ -390,7 +318,7 @@ const filtrarDatos = (data, plan, sucursal, radio, fechaDesde, fechaHasta) => {
         padding={"0px"}
         width={"40vw"}
         height={"15vh"}
-        background={"#085397"}
+        background={GRADIENT_MODAL_HEADER}
         paddingTopEncabezado={'20px'}
       >
         <Contenido>

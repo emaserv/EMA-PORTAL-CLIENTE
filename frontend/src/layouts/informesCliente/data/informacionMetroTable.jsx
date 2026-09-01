@@ -18,6 +18,7 @@ import SoftProgress from "components/SoftProgress";
 import { HiChevronUp, HiChevronDown } from "react-icons/hi";
 import dayjs from "dayjs";
 import PhotoIcon from "@mui/icons-material/Photo";
+import { TABLE_HEADER_CELL_SX, GRADIENT_TABLE_HEADER_METRO, COLOR_ICON_DISABLED } from "assets/uiConstants";
 import MapIcon from "@mui/icons-material/Map";
 import Edit from "@mui/icons-material/Edit";
 import ArticleIcon from "@mui/icons-material/Article";
@@ -244,44 +245,14 @@ export default function InformacionMetroTable({ data, columns }) {
 
     return (
       <TableHead style={{ height: "40px" }}>
-        <TableRow
-          style={{
-            background: "linear-gradient(to top, #006400, #32CD32)",
-            borderRadius: "10 px", // Bordes redondeados
-            minWidth: "auto",
-            fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-            fontSize: "0.3rem",
-            opacity: 1,
-            cursor: "pointer",
-            fontWeight: "500",
-            color: "#ffffff", // Texto en blanco para mayor contraste
-            textTransform: "uppercase",
-            padding: "0px",
-            paddingLeft: "16px",
-            //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
-          }}
-        >
+        <TableRow style={{ height: "40px" }}>
           {headCells.map((headCell) => (
             <TableCell
               key={headCell.id}
               align={headCell.numeric ? "right" : "center"}
               padding={headCell.disablePadding ? "none" : "normal"}
               sortDirection={orderBy === headCell.id ? order : false}
-              sx={{
-                background: "linear-gradient(to top, #006400, #32CD32)",
-                borderRadius: "1px", // Bordes redondeados
-                minWidth: "auto",
-                fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                fontSize: "0.85rem",
-                opacity: 1,
-                cursor: "pointer",
-                fontWeight: "700",
-                color: "#ffffff", // Texto en blanco para mayor contraste
-                textTransform: "uppercase",
-                padding: "0px",
-                paddingLeft: "10px",
-                //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
-              }}
+              sx={{ ...TABLE_HEADER_CELL_SX, background: GRADIENT_TABLE_HEADER_METRO, cursor: "pointer" }}
               selected={numSelected > 0 && orderBy === headCell.id}
               onClick={createSortHandler(headCell.id)}
             >
@@ -392,7 +363,7 @@ export default function InformacionMetroTable({ data, columns }) {
                       hover
                       tabIndex={-1}
                       sx={{
-                        backgroundColor: index % 2 !== 0 ? "lightgrey" : "white", // Fondo distinto para filas pares
+                        backgroundColor: index % 2 !== 0 ? COLOR_ICON_DISABLED : "#ffffff", // Fondo distinto para filas pares
                       }}
                     >
                       {columns.map((column, colIndex) => {

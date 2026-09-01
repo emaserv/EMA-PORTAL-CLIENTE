@@ -18,6 +18,7 @@ import { HiChevronUp, HiChevronDown } from "react-icons/hi";
 import dayjs from "dayjs";
 import MobileFriendlyTooltip from "components/TooltipMobile";
 import axios from "axios";
+import { TABLE_HEADER_CELL_SX } from "assets/uiConstants";
 import { useAuth } from "layouts/auth/AuthContext";
 
 
@@ -205,44 +206,14 @@ export default function CalleAlturaTableNaturgy({ data, columns }) {
 
     return (
       <TableHead style={{ height: "40px" }}>
-        <TableRow
-          style={{
-            background: "linear-gradient(to top, #2152ff, #21d4fd)",
-            borderRadius: "10 px", // Bordes redondeados
-            minWidth: "auto",
-            fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-            fontSize: "0.3rem",
-            opacity: 1,
-            cursor: "pointer",
-            fontWeight: "500",
-            color: "#ffffff", // Texto en blanco para mayor contraste
-            textTransform: "uppercase",
-            padding: "0px",
-            paddingLeft: "16px",
-            //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
-          }}
-        >
+        <TableRow style={{ height: "40px" }}>
           {columnasFiltradas.map((headCell) => (
             <TableCell
               key={headCell.id}
               align={headCell.numeric ? "right" : "left"}
               padding={headCell.disablePadding ? "none" : "normal"}
               sortDirection={orderBy === headCell.id ? order : false}
-              sx={{
-                background: "linear-gradient(to top, #2152ff, #21d4fd)",
-                borderRadius: "1px", // Bordes redondeados
-                minWidth: "auto",
-                fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                fontSize: "0.85rem",
-                opacity: 1,
-                cursor: "pointer",
-                fontWeight: "700",
-                color: "#ffffff", // Texto en blanco para mayor contraste
-                textTransform: "uppercase",
-                padding: "0px",
-                paddingLeft: "10px",
-                //boxShadow: '0rem 0.25rem 0.4375rem -0.0625rem rgba(0, 0, 0, 0.11), 0rem 0.125rem 0.25rem -0.0625rem rgba(0, 0, 0, 0.07)'
-              }}
+              sx={{ ...TABLE_HEADER_CELL_SX, cursor: "pointer" }}
               selected={numSelected > 0 && orderBy === headCell.id}
               onClick={createSortHandler(headCell.id)}
             >

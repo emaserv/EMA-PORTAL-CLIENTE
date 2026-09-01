@@ -18,11 +18,12 @@ import PersonIcon from '@mui/icons-material/Person';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
-import { FormControl, Select, MenuItem, IconButton } from "@mui/material";
+import DropdownList from "components/DropdownList";
 import AcuseReciboConFirma from "./components/acuseConFirma";
 import html2canvas from "html2canvas";
 import ReactDOM from "react-dom/client";
 import { apiFetch } from 'services/api';
+import { COLOR_ICON_ACTIVE } from 'assets/uiConstants';
 
 const AcuseCliente = () => {
   const { handleSubmit, control } = useForm();
@@ -646,7 +647,7 @@ const AcuseCliente = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(39, 39, 39, 0.82)', 
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
           zIndex: 1000,
           display: 'flex',
           flexDirection: 'column',
@@ -732,11 +733,11 @@ const AcuseCliente = () => {
         </SoftBox>
 
         {/* CONTENEDOR PRINCIPAL - MÁS AMPLIO */}
-        <SoftBox 
-          width="100%" 
+        <SoftBox
+          width="100%"
           maxWidth="1800px"
           px={4}
-          mt={{ xs: '8rem', md: '10rem' }}
+          mt="7rem"
           mb={4}
         >
 
@@ -766,7 +767,7 @@ const AcuseCliente = () => {
                   }}
                 >
                   <SoftBox display="flex" alignItems="center" mb={2}>
-                    <InventoryIcon sx={{ fontSize: 36, color: '#1A73E8', mr: 1.5 }} />
+                    <InventoryIcon sx={{ fontSize: 36, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
                     <SoftTypography variant="h5" fontWeight="bold">
                       Acuse por Lote
                     </SoftTypography>
@@ -784,64 +785,18 @@ const AcuseCliente = () => {
                       name="loteSeleccionado"
                       control={control}
                       render={({ field }) => (
-                        <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-                          <Select
-                            {...field}
-                            value={field.value || ""}
-                            displayEmpty
-                            renderValue={(selected) => {
-                              if (!selected) {
-                                return <p style={{ color: '#9e9e9e' }}>Seleccione un Lote</p>;
-                              }
-                              const item = lotes.find(item => item.nombre === selected);
-                              return item ? item.nombre : selected;
-                            }}
-                            sx={{
-                              height: '40px',
-                              '& .MuiSelect-select': {
-                                py: 1.5,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                              }
-                            }}
-                            MenuProps={{
-                              PaperProps: {
-                                sx: {
-                                  maxWidth: '300px !important',
-                                  width: 'auto',
-                                  maxHeight: '400px !important',
-                                }
-                              }
-                            }}
-                            endAdornment={
-                              field.value ? (
-                                <IconButton
-                                  size="small"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    field.onChange("");
-                                  }}
-                                  sx={{
-                                    position: 'absolute',
-                                    right: 30,
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    zIndex: 10,
-                                  }}
-                                >
-                                  <CloseIcon fontSize="small" sx={{ color: '#9e9e9e' }} />
-                                </IconButton>
-                              ) : null
-                            }
-                          >
-                            {lotes.map((item) => (
-                              <MenuItem key={item.nombre} value={item.nombre}>
-                                {item.nombre}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
+                        <SoftBox sx={{ mt: 1 }}>
+                          <DropdownList
+                            width="100%"
+                            list={lotes}
+                            placeholder="Seleccione un Lote"
+                            campoAMostrar="nombre"
+                            campoID="nombre"
+                            inputRef={field.ref}
+                            value={field.value}
+                            onChange={(selectedValue) => field.onChange(selectedValue || "")}
+                          />
+                        </SoftBox>
                       )}
                     />
                   </SoftBox>
@@ -854,7 +809,7 @@ const AcuseCliente = () => {
                       disabled={loading || buscandoCliente || procesandoExcel}
                       sx={{ minWidth: '140px', py: 1.5 }}
                     >
-                      {loading ? "PROCESANDO..." : "GENERAR"}
+                      {loading ? "Procesando..." : "Generar"}
                     </SoftButton>
                   </SoftBox>
                 </Card>
@@ -879,7 +834,7 @@ const AcuseCliente = () => {
                 }}
               >
                 <SoftBox display="flex" alignItems="center" mb={2}>
-                  <PersonIcon sx={{ fontSize: 36, color: '#1A73E8', mr: 1.5 }} />
+                  <PersonIcon sx={{ fontSize: 36, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
                   <SoftTypography variant="h5" fontWeight="bold">
                     Acuse por Cliente
                   </SoftTypography>
@@ -918,7 +873,7 @@ const AcuseCliente = () => {
                       disabled={buscandoCliente || loading || procesandoExcel}
                       sx={{ minWidth: '140px', py: 1.5 }}
                     >
-                      {buscandoCliente ? "BUSCANDO..." : "FILTRAR"}
+                      {buscandoCliente ? "Buscando..." : "Filtrar"}
                     </SoftButton>
                   </SoftBox>
                 </form>
@@ -943,7 +898,7 @@ const AcuseCliente = () => {
                 }}
               >
                 <SoftBox display="flex" alignItems="center" mb={2}>
-                  <DescriptionIcon sx={{ fontSize: 36, color: '#1A73E8', mr: 1.5 }} />
+                  <DescriptionIcon sx={{ fontSize: 36, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
                   <SoftTypography variant="h5" fontWeight="bold">
                     Acuse por Excel
                   </SoftTypography>
@@ -961,17 +916,17 @@ const AcuseCliente = () => {
                   <SoftBox
                     sx={{
                       border: '2px dashed',
-                      borderColor: excelFile ? '#1A73E8' : '#e0e0e0',
+                      borderColor: excelFile ? COLOR_ICON_ACTIVE : '#e0e0e0',
                       borderRadius: 2,
                       p: 2,
                       mt: 1,
                       textAlign: 'center',
-                      backgroundColor: excelFile ? 'rgba(26, 115, 232, 0.04)' : '#f8f9fa',
+                      backgroundColor: excelFile ? 'rgba(33, 82, 255, 0.04)' : '#f8f9fa',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       '&:hover': {
-                        borderColor: '#1A73E8',
-                        backgroundColor: 'rgba(26, 115, 232, 0.04)',
+                        borderColor: COLOR_ICON_ACTIVE,
+                        backgroundColor: 'rgba(33, 82, 255, 0.04)',
                       }
                     }}
                     onClick={() => document.getElementById('excel-file-input').click()}
@@ -985,7 +940,7 @@ const AcuseCliente = () => {
                     />
                     <CloudUploadIcon sx={{ 
                       fontSize: 40,
-                      color: excelFile ? '#1A73E8' : '#9e9e9e',
+                      color: excelFile ? COLOR_ICON_ACTIVE : '#9e9e9e',
                       mb: 0.5 
                     }} />
                     <SoftTypography 
@@ -1019,7 +974,7 @@ const AcuseCliente = () => {
                     startIcon={<CloudUploadIcon />}
                     sx={{ minWidth: '160px', py: 1.5 }}
                   >
-                    {procesandoExcel ? "PROCESANDO..." : "GENERAR ZIP"}
+                    {procesandoExcel ? "Procesando..." : "Generar ZIP"}
                   </SoftButton>
                 </SoftBox>
               </Card>
