@@ -1,7 +1,7 @@
 import { React, useEffect, useState, useCallback } from "react";
 import SoftBox from "components/SoftBox";
 import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
-import { Card, Alert as MuiAlert, Snackbar, Grid } from "@mui/material";
+import { Card, Alert as MuiAlert, Snackbar, Divider } from "@mui/material";
 import SoftTypography from "components/SoftTypography";
 import SoftButton from "components/SoftButton";
 import { useForm, Controller } from "react-hook-form";
@@ -10,8 +10,7 @@ import { API_BACK } from "../../config";
 import { saveAs } from "file-saver";
 import TablaAcusesCliente from "./data/tablaAcusesCliente.jsx";
 import SoftInputBase from "components/SoftInputBase";
-import CircularProgress from "@mui/material/CircularProgress";
-import CloseIcon from '@mui/icons-material/Close';
+import LoadingModal from "../../components/loadingModal";
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PersonIcon from '@mui/icons-material/Person';
@@ -611,15 +610,38 @@ const AcuseCliente = () => {
     }
   };
 
-  // El ancho de cada columna se calcula segun cuantas tarjetas se muestran en total,
-  // para que siempre se repartan el 100% del ancho de la seccion (nunca queden mas
-  // angostas que eso ni dejen espacio vacio a los costados).
-  const getCardWidth = () => {
-    const seMuestraLote = user?.userName === "imorales@emaservicios.com.ar";
-    return seMuestraLote ? { xs: 12, md: 4 } : { xs: 12, md: 6 };
-  };
+  // Funcionalidades disponibles dentro de la seccion. Se muestran de a una
+  // (ocupando todo el ancho) y se cambia entre ellas con el switch de arriba,
+  // en vez de repartirlas lado a lado en columnas angostas.
+  const FUNCIONALIDADES = [
+    {
+      id: "lote",
+      label: "Por Lote",
+      titulo: "Acuse por Lote",
+      descripcion: "Genere acuses para todos los comprobantes de un lote específico",
+      icon: InventoryIcon,
+      mostrar: user?.userName === "imorales@emaservicios.com.ar",
+    },
+    {
+      id: "cliente",
+      label: "Por Cliente",
+      titulo: "Acuse por Cliente",
+      descripcion: "Busque y visualice los acuses de un cliente específico",
+      icon: PersonIcon,
+      mostrar: true,
+    },
+    {
+      id: "excel",
+      label: "Por Excel",
+      titulo: "Acuse por Excel",
+      descripcion: "Genere acuses para múltiples clientes desde un archivo Excel",
+      icon: DescriptionIcon,
+      mostrar: true,
+    },
+  ].filter((f) => f.mostrar);
 
-  const cardWidth = getCardWidth();
+  const [funcionalidad, setFuncionalidad] = useState("cliente");
+  const funcionalidadActiva = FUNCIONALIDADES.find((f) => f.id === funcionalidad) || FUNCIONALIDADES[0];
 
   return (
     <>
@@ -640,93 +662,7 @@ const AcuseCliente = () => {
         </MuiAlert>
       </Snackbar>
 
-    {(loading || procesandoExcel || renderizando) && (
-      <SoftBox 
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          zIndex: 1000,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          paddingTop: '20vh', 
-        }}
-      >
-        <Card sx={{ 
-          width: '90%',
-          maxWidth: '500px',
-          p: 4,
-          borderRadius: 3,
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-          border: '1px solid #e0e0e0',
-          backgroundColor: 'white',
-        }}>
-          <SoftBox display="flex" flexDirection="column" alignItems="center" gap={3}>
-            <CircularProgress size={60} thickness={4} color="info" />
-            
-            <SoftBox textAlign="center">
-              <SoftTypography variant="h5" fontWeight="bold" color="info" gutterBottom>
-                {renderizando 
-                  ? "Renderizando Acuses" 
-                  : procesandoExcel 
-                    ? "📊 Procesando Excel" 
-                    : "⚙️ Generando Acuses"}
-              </SoftTypography>
-              <SoftTypography variant="body1" color="text.secondary">
-                {progreso}
-              </SoftTypography>
-            </SoftBox>
-            
-            <SoftBox width="100%">
-              <SoftTypography variant="caption" color="text.secondary" display="block" textAlign="center">
-                {renderizando 
-                  ? "Convirtiendo acuses a imágenes JPG..." 
-                  : procesandoExcel 
-                    ? "Preparando archivos..." 
-                    : "La descarga comenzará automáticamente"}
-              </SoftTypography>
-            </SoftBox>
-            
-            {!renderizando && !procesandoExcel && (
-              <SoftButton
-                variant="gradient"
-                color="info"
-                size="small"
-                onClick={() => {
-                  if (currentTaskId) {
-                    setLoading(false);
-                    setProgreso("");
-                    setCurrentTaskId(null);
-                    cancelarTarea(currentTaskId);
-                  } else if (activeTasks.length > 0) {
-                    const taskToCancel = activeTasks[0]; 
-                    if (taskToCancel) {
-                      setLoading(false);
-                      setProgreso("");
-                      setCurrentTaskId(null);
-                      cancelarTarea(taskToCancel.task_id);
-                    }
-                  } else {
-                    setLoading(false);
-                    setProgreso("");
-                    setCurrentTaskId(null);
-                    mostrarSnackbar("Operación cancelada", "info");
-                  }
-                }}
-                startIcon={<CloseIcon />}
-              >
-                Cancelar
-              </SoftButton>
-            )}
-          </SoftBox>
-        </Card>
-      </SoftBox>
-    )}
+    <LoadingModal isOpen={loading || procesandoExcel || renderizando} />
 
       <SoftBox display="flex" flexDirection="column" alignItems="center" minHeight="100vh">
         <SoftBox width="100%">
@@ -740,90 +676,120 @@ const AcuseCliente = () => {
           mb={4}
         >
 
-          {/* Seccion general que agrupa las cards, mismo estilo (fondo blanco, ancho) que el resto de las pantallas */}
+          {/* Seccion general que agrupa las funcionalidades, mismo estilo (fondo blanco, ancho) que el resto de las pantallas */}
           <Card sx={{ borderRadius: "20px", p: 3 }}>
-          <Grid
-            container
-            spacing={4}
-            justifyContent="center"
-            alignItems="stretch"
-          >
-            {/* Card Lote (solo para usuario específico) */}
-            {user?.userName === "imorales@emaservicios.com.ar" && (
-              <Grid
-                item
-                {...cardWidth}
-                sx={{ '&:not(:first-of-type)': { borderLeft: { xs: 'none', md: '1px solid #e6e9ee' } } }}
-              >
-                <SoftBox sx={{ p: { xs: 0, md: 3 }, display: 'flex', flexDirection: 'column' }}>
-                  <SoftBox display="flex" alignItems="center" mb={2}>
-                    <InventoryIcon sx={{ fontSize: 36, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
-                    <SoftTypography variant="h5" fontWeight="bold">
-                      Acuse por Lote
-                    </SoftTypography>
-                  </SoftBox>
-
-                  <SoftTypography variant="body2" color="text.secondary" mb={3} sx={{ minHeight: '3.75rem' }}>
-                    Genere acuses para todos los comprobantes de un lote específico
+            {/* Header: nombre + descripcion de la funcionalidad activa a la
+                izquierda, switch para cambiar de funcionalidad a la derecha */}
+            <SoftBox
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+                gap: 2,
+                mb: 3,
+              }}
+            >
+              <SoftBox>
+                <SoftBox display="flex" alignItems="center" mb={0.5}>
+                  <funcionalidadActiva.icon sx={{ fontSize: 30, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
+                  <SoftTypography variant="h5" fontWeight="bold">
+                    {funcionalidadActiva.titulo}
                   </SoftTypography>
-
-                  <SoftBox mb={3}>
-                    <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
-                      Seleccionar Lote
-                    </SoftTypography>
-                    <Controller
-                      name="loteSeleccionado"
-                      control={control}
-                      render={({ field }) => (
-                        <SoftBox sx={{ mt: 1 }}>
-                          <DropdownList
-                            width="100%"
-                            list={lotes}
-                            placeholder="Seleccione un Lote"
-                            campoAMostrar="nombre"
-                            campoID="nombre"
-                            inputRef={field.ref}
-                            value={field.value}
-                            onChange={(selectedValue) => field.onChange(selectedValue || "")}
-                          />
-                        </SoftBox>
-                      )}
-                    />
-                  </SoftBox>
-
-                  <SoftBox display="flex" justifyContent="flex-end">
-                    <SoftButton
-                      variant="gradient"
-                      color="info"
-                      onClick={handleSubmit(onDescargarPorLote)}
-                      disabled={loading || buscandoCliente || procesandoExcel}
-                      sx={{ minWidth: '140px', py: 1.5 }}
-                    >
-                      {loading ? "Procesando..." : "Generar"}
-                    </SoftButton>
-                  </SoftBox>
                 </SoftBox>
-              </Grid>
+                <SoftTypography variant="body2" color="text.secondary">
+                  {funcionalidadActiva.descripcion}
+                </SoftTypography>
+              </SoftBox>
+
+              <SoftBox
+                sx={{
+                  display: "inline-flex",
+                  backgroundColor: "#f4f6fa",
+                  borderRadius: "14px",
+                  p: 0.5,
+                  gap: 0.5,
+                  flexShrink: 0,
+                }}
+              >
+                {FUNCIONALIDADES.map((f) => {
+                  const Icon = f.icon;
+                  const activo = funcionalidad === f.id;
+                  return (
+                    <SoftBox
+                      key={f.id}
+                      component="button"
+                      type="button"
+                      onClick={() => setFuncionalidad(f.id)}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        border: "none",
+                        cursor: "pointer",
+                        px: 2.5,
+                        py: 1,
+                        borderRadius: "10px",
+                        fontFamily: "inherit",
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        color: activo ? "#ffffff" : "#67748e",
+                        backgroundColor: activo ? COLOR_ICON_ACTIVE : "transparent",
+                        boxShadow: activo ? "0 4px 10px rgba(33, 82, 255, 0.25)" : "none",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <Icon sx={{ fontSize: 18 }} />
+                      {f.label}
+                    </SoftBox>
+                  );
+                })}
+              </SoftBox>
+            </SoftBox>
+
+            <Divider sx={{ mb: 3 }} />
+
+            {/* Contenido de la funcionalidad activa */}
+            {funcionalidad === "lote" && FUNCIONALIDADES.some((f) => f.id === "lote") && (
+              <SoftBox sx={{ maxWidth: "420px" }}>
+                <SoftBox mb={3}>
+                  <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
+                    Seleccionar Lote
+                  </SoftTypography>
+                  <Controller
+                    name="loteSeleccionado"
+                    control={control}
+                    render={({ field }) => (
+                      <SoftBox sx={{ mt: 1 }}>
+                        <DropdownList
+                          width="100%"
+                          list={lotes}
+                          placeholder="Seleccione un Lote"
+                          campoAMostrar="nombre"
+                          campoID="nombre"
+                          inputRef={field.ref}
+                          value={field.value}
+                          onChange={(selectedValue) => field.onChange(selectedValue || "")}
+                        />
+                      </SoftBox>
+                    )}
+                  />
+                </SoftBox>
+
+                <SoftButton
+                  variant="gradient"
+                  color="info"
+                  onClick={handleSubmit(onDescargarPorLote)}
+                  disabled={loading || buscandoCliente || procesandoExcel}
+                  sx={{ minWidth: '140px', py: 1.5 }}
+                >
+                  {loading ? "Procesando..." : "Generar"}
+                </SoftButton>
+              </SoftBox>
             )}
 
-            {/* Card Cliente */}
-            <Grid
-              item
-              {...cardWidth}
-              sx={{ '&:not(:first-of-type)': { borderLeft: { xs: 'none', md: '1px solid #e6e9ee' } } }}
-            >
-              <SoftBox sx={{ p: { xs: 0, md: 3 }, display: 'flex', flexDirection: 'column' }}>
-                <SoftBox display="flex" alignItems="center" mb={2}>
-                  <PersonIcon sx={{ fontSize: 36, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
-                  <SoftTypography variant="h5" fontWeight="bold">
-                    Acuse por Cliente
-                  </SoftTypography>
-                </SoftBox>
-
-                <SoftTypography variant="body2" color="text.secondary" mb={3} sx={{ minHeight: '3.75rem' }}>
-                  Busque y visualice los acuses de un cliente específico
-                </SoftTypography>
-
+            {funcionalidad === "cliente" && (
+              <SoftBox sx={{ maxWidth: "420px" }}>
                 <form onSubmit={handleSubmit(onDescargarPorCliente)}>
                   <SoftBox mb={3}>
                     <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
@@ -845,39 +811,21 @@ const AcuseCliente = () => {
                     />
                   </SoftBox>
 
-                  <SoftBox display="flex" justifyContent="flex-end">
-                    <SoftButton
-                      variant="gradient"
-                      color="info"
-                      type="submit"
-                      disabled={buscandoCliente || loading || procesandoExcel}
-                      sx={{ minWidth: '140px', py: 1.5 }}
-                    >
-                      {buscandoCliente ? "Buscando..." : "Filtrar"}
-                    </SoftButton>
-                  </SoftBox>
+                  <SoftButton
+                    variant="gradient"
+                    color="info"
+                    type="submit"
+                    disabled={buscandoCliente || loading || procesandoExcel}
+                    sx={{ minWidth: '140px', py: 1.5 }}
+                  >
+                    {buscandoCliente ? "Buscando..." : "Filtrar"}
+                  </SoftButton>
                 </form>
               </SoftBox>
-            </Grid>
+            )}
 
-            {/* Card Excel */}
-            <Grid
-              item
-              {...cardWidth}
-              sx={{ '&:not(:first-of-type)': { borderLeft: { xs: 'none', md: '1px solid #e6e9ee' } } }}
-            >
-              <SoftBox sx={{ p: { xs: 0, md: 3 }, display: 'flex', flexDirection: 'column' }}>
-                <SoftBox display="flex" alignItems="center" mb={2}>
-                  <DescriptionIcon sx={{ fontSize: 36, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
-                  <SoftTypography variant="h5" fontWeight="bold">
-                    Acuse por Excel
-                  </SoftTypography>
-                </SoftBox>
-
-                <SoftTypography variant="body2" color="text.secondary" mb={3} sx={{ minHeight: '3.75rem' }}>
-                  Genere acuses para múltiples clientes desde un archivo Excel
-                </SoftTypography>
-
+            {funcionalidad === "excel" && (
+              <SoftBox sx={{ maxWidth: "420px" }}>
                 <SoftBox mb={3}>
                   <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
                     Archivo Excel
@@ -908,12 +856,12 @@ const AcuseCliente = () => {
                       style={{ display: 'none' }}
                       onChange={handleFileChange}
                     />
-                    <CloudUploadIcon sx={{ 
+                    <CloudUploadIcon sx={{
                       fontSize: 40,
                       color: excelFile ? COLOR_ICON_ACTIVE : '#9e9e9e',
-                      mb: 0.5 
+                      mb: 0.5
                     }} />
-                    <SoftTypography 
+                    <SoftTypography
                       variant="body2"
                       color={excelFile ? 'info' : 'text.secondary'}
                       fontWeight={excelFile ? 'medium' : 'regular'}
@@ -935,25 +883,23 @@ const AcuseCliente = () => {
                   </SoftTypography>
                 </SoftBox>
 
-                <SoftBox mt={3} display="flex" justifyContent="flex-end">
-                  <SoftButton 
-                    variant="gradient" 
-                    color="info"
-                    onClick={onDescargarPorExcel}
-                    disabled={!excelFile || procesandoExcel || loading || buscandoCliente}
-                    startIcon={<CloudUploadIcon />}
-                    sx={{ minWidth: '160px', py: 1.5 }}
-                  >
-                    {procesandoExcel ? "Procesando..." : "Generar ZIP"}
-                  </SoftButton>
-                </SoftBox>
+                <SoftButton
+                  variant="gradient"
+                  color="info"
+                  onClick={onDescargarPorExcel}
+                  disabled={!excelFile || procesandoExcel || loading || buscandoCliente}
+                  startIcon={<CloudUploadIcon />}
+                  sx={{ minWidth: '160px', py: 1.5 }}
+                >
+                  {procesandoExcel ? "Procesando..." : "Generar ZIP"}
+                </SoftButton>
               </SoftBox>
-            </Grid>
-          </Grid>
+            )}
           </Card>
 
-          {/* Tabla de resultados */}
-          {dataCliente.length > 0 && (
+          {/* Tabla de resultados: solo mientras la funcionalidad activa siga
+              siendo "Por Cliente" (al cambiar de funcionalidad se oculta) */}
+          {funcionalidad === "cliente" && dataCliente.length > 0 && (
             <SoftBox mt={4}>
               <Card sx={{ p: 3, borderRadius: 5 }}>
                 <SoftBox px={1}>
@@ -961,7 +907,7 @@ const AcuseCliente = () => {
                     Se encontraron {dataCliente.length} acuses para el cliente
                   </SoftTypography>
                 </SoftBox>
-                <TablaAcusesCliente data={dataCliente} />
+                <TablaAcusesCliente data={dataCliente} setRenderizando={setRenderizando} />
               </Card>
             </SoftBox>
           )}

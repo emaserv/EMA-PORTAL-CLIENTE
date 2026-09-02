@@ -132,8 +132,8 @@ function AcuseLoadingModal() {
 
 // ─── Sub-componentes estables ────────────────────────────────────────────────
 
-const ICON_CELL_SX = { paddingTop: "2px", paddingBottom: "0px" };
-const TEXT_CELL_SX = { fontSize: "0.875rem", paddingTop: "2px", paddingBottom: "2px" };
+const ICON_CELL_SX = { paddingTop: "10px", paddingBottom: "10px" };
+const TEXT_CELL_SX = { fontSize: "0.875rem", paddingTop: "10px", paddingBottom: "10px" };
 
 function IconLinkCell({ href, icon: Icon }) {
   const active = href && href !== "-";
@@ -532,9 +532,9 @@ export default function CalleAlturaTable({ data, columns }) {
       {/* Modal de carga del acuse */}
       {loadingAcuse && <AcuseLoadingModal />}
 
-      <Paper sx={{ width: "100%", mb: 2 }}>
-        <TableContainer>
-          <Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle" size="medium">
+      <Paper elevation={0} sx={{ width: "100%", mb: 2, boxShadow: "none" }}>
+        <TableContainer sx={{ boxShadow: "none", borderRadius: 0, maxHeight: "70vh", overflow: "auto" }}>
+          <Table stickyHeader sx={{ minWidth: 750 }} aria-labelledby="tableTitle" size="medium">
             <EnhancedTableHead
               order={order}
               orderBy={orderBy}

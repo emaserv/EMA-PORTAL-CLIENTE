@@ -7,6 +7,7 @@ import PropTypes from "prop-types";
 import Popper from '@mui/material/Popper';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import { COLOR_ICON_ACTIVE } from 'assets/uiConstants';
 import './styles.css';
 
 const iconoSinMarcar = <CheckBoxOutlineBlankIcon fontSize="small" />;
@@ -53,19 +54,26 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
         onChange={handleOnChange}
         onBlur={field.onBlur}
         value={multiple ? multipleValue : field.value}
-        renderTags={(selected) => (
-          <span
-            style={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {selected.length
-              ? `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}`
-              : ''}
-          </span>
-        )}
+        renderTags={(selected) =>
+          selected.length > 0 && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                whiteSpace: 'nowrap',
+                backgroundColor: '#eaf0ff',
+                color: COLOR_ICON_ACTIVE,
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                lineHeight: 1,
+                padding: '5px 10px',
+                borderRadius: '999px',
+              }}
+            >
+              {selected.length} seleccionado{selected.length > 1 ? 's' : ''}
+            </span>
+          )
+        }
         sx={{
           '& .MuiAutocomplete-inputRoot': {
             flexWrap: 'nowrap',
@@ -78,7 +86,7 @@ export default function DropdownList({ width, list, placeholder, campoAMostrar, 
         renderInput={(params) => (
           <TextField
             {...params}
-            placeholder={placeholder}
+            placeholder={multiple && multipleValue.length > 0 ? "" : placeholder}
             sx={{
               margin: 0,
               '& .MuiOutlinedInput-root': {

@@ -20,7 +20,7 @@ import { API_BACK } from "../../config";
 import LoadingModal from "../../components/loadingModal";
 import DropdownList from "components/DropdownList";
 import { apiFetch, apiClient } from 'services/api';
-import { GRADIENT_MODAL_HEADER } from "assets/uiConstants";
+import { GRADIENT_MODAL_HEADER, SECTION_CARD_SX } from "assets/uiConstants";
 import FilterField from "components/FilterField";
 import Footer from "components/Footer";
 
@@ -434,7 +434,7 @@ const FechaCliente = () => {
             user.idGrupoCliente === 1 ||
             user.idGrupoCliente === null) ? (
             <SoftBox paddingBottom={3} justifyContent="center">
-              <Card>
+              <Card sx={SECTION_CARD_SX}>
                 <SoftBox p={3}>
                   <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />
                 </SoftBox>
@@ -449,7 +449,7 @@ const FechaCliente = () => {
           justifyContent="center"
         >
           <SoftBox justifyContent="center">
-            <Card>
+            <Card sx={SECTION_CARD_SX}>
               {user ? (
                 <>
                   <SoftBox
@@ -497,7 +497,7 @@ const FechaCliente = () => {
             justifyContent="center"
           >
             <SoftBox justifyContent="center">
-              <Card>
+              <Card sx={SECTION_CARD_SX}>
                 <SoftBox p={3}>
                   <InformacionMetroTable
                     data={dataInfo}

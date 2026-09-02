@@ -272,7 +272,7 @@ export default function CalleAlturaTableNaturgy({ data, columns }) {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Paper sx={{ width: "100%", mb: 2 }}>
+      <Paper elevation={0} sx={{ width: "100%", mb: 2, boxShadow: "none" }}>
         <EnhancedTableToolbar
           numSelected={selected.length}
           setStartDate={handleStartDateChange}
@@ -280,8 +280,9 @@ export default function CalleAlturaTableNaturgy({ data, columns }) {
           startDate={startDate}
           endDate={endDate}
         />
-        <TableContainer>
+        <TableContainer sx={{ boxShadow: "none", borderRadius: 0, maxHeight: "70vh", overflow: "auto" }}>
           <Table
+            stickyHeader
             sx={{ minWidth: 750 }}
             aria-labelledby="tableTitle"
             size={dense ? "small" : "medium"}
@@ -318,8 +319,8 @@ export default function CalleAlturaTableNaturgy({ data, columns }) {
                                 align="left"
                                 sx={{
                                   fontSize: "0.875rem",
-                                  paddingTop: "2px",
-                                  paddingBottom: "2px",
+                                  paddingTop: "10px",
+                                  paddingBottom: "10px",
                                 }}
                               >
                                 {column !== "porcentaje" ? (
@@ -357,7 +358,7 @@ export default function CalleAlturaTableNaturgy({ data, columns }) {
           style={{
             display: "flex",
             justifyContent: "flex-end",
-            marginRight: "10vh",
+            marginRight: "1.5rem",
           }}
         >
           {/* 

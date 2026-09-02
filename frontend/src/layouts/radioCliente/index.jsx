@@ -19,7 +19,7 @@ import DropdownList from "components/DropdownList";
 
 import L from "leaflet";
 import { apiFetch } from 'services/api';
-import { GRADIENT_MODAL_HEADER } from "assets/uiConstants";
+import { GRADIENT_MODAL_HEADER, SECTION_CARD_SX } from "assets/uiConstants";
 import FilterField from "components/FilterField";
 import Footer from "components/Footer";
 
@@ -743,7 +743,7 @@ const RadioCliente = () => {
         {user && (user.idGrupoCliente !== 1) ? (
           <SoftBox py={3} style={{ width: "90%" }} justifyContent="center">
             <SoftBox justifyContent="center">
-              <Card>
+              <Card sx={SECTION_CARD_SX}>
                 <SoftBox p={3}>
                   <MyMap
                     arrayPuntos={armarArrayCoordenadas(puntosMapa)}
@@ -764,7 +764,7 @@ const RadioCliente = () => {
             justifyContent="center"
           >
             <SoftBox justifyContent="center">
-              <Card>
+              <Card sx={SECTION_CARD_SX}>
                 <SoftBox p={3}>
                   <PRSTable data={datosFiltrados} columns={columns} />
                 </SoftBox>
@@ -779,7 +779,7 @@ const RadioCliente = () => {
             justifyContent="center"
           >
             <SoftBox justifyContent="center">
-              <Card>
+              <Card sx={SECTION_CARD_SX}>
                 <SoftBox p={3}>
                   <InformacionMetroTable
                     data={dataInfo}

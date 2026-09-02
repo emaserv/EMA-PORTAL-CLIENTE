@@ -18,7 +18,7 @@ import SoftProgress from "components/SoftProgress";
 import { HiChevronUp, HiChevronDown } from "react-icons/hi";
 import dayjs from "dayjs";
 import PhotoIcon from "@mui/icons-material/Photo";
-import { TABLE_HEADER_CELL_SX, GRADIENT_TABLE_HEADER_METRO, COLOR_ICON_DISABLED } from "assets/uiConstants";
+import { TABLE_HEADER_CELL_SX, GRADIENT_TABLE_HEADER_METRO } from "assets/uiConstants";
 import MapIcon from "@mui/icons-material/Map";
 import Edit from "@mui/icons-material/Edit";
 import ArticleIcon from "@mui/icons-material/Article";
@@ -326,7 +326,7 @@ export default function InformacionMetroTable({ data, columns }) {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Paper sx={{ width: "100%", mb: 2 }}>
+      <Paper elevation={0} sx={{ width: "100%", mb: 2, boxShadow: "none" }}>
         <EnhancedTableToolbar
           numSelected={selected.length}
           setStartDate={handleStartDateChange}
@@ -334,7 +334,7 @@ export default function InformacionMetroTable({ data, columns }) {
           startDate={startDate}
           endDate={endDate}
         />
-        <TableContainer>
+        <TableContainer sx={{ boxShadow: "none", borderRadius: 0 }}>
           <Table
             sx={{ minWidth: 750 }}
             aria-labelledby="tableTitle"
@@ -362,9 +362,6 @@ export default function InformacionMetroTable({ data, columns }) {
                       key={rowKey} // Proporcionar una clave única para la fila
                       hover
                       tabIndex={-1}
-                      sx={{
-                        backgroundColor: index % 2 !== 0 ? COLOR_ICON_DISABLED : "#ffffff", // Fondo distinto para filas pares
-                      }}
                     >
                       {columns.map((column, colIndex) => {
                         // Lista de columnas que deseas ocultar
@@ -390,8 +387,8 @@ export default function InformacionMetroTable({ data, columns }) {
                             align="center"
                             sx={{
                               fontSize: "0.875rem",
-                              paddingTop: "2px",
-                              paddingBottom: "2px",
+                              paddingTop: "10px",
+                              paddingBottom: "10px",
                             }}
                           >
                             {column !== "porcentaje" ? (
@@ -428,7 +425,7 @@ export default function InformacionMetroTable({ data, columns }) {
           style={{
             display: "flex",
             justifyContent: "flex-end",
-            marginRight: "10vh",
+            marginRight: "1.5rem",
           }}
         >
           {/* 

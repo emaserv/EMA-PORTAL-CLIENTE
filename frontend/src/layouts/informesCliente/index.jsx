@@ -17,6 +17,7 @@ import CalleAlturaTableNaturgy from "./data/fechaClienteCalleAlturaTableNaturgy"
 import { apiFetch, apiClient } from 'services/api';
 import FilterField from "components/FilterField";
 import Footer from "components/Footer";
+import { SECTION_CARD_SX } from "assets/uiConstants";
 
 const InformesCliente = () => {
   const { user } = useAuth();
@@ -281,7 +282,7 @@ const InformesCliente = () => {
           justifyContent="center"
         >
           <SoftBox justifyContent="center">
-            <Card>
+            <Card sx={SECTION_CARD_SX}>
               {user ? (
                 <>
                   <SoftBox
@@ -336,7 +337,7 @@ const InformesCliente = () => {
         {user && user.idGrupoCliente === 4 ? (
           <SoftBox style={{ width: "90%" }} justifyContent="center">
             <SoftBox justifyContent="center" paddingBottom={3}>
-              <Card>
+              <Card sx={SECTION_CARD_SX}>
                 <SoftBox px={3} paddingBottom={2} paddingTop={3}>
                   <InformacionMetroTable
                     data={dataInfo}

@@ -387,7 +387,7 @@ export default function PRSTable({ data, columns }) {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Paper sx={{ width: "100%", mb: 2 }}>
+      <Paper elevation={0} sx={{ width: "100%", mb: 2, boxShadow: "none" }}>
         <EnhancedTableToolbar
           numSelected={selected.length}
           setStartDate={handleStartDateChange}
@@ -395,8 +395,9 @@ export default function PRSTable({ data, columns }) {
           startDate={startDate}
           endDate={endDate}
         />
-        <TableContainer>
+        <TableContainer sx={{ boxShadow: "none", borderRadius: 0, maxHeight: "70vh", overflow: "auto" }}>
           <Table
+            stickyHeader
             sx={{ minWidth: 750 }}
             aria-labelledby="tableTitle"
             size={dense ? "small" : "medium"}
@@ -426,153 +427,119 @@ export default function PRSTable({ data, columns }) {
                     selected={isItemSelected}
                     sx={{ cursor: "pointer" }}
                   >
-                  {columns.map((column) => {
-                    // columnas que siempre ocultamos
-                    const ocultasFijas = [
-                      "id",
-                      "grupoCliente",
-                      "geoVisita",
-                      "firma",
-                      "direccion",
-                      "foto",
-                      "estadoMetro",
-                      "fechaVencimiento",
-                      "importe",
-                      "acuseDeDeuda",
-                      "medidor",
-                      "entreCalles",
-                      "codigoPostal",
-                      "fechaIngreso",
-                      "legajo",
-                    ];
-
-                    // columnas que se ocultan solo para idGrupoCliente 6
-                    const ocultasGrupo6 = ["plan","sucursal", "radio"];
-
-                    if (
-                      ocultasFijas.includes(column) ||
-                      (user.idGrupoCliente === 6 && ocultasGrupo6.includes(column))
-                    ) {
-                      return null;
-                    }
-
-                    return (
-                      <TableCell
-                        key={`${row.id}-${column}`}
-                        align="left"
-                        sx={{
-                          fontSize: "0.875rem",
-                          paddingTop: "2px",
-                          paddingBottom: "2px",
-                        }}
-                      >
-                        {column !== "porcentaje" ? (
-                          <MobileFriendlyTooltip
-                            title={row[column] ? row[column] : "Sin información"}
-                          >
-                            <span>{truncarTexto(row[column], 12)}</span>
-                          </MobileFriendlyTooltip>
-                        ) : (
-                          <Completion value={row[column]} color="info" />
-                        )}
-                      </TableCell>
-                    );
-                  })}
-
-
-                    {row.estadoPieza !== "NR" ? (
-                      <TableCell
-                        id={`${row.id}-geoVisita-1`}
-                        sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
-                          paddingLeft: "2.5rem",
-                        }}
-                      >
-                        <a
-                          href={row.geoVisita ? row.geoVisita : "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            textDecoration: "none",
-                            color: row.geoVisita ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
+                  {columnasFiltradas
+                    .filter(
+                      (headCell) =>
+                        !["geoVisita", "foto", "firma", "imagenAD"].includes(headCell.id)
+                    )
+                    .map((headCell) => {
+                      const column = headCell.id;
+                      return (
+                        <TableCell
+                          key={`${row.id}-${column}`}
+                          align="left"
+                          sx={{
+                            fontSize: "0.875rem",
+                            paddingTop: "10px",
+                            paddingBottom: "10px",
                           }}
                         >
-                          <MapIcon fontSize="medium" />
-                        </a>
-                      </TableCell>
-                    ) : null}
+                          {column !== "porcentaje" ? (
+                            <MobileFriendlyTooltip
+                              title={row[column] ? row[column] : "Sin información"}
+                            >
+                              <span>{truncarTexto(row[column], 12)}</span>
+                            </MobileFriendlyTooltip>
+                          ) : (
+                            <Completion value={row[column]} color="info" />
+                          )}
+                        </TableCell>
+                      );
+                    })}
 
-                    {row.estadoPieza !== "NR" ? (
-                      <TableCell
-                        id={`${row.id}-foto-1`}
-                        sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
+                    <TableCell
+                      id={`${row.id}-geoVisita-1`}
+                      sx={{
+                        paddingTop: "10px",
+                        paddingBottom: "10px",
+                        paddingLeft: "2.5rem",
+                      }}
+                    >
+                      <a
+                        href={row.geoVisita ? row.geoVisita : "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          textDecoration: "none",
+                          color: row.geoVisita ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
                         }}
                       >
-                        <a
-                          href={row.foto ? row.foto : "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            textDecoration: "none",
-                            color: row.foto ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
-                          }}
-                        >
-                          <PhotoIcon fontSize="medium" />
-                        </a>
-                      </TableCell>
-                    ) : null}
+                        <MapIcon fontSize="medium" />
+                      </a>
+                    </TableCell>
 
-                    {row.estadoPieza !== "NR" ? (
-                      <TableCell
-                        id={`${row.id}-firma-1`}
-                        sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
+                    <TableCell
+                      id={`${row.id}-foto-1`}
+                      sx={{
+                        paddingTop: "10px",
+                        paddingBottom: "10px",
+                      }}
+                    >
+                      <a
+                        href={row.foto ? row.foto : "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          textDecoration: "none",
+                          color: row.foto ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
                         }}
                       >
-                        <a
-                          href={row.firma !== "-" ? row.firma : "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            textDecoration: "none",
-                            color: row.firma !== "-" ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
-                            pointerEvents: row.firma !== "-" ? "auto" : "none", // Deshabilita el click si es '-'
-                            cursor:
-                              row.firma !== "-" ? "pointer" : "not-allowed",
-                          }}
-                        >
-                          <Edit fontSize="medium" />
-                        </a>
-                      </TableCell>
-                    ) : null}
+                        <PhotoIcon fontSize="medium" />
+                      </a>
+                    </TableCell>
 
-                    {row.estadoPieza !== "NR" ? (
-                      <TableCell
-                        id={`${row.id}-firma-1`}
-                        sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
+                    <TableCell
+                      id={`${row.id}-firma-1`}
+                      sx={{
+                        paddingTop: "10px",
+                        paddingBottom: "10px",
+                      }}
+                    >
+                      <a
+                        href={row.firma !== "-" ? row.firma : "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          textDecoration: "none",
+                          color: row.firma !== "-" ? COLOR_ICON_ACTIVE : COLOR_ICON_DISABLED,
+                          pointerEvents: row.firma !== "-" ? "auto" : "none", // Deshabilita el click si es '-'
+                          cursor:
+                            row.firma !== "-" ? "pointer" : "not-allowed",
                         }}
                       >
-                        <a
-                          href={row.firma !== "-" ? row.firma : "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            textDecoration: "none",
-                            color: COLOR_ICON_DISABLED,
-                            pointerEvents: "none", // Deshabilita el click si es '-'
-                            cursor: "not-allowed",
-                          }}
-                        >
-                          <ArticleIcon fontSize="medium" />
-                        </a>
-                      </TableCell>
-                    ) : null}
+                        <Edit fontSize="medium" />
+                      </a>
+                    </TableCell>
+
+                    <TableCell
+                      id={`${row.id}-imagenAD-1`}
+                      sx={{
+                        paddingTop: "10px",
+                        paddingBottom: "10px",
+                      }}
+                    >
+                      <a
+                        href="#"
+                        style={{
+                          textDecoration: "none",
+                          color: COLOR_ICON_DISABLED,
+                          pointerEvents: "none",
+                          cursor: "not-allowed",
+                        }}
+                      >
+                        <ArticleIcon fontSize="medium" />
+                      </a>
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -582,7 +549,7 @@ export default function PRSTable({ data, columns }) {
                     height: (dense ? 33 : 53) * emptyRows,
                   }}
                 >
-                  <TableCell colSpan={columns.length + 1} />
+                  <TableCell colSpan={columnasFiltradas.length + 1} />
                 </TableRow>
               )}
             </TableBody>
@@ -592,7 +559,7 @@ export default function PRSTable({ data, columns }) {
           style={{
             display: "flex",
             justifyContent: "flex-end",
-            marginRight: "10vh",
+            marginRight: "1.5rem",
           }}
         >
           <TablePagination

@@ -355,7 +355,7 @@ export default function PRSTable({ data, columns }) {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Paper sx={{ width: "100%", mb: 2 }}>
+      <Paper elevation={0} sx={{ width: "100%", mb: 2, boxShadow: "none" }}>
         <EnhancedTableToolbar
           numSelected={selected.length}
           setStartDate={handleStartDateChange}
@@ -363,7 +363,7 @@ export default function PRSTable({ data, columns }) {
           startDate={startDate}
           endDate={endDate}
         />
-        <TableContainer sx={{ maxHeight: 800, overflow: "auto" }}>
+        <TableContainer sx={{ boxShadow: "none", borderRadius: 0, maxHeight: "70vh", overflow: "auto" }}>
         <Table stickyHeader aria-label="sticky table" style={{ tableLayout: "auto", width: "100%" }}
             // sx={{ minWidth: 750 }}
             // aria-labelledby="tableTitle"
@@ -412,8 +412,8 @@ export default function PRSTable({ data, columns }) {
                             align="left"
                             sx={{
                               fontSize: "0.875rem",
-                              paddingTop: "2px",
-                              paddingBottom: "2px",
+                              paddingTop: "10px",
+                              paddingBottom: "10px",
                               whiteSpace: "nowrap",
                             }}
                           >
@@ -437,8 +437,8 @@ export default function PRSTable({ data, columns }) {
                       <TableCell
                         id={`${row.id}-geoVisita-1`}
                         sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
+                          paddingTop: "10px",
+                          paddingBottom: "10px",
                           paddingLeft: "2.5rem",
                         }}
                       >
@@ -460,8 +460,8 @@ export default function PRSTable({ data, columns }) {
                       <TableCell
                         id={`${row.id}-foto-1`}
                         sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
+                          paddingTop: "10px",
+                          paddingBottom: "10px",
                         }}
                       >
                         <a
@@ -483,8 +483,8 @@ export default function PRSTable({ data, columns }) {
                         id={`${row.id}-firma-1`}
                         align="center"
                         sx={{
-                          paddingTop: "2px",
-                          paddingBottom: "0px",
+                          paddingTop: "10px",
+                          paddingBottom: "10px",
                         }}
                       >
                         {row.firma && row.firma !== "-" ? (
@@ -525,7 +525,7 @@ export default function PRSTable({ data, columns }) {
           style={{
             display: "flex",
             justifyContent: "flex-end",
-            marginRight: "10vh",
+            marginRight: "1.5rem",
           }}
         >
           <TablePagination

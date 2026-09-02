@@ -62,7 +62,7 @@ const headCells = [
   { id: "acuse", label: "ACUSE", labelComplete: "Acuse" },
 ];
 
-const TablaAcusesCliente = ({ data }) => {
+const TablaAcusesCliente = ({ data, setRenderizando }) => {
 
   const [popupAbierto, setPopupAbierto] = useState(false);
   const [coordenadaMapa, setCoordenadaMapa] = useState([]);
@@ -72,6 +72,8 @@ const TablaAcusesCliente = ({ data }) => {
   const [firmaSeleccionada, setFirmaSeleccionada] = useState(null);
 
   const abrirAcuseEnNuevaPestaniaConCanvas = (itemOriginal) => {
+    setRenderizando?.(true);
+
     const item = {
       ...itemOriginal,
       fecha: formatearFecha(itemOriginal.fecha),
@@ -100,12 +102,21 @@ const TablaAcusesCliente = ({ data }) => {
       <AcuseReciboConFirma
         data={item}
         onRendered={async (refElement) => {
-          const canvas = await html2canvas(refElement, {
-            useCORS: true,
-            backgroundColor: "#fff",
-            scrollY: 0,
-            scale: 1.2,
-          });
+          let canvas;
+          try {
+            canvas = await html2canvas(refElement, {
+              useCORS: true,
+              backgroundColor: "#fff",
+              scrollY: 0,
+              scale: 1.2,
+            });
+          } catch (error) {
+            console.error("Error generando el acuse:", error);
+            root.unmount();
+            document.body.removeChild(contenedor);
+            setRenderizando?.(false);
+            return;
+          }
 
           // Usamos calidad 0.5 para que pese como los masivos
           canvas.toBlob((blob) => {
@@ -214,6 +225,8 @@ const TablaAcusesCliente = ({ data }) => {
 
                 nuevaVentana.document.close();
               }
+
+              setRenderizando?.(false);
             };
 
             reader.readAsDataURL(blob);
@@ -469,6 +482,7 @@ const TablaAcusesCliente = ({ data }) => {
 
 TablaAcusesCliente.propTypes = {
   data: PropTypes.array.isRequired,
+  setRenderizando: PropTypes.func,
 };
 
 export default TablaAcusesCliente;

@@ -10,6 +10,18 @@ export const COLOR_MODAL_ERROR = "#ea0606"; // theme colors.error.main
 export const COLOR_MODAL_SUCCESS = "#82d616"; // theme colors.success.main
 export const COLOR_ICON_ACTIVE = "#2152ff";
 export const COLOR_ICON_DISABLED = "#D3D3D3";
+export const COLOR_TEXT_MUTED = "#8392ab";
+
+// Estilo de tarjeta compartido por las pantallas internas (mismo look que el
+// AppBar y la Card de Home): bordes bien redondeados, borde muy claro y
+// sombra suave, en vez del Card por defecto de MUI (mas chato y con borde
+// gris marcado). Usar en toda Card de "seccion" para que todas las pantallas
+// se vean consistentes entre si.
+export const SECTION_CARD_SX = {
+  borderRadius: "20px",
+  border: "1px solid #eef0f4",
+  boxShadow: "0 8px 24px rgba(20, 30, 60, 0.08)",
+};
 
 export const TABLE_HEADER_CELL_SX = {
   background: GRADIENT_TABLE_HEADER,
