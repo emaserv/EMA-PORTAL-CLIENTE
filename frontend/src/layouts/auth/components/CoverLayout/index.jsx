@@ -1,97 +1,67 @@
-/**
-=========================================================
-* Soft UI Dashboard React - v4.0.1
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/soft-ui-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
 // prop-types is a library for typechecking of props
 import PropTypes from "prop-types";
 
 // @mui material components
-import Grid from "@mui/material/Grid";
+import Card from "@mui/material/Card";
 
 // Soft UI Dashboard React components
 import SoftBox from "components/SoftBox";
 import SoftTypography from "components/SoftTypography";
 
 // Soft UI Dashboard React components
-import DefaultNavbar from "components/Navbars/DefaultNavbar";
 import PageLayout from "components/LayoutContainers/PageLayout";
 
-// Authentication layout components
-import Footer from "layouts/auth/components/Footer";
+// Footer compartido por toda la app (mismo pie que el resto de las pantallas)
+import Footer from "components/Footer";
 
-function CoverLayout({ color, header, title, description, image, top, children }) {
+function CoverLayout({ header, title, description, image, children }) {
   return (
     <PageLayout background="white">
-      
-      <Grid
-        container
-        justifyContent="space-between"
-        sx={{
-          minHeight: "20vh",
-          marginLeft: 15,
-          marginRigth: 10
-        }}
-      >
-        <Grid item xs={11} sm={8} md={5} xl={3}>
-          <SoftBox mt={top}>
-            <SoftBox pt={1} px={-5}>
-              {!header ? (
-                <>
-                  <SoftBox mb={1}>
-                    <SoftTypography variant="h3" fontWeight="bold" color={color} textGradient>
-                      {title}
-                    </SoftTypography>
-                  </SoftBox>
-                  <SoftTypography variant="body2" fontWeight="regular" color="text">
-                    {description}
-                  </SoftTypography>
-                </>
-              ) : (
-                header
-              )}
-            </SoftBox>
-            <SoftBox pt={1} px={-30}>{children}</SoftBox>
-          </SoftBox>
-        </Grid>
-        <Grid item xs={12} md={5}>
-          <SoftBox
-            height="80%"
-            display={{ xs: "none", md: "block" }}
-            position="relative"
-            top={{md: "5rem", xl: "5rem" }}
-            right={{ md: "20rem", xl: "20rem" }}
-            mr={-20}
+      <SoftBox display="flex" flexDirection="column" sx={{ minHeight: "100vh" }}>
+        <SoftBox
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          sx={{
+            flex: "1 1 auto",
+            background: "linear-gradient(180deg, #eef3ff 0%, #ffffff 55%)",
+            px: 2,
+            py: 6,
+          }}
+        >
+          <Card
             sx={{
-              overflow: "hidden",
-              borderBottomLeftRadius: ({ borders: { borderRadius } }) => borderRadius.lg,
+              width: "100%",
+              maxWidth: "420px",
+              p: 4,
+              borderRadius: "20px",
             }}
           >
-            <SoftBox
-              mt={4}
-              ml={-1.5}
-              height="90%"
-              sx={{
-                  backgroundImage: `url(${image})`,
-                  backgroundSize: "contain", // Hace que la imagen cubra todo el contenedor
-                  backgroundRepeat: "no-repeat", // Evita que la imagen se repita
-                  backgroundPosition: "center", // Centra la imagen
-              }}
-            />
-          </SoftBox>
-        </Grid>
-      </Grid>
-      <Footer />
+            {image && (
+              <SoftBox display="flex" justifyContent="center" mb={3}>
+                <SoftBox component="img" src={image} alt="Logo" sx={{ height: "3.5rem", width: "auto" }} />
+              </SoftBox>
+            )}
+
+            {!header ? (
+              <SoftBox textAlign="center" mb={3}>
+                <SoftTypography variant="h5" fontWeight="bold" mb={0.5}>
+                  {title}
+                </SoftTypography>
+                <SoftTypography variant="body2" color="text.secondary">
+                  {description}
+                </SoftTypography>
+              </SoftBox>
+            ) : (
+              header
+            )}
+
+            {children}
+          </Card>
+        </SoftBox>
+
+        <Footer />
+      </SoftBox>
     </PageLayout>
   );
 }
@@ -101,27 +71,14 @@ CoverLayout.defaultProps = {
   header: "",
   title: "",
   description: "",
-  color: "info",
-  top: 10,
 };
 
 // Typechecking props for the CoverLayout
 CoverLayout.propTypes = {
-  color: PropTypes.oneOf([
-    "primary",
-    "secondary",
-    "info",
-    "success",
-    "warning",
-    "error",
-    "dark",
-    "light",
-  ]),
   header: PropTypes.node,
   title: PropTypes.string,
   description: PropTypes.string,
-  image: PropTypes.string.isRequired,
-  top: PropTypes.number,
+  image: PropTypes.string,
   children: PropTypes.node.isRequired,
 };
 

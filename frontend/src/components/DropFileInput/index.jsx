@@ -1,12 +1,13 @@
 import React, { useCallback } from 'react';
 import Typography from '@mui/material/Typography';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 
 import PropTypes from 'prop-types';
+import { COLOR_ICON_ACTIVE } from 'assets/uiConstants';
 
 const DropFileInput = (props) => {
+  const archivoSeleccionado = props.fileName !== "init";
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
@@ -36,22 +37,38 @@ const DropFileInput = (props) => {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        paddingLeft: '15rem',
-        paddingRight: '15rem',
-        paddingTop: '3rem',
-        paddingBottom: '3rem',
+        justifyContent: 'center',
+        gap: 0.5,
+        py: 2.5,
+        px: 3,
         borderRadius: 2,
         cursor: 'pointer',
-        border: '1px dashed #aaa', 
+        border: '2px dashed',
+        borderColor: archivoSeleccionado ? COLOR_ICON_ACTIVE : '#e0e0e0',
         width: '100%',
-        background: 'linear-gradient(310deg, #2152ff, #21d4fd)',
+        backgroundColor: archivoSeleccionado ? 'rgba(33, 82, 255, 0.04)' : '#f8f9fa',
+        transition: 'all 0.2s',
+        '&:hover': {
+          borderColor: COLOR_ICON_ACTIVE,
+          backgroundColor: 'rgba(33, 82, 255, 0.04)',
+        },
       }}
-      
     >
-      {props.fileName != "init" ? (
+      {archivoSeleccionado ? (
         <>
-          <Typography variant="h6" sx={{color: '#FFFFFF'}}>Archivo seleccionado:</Typography>
-          <Typography variant="subtitle2" sx={{color: '#FFFFFF'}}><i>{props.fileName}</i></Typography>
+          <input
+            type="file"
+            id="fileInput"
+            style={{ display: 'none' }}
+            onChange={(e) => handleFile(e.target.files[0])}
+          />
+          <CloudUploadIcon sx={{ fontSize: 40, color: COLOR_ICON_ACTIVE, mb: 0.5 }} />
+          <Typography variant="body2" fontWeight="medium" color="info">
+            {props.fileName}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Archivo listo para procesar
+          </Typography>
         </>
       ) : (
         <>
@@ -59,13 +76,11 @@ const DropFileInput = (props) => {
             type="file"
             id="fileInput"
             style={{ display: 'none' }}
-            onChange = {(e) => handleFile(e.target.files[0])}
+            onChange={(e) => handleFile(e.target.files[0])}
           />
-          <IconButton>
-            <CloudUploadIcon sx={{ fontSize: 40, color: '#ffffff' }} />
-          </IconButton>
-          <Typography variant="button" component="span" sx={{color:'#ffffff'}}>
-            Arrastre o seleccione un archivo
+          <CloudUploadIcon sx={{ fontSize: 40, color: '#9e9e9e' }} />
+          <Typography variant="body2" color="text.secondary">
+            Arrastre o haga clic para seleccionar un archivo
           </Typography>
         </>
       )}
@@ -79,4 +94,4 @@ DropFileInput.propTypes = {
   setFileName: PropTypes.func,
   fileName: PropTypes.string,
   field: PropTypes.string,
-} 
+}

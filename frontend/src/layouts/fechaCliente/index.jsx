@@ -22,6 +22,7 @@ import DropdownList from "components/DropdownList";
 import { apiFetch, apiClient } from 'services/api';
 import { GRADIENT_MODAL_HEADER } from "assets/uiConstants";
 import FilterField from "components/FilterField";
+import Footer from "components/Footer";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -316,9 +317,9 @@ const FechaCliente = () => {
           <ResponsiveAppBar />
         </SoftBox>
 
-        <Card style={{ marginTop: "7rem", width: "90%" }}>
+        <Card style={{ marginTop: "2rem", width: "90%" }}>
           <SoftBox p={3}>
-            <SoftTypography variant="h4">Filtros</SoftTypography>
+            <SoftTypography variant="h5">Consulta por cliente</SoftTypography>
             <Divider />
 
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -507,6 +508,8 @@ const FechaCliente = () => {
             </SoftBox>
           </SoftBox>
         ) : null}
+
+        <Footer />
       </SoftBox>
 
       <PopUp

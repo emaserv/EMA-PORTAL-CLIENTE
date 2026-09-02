@@ -27,6 +27,7 @@ import SoftButton from "components/SoftButton";
 import SoftInputBase from "components/SoftInputBase";
 import DropdownList from "components/DropdownList";
 import PopUp from "components/PopUp";
+import Footer from "components/Footer";
 import ResponsiveAppBar from "layouts/home/components/responsiveAppBar";
 import { useAuth } from "layouts/auth/AuthContext";
 import { apiClient } from "services/api";
@@ -213,7 +214,7 @@ const AdminUsuarios = () => {
           <ResponsiveAppBar />
         </SoftBox>
 
-        <Card style={{ marginTop: "7rem", width: "90%", marginBottom: "3rem" }}>
+        <Card style={{ marginTop: "2rem", width: "90%", marginBottom: "3rem" }}>
           <SoftBox p={3}>
             <SoftBox
               display="flex"
@@ -223,7 +224,7 @@ const AdminUsuarios = () => {
               gap={2}
               mb={1}
             >
-              <SoftTypography variant="h4">Administrar Usuarios</SoftTypography>
+              <SoftTypography variant="h5">Administrar Usuarios</SoftTypography>
 
               <SoftBox
                 display="flex"
@@ -386,6 +387,8 @@ const AdminUsuarios = () => {
             />
           </SoftBox>
         </Card>
+
+        <Footer />
       </SoftBox>
 
       <PopUp
@@ -396,18 +399,16 @@ const AdminUsuarios = () => {
         mostrarOverlay
         posicionModal="center"
         padding="0px"
-        width="30vw"
+        width="28vw"
         height="auto"
         background={GRADIENTE_INFO}
-        paddingTopEncabezado="20px"
+        paddingTopEncabezado="16px"
       >
-        <form onSubmit={handleSubmit(onSubmit)} style={{ padding: "24px" }}>
-          <SoftBox mb={2}>
-            <SoftBox mb={1} ml={0.5}>
-              <SoftTypography component="label" variant="caption" fontWeight="bold">
-                Nombre
-              </SoftTypography>
-            </SoftBox>
+        <form onSubmit={handleSubmit(onSubmit)} style={{ padding: "20px" }}>
+          <SoftBox mb={1.25}>
+            <SoftTypography component="label" variant="caption" fontWeight="bold" sx={{ display: "block", mb: 0.5 }}>
+              Nombre
+            </SoftTypography>
             <Controller
               name="nombre"
               control={control}
@@ -423,12 +424,10 @@ const AdminUsuarios = () => {
             )}
           </SoftBox>
 
-          <SoftBox mb={2}>
-            <SoftBox mb={1} ml={0.5}>
-              <SoftTypography component="label" variant="caption" fontWeight="bold">
-                Apellido
-              </SoftTypography>
-            </SoftBox>
+          <SoftBox mb={1.25}>
+            <SoftTypography component="label" variant="caption" fontWeight="bold" sx={{ display: "block", mb: 0.5 }}>
+              Apellido
+            </SoftTypography>
             <Controller
               name="apellido"
               control={control}
@@ -436,12 +435,10 @@ const AdminUsuarios = () => {
             />
           </SoftBox>
 
-          <SoftBox mb={2}>
-            <SoftBox mb={1} ml={0.5}>
-              <SoftTypography component="label" variant="caption" fontWeight="bold">
-                Usuario
-              </SoftTypography>
-            </SoftBox>
+          <SoftBox mb={1.25}>
+            <SoftTypography component="label" variant="caption" fontWeight="bold" sx={{ display: "block", mb: 0.5 }}>
+              Usuario
+            </SoftTypography>
             <Controller
               name="userName"
               control={control}
@@ -461,12 +458,10 @@ const AdminUsuarios = () => {
             )}
           </SoftBox>
 
-          <SoftBox mb={2}>
-            <SoftBox mb={1} ml={0.5}>
-              <SoftTypography component="label" variant="caption" fontWeight="bold">
-                {usuarioEditando ? "Nueva contraseña (opcional)" : "Contraseña"}
-              </SoftTypography>
-            </SoftBox>
+          <SoftBox mb={1.25}>
+            <SoftTypography component="label" variant="caption" fontWeight="bold" sx={{ display: "block", mb: 0.5 }}>
+              {usuarioEditando ? "Nueva contraseña (opcional)" : "Contraseña"}
+            </SoftTypography>
             <Controller
               name="password"
               control={control}
@@ -491,19 +486,17 @@ const AdminUsuarios = () => {
             )}
           </SoftBox>
 
-          <SoftBox mb={2}>
-            <SoftBox mb={1} ml={0.5}>
-              <SoftTypography component="label" variant="caption" fontWeight="bold">
-                Cliente
-              </SoftTypography>
-            </SoftBox>
+          <SoftBox mb={1.25}>
+            <SoftTypography component="label" variant="caption" fontWeight="bold" sx={{ display: "block", mb: 0.5 }}>
+              Cliente
+            </SoftTypography>
             <Controller
               name="idGrupoCliente"
               control={control}
               rules={{ required: "Campo obligatorio" }}
               render={({ field }) => (
                 <DropdownList
-                  width="26vw"
+                  width="100%"
                   list={gruposCliente}
                   placeholder="Seleccione un cliente"
                   campoAMostrar="nombre"
@@ -520,7 +513,7 @@ const AdminUsuarios = () => {
             )}
           </SoftBox>
 
-          <SoftBox mb={1} display="flex" alignItems="center">
+          <SoftBox mb={0.5} display="flex" alignItems="center">
             <Controller
               name="esAdmin"
               control={control}
@@ -540,7 +533,7 @@ const AdminUsuarios = () => {
             </SoftTypography>
           </SoftBox>
 
-          <SoftBox display="flex" justifyContent="flex-end" mt={3}>
+          <SoftBox display="flex" justifyContent="flex-end" mt={2}>
             <SoftButton variant="gradient" color="info" type="submit">
               {usuarioEditando ? "Guardar cambios" : "Crear usuario"}
             </SoftButton>

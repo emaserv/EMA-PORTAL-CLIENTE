@@ -6,14 +6,23 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 
 import styled from "styled-components";
+import Card from "@mui/material/Card";
+import Divider from "@mui/material/Divider";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import PersonIcon from "@mui/icons-material/Person";
+import DescriptionIcon from "@mui/icons-material/Description";
+import EventNoteIcon from "@mui/icons-material/EventNote";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import DrawIcon from "@mui/icons-material/Draw";
+import MapIcon from "@mui/icons-material/Map";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 
 import camionetas from "assets/images/Portal-Cliente-Images/camionetas2.jpg";
 
 import { Link } from "react-router-dom";
-import Grid from "@mui/material/Grid";
 import PopUp from "components/PopUp";
+import Footer from "components/Footer";
 
-import "./GradientBackground.css";
 import SoftButton from "components/SoftButton";
 import SoftTypography from "components/SoftTypography";
 import DropFileInput from "components/DropFileInput";
@@ -45,6 +54,16 @@ const Home = () => {
     { id: 2, nombre: "EMASERVICIOS" },
     { id: 3, nombre: "DAI"},
   ];
+
+  // Estilo compartido por los botones del menu de inicio, para que quede
+  // como una lista de navegacion prolija en vez de botones tipo CTA repetidos.
+  const menuButtonSx = {
+    justifyContent: "flex-start",
+    textTransform: "none",
+    fontSize: "0.9rem",
+    py: 1.1,
+    px: 2.25,
+  };
 
   //CAMBIAR ESTA FUNCION
   const onSubmit = async (data) => {
@@ -88,280 +107,141 @@ const Home = () => {
 
   return (
     <>
-      <SoftBox alignItems="center">
-        <SoftBox>
+      <SoftBox display="flex" flexDirection="column" alignItems="center">
+        <SoftBox width="100%">
           <ResponsiveAppBar />
         </SoftBox>
 
-        <div
-          className="gradient-background"
-          style={{ display: "flex", alignItems: "center" }}
-        >
-          <SoftBox marginTop="3rem">
-            {user ? (
-              <Grid
-                container
-                spacing={3}
-                marginLeft="7rem"
-                marginRight="-15rem"
-              >
-                {user && user.idGrupoCliente === null ? (
-                  <Grid
-                    sx={{ textAlign: "left" }} // Centering the text
-                    item
-                    xs={10}
-                  >
-                    <div className="content" display="flex">
-                      <SoftButton
-                        variant="gradient"
-                        color="info"
-                        size="large"
-                        sx={{ width: "30rem" }}
-                        onClick={() => cambiarEstadoPopUp1(!estadoPopUp1)}
-                      >
-                        Importar Archivo
-                      </SoftButton>
-                    </div>
-                  </Grid>
-                ) : null}
-
-                
-
-                {user && user.idGrupoCliente !== 2 && user.idGrupoCliente !== 7  ? (
-                <Grid
-                  sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
-                  item
-                  xs={12}
-                >
-                  <div className="content" display="flex">
-                    <Link to="/fecha-cliente">
-                      <SoftButton
-                        variant="gradient"
-                        color="info"
-                        size="large"
-                        sx={{ width: "30rem" }}
-                      >
-                        Consulta por Cliente
-                      </SoftButton>
-                    </Link>
-                  </div>
-                </Grid>)
-                : null}
-
-                {(user && (user.idGrupoCliente === 2 || user?.userName === "imorales@emaservicios.com.ar")) && (
-                  <Grid
-                    sx={{ textAlign: "left", marginTop: "1rem" }}
-                    item
-                    xs={12}
-                  >
-                    <div className="content" style={{ display: "flex" }}>
-                      <Link to="/acuse-cliente">
-                        <SoftButton
-                          variant="gradient"
-                          color="info"
-                          size="large"
-                          sx={{ width: "30rem" }}
-                        >
-                          Acuse Cliente
-                        </SoftButton>
-                      </Link>
-                    </div>
-                  </Grid>
-                )}
-
-                {user && (user.idGrupoCliente === 4 || user.idGrupoCliente === 2) ? (
-                <Grid
-                  sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
-                  item
-                  xs={12}
-                >
-                  <div className="content" display="flex">
-                    <Link to="/consulta-emision">
-                      <SoftButton
-                        variant="gradient"
-                        color="info"
-                        size="large"
-                        sx={{ width: "30rem" }}
-                      >
-                        Consulta por Emision
-                      </SoftButton>
-                    </Link>
-                  </div>
-                </Grid>)
-                : null}
-
-                {user && (user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2 && user.idGrupoCliente !== 6) ? (
-                  <Grid
-                    sx={{ textAlign: "left", marginTop: "1rem" }} // Centering the text
-                    item
-                    xs={12}
-                  >
-                    <div className="content" display="flex">
-                      <Link to="/radio-cliente">
-                        <SoftButton
-                          variant="gradient"
-                          color="info"
-                          size="large"
-                          sx={{ width: "30rem" }}
-                        >
-                          Consulta por Radio
-                        </SoftButton>
-                      </Link>
-                    </div>
-                  </Grid>
-                ) : null}
-
-                {user && (user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2 && user.idGrupoCliente !== 6 && user.idGrupoCliente !== 7) ? (
-                <Grid
-                    sx={{ textAlign: "left", marginTop: "1rem" }} // Centrado del texto
-                    item
-                    xs={12}
-                  >
-                    <div className="content" display="flex">
-                      <Link to="/consulta-firmas">
-                        <SoftButton
-                          variant="gradient"
-                          color="info"
-                          size="large"
-                          sx={{ width: "30rem" }}
-                        >
-                          Consulta por Firmas
-                        </SoftButton>
-                      </Link>
-                    </div>
-                  </Grid>
-                  ) : null}
-
-                {user &&  user.idGrupoCliente === 1 ? (
-                <Grid
-                    sx={{ textAlign: "left", marginTop: "1rem" }} 
-                    item
-                    xs={12}
-                  >
-                    <div className="content" display="flex">
-                      <Link to="/mapa-cliente">
-                        <SoftButton
-                          variant="gradient"
-                          color="info"
-                          size="large"
-                          sx={{ width: "30rem" }}
-                        >
-                          Consulta por Mapa
-                        </SoftButton>
-                      </Link>
-                    </div>
-                  </Grid>
-                  ) : null}
-
-                {user && user.esAdmin ? (
-                  <Grid
-                    sx={{ textAlign: "left", marginTop: "1rem" }}
-                    item
-                    xs={12}
-                  >
-                    <div className="content" display="flex">
-                      <Link to="/admin/usuarios">
-                        <SoftButton
-                          variant="gradient"
-                          color="info"
-                          size="large"
-                          sx={{ width: "30rem" }}
-                        >
-                          Administrar Usuarios
-                        </SoftButton>
-                      </Link>
-                    </div>
-                  </Grid>
-                ) : null}
-
-              </Grid>
-              
-            ) : null}
-          </SoftBox>
-
-          <Grid
-            container
-            justifyContent="center"
+        <SoftBox sx={{ width: "90%", mt: "20px", mb: 4 }}>
+          <Card
             sx={{
-              height: "100vh", // Establece la altura del contenedor al 100% de la altura de la ventana
-              overflow: "hidden", // Evita el desbordamiento si la imagen es más grande que el contenedor
-              zIndex: -2,
-              position: "relative", // Asegúrate de que el contenedor tenga un contexto de posición
+              borderRadius: "20px",
+              overflow: "hidden",
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "440px 1fr" },
+              height: { xs: "auto", sm: "calc(100vh - 220px)" },
+              minHeight: { xs: "auto", sm: "500px" },
             }}
           >
-            <Grid item xs={12}>
+            {user && (
               <SoftBox
-                height="100%" // Asegúrate de que el SoftBox ocupe el 100% de la altura del contenedor
-                display={{ xs: "none", md: "block" }}
-                position="absolute"
-                right={{ md: "-2rem", xl: "-5rem" }}
-                mr={-16}
                 sx={{
-                  transform: "skewX(-10deg)",
-                  overflow: "hidden",
-                  borderBottomLeftRadius: ({ borders: { borderRadius } }) =>
-                    borderRadius.lg,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  overflowY: "auto",
+                  p: { xs: 4, md: 4.5 },
                 }}
               >
-                <SoftBox
-                  ml={-72}
-                  height="100%"
-                  width="100vw"
-                  sx={{
-                    position: "relative",
-                    backgroundImage: `url(${camionetas})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                    maskImage:
-                      "linear-gradient(45deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%)", // Aplica el degradado a la máscara
-                    maskSize: "cover",
-                    maskPosition: "center",
-                    maskRepeat: "no-repeat",
-                    transform: "skewX(10deg)",
-                  }}
-                />
+                <SoftTypography variant="h4" fontWeight="bold" mb={0.5}>
+                  Hola, {user.nombre}
+                </SoftTypography>
+                <SoftTypography variant="body2" sx={{ color: "#8392ab" }} mb={2.5}>
+                  ¿Qué necesitás hacer hoy?
+                </SoftTypography>
+
+                <Divider sx={{ mb: 2 }} />
+
+                <SoftBox display="flex" flexDirection="column" gap={1.25}>
+                  {user.idGrupoCliente === null && (
+                    <SoftButton
+                      variant="gradient"
+                      color="info"
+                      size="medium"
+                      fullWidth
+                      startIcon={<CloudUploadIcon />}
+                      sx={menuButtonSx}
+                      onClick={() => cambiarEstadoPopUp1(!estadoPopUp1)}
+                    >
+                      Importar Archivo
+                    </SoftButton>
+                  )}
+
+                  {user.idGrupoCliente !== 2 && user.idGrupoCliente !== 7 && (
+                    <SoftButton component={Link} to="/fecha-cliente" variant="gradient" color="info" size="medium" fullWidth startIcon={<PersonIcon />} sx={menuButtonSx}>
+                      Consulta por Cliente
+                    </SoftButton>
+                  )}
+
+                  {(user.idGrupoCliente === 2 || user?.userName === "imorales@emaservicios.com.ar") && (
+                    <SoftButton component={Link} to="/acuse-cliente" variant="gradient" color="info" size="medium" fullWidth startIcon={<DescriptionIcon />} sx={menuButtonSx}>
+                      Acuse Cliente
+                    </SoftButton>
+                  )}
+
+                  {(user.idGrupoCliente === 4 || user.idGrupoCliente === 2) && (
+                    <SoftButton component={Link} to="/consulta-emision" variant="gradient" color="info" size="medium" fullWidth startIcon={<EventNoteIcon />} sx={menuButtonSx}>
+                      Consulta por Emision
+                    </SoftButton>
+                  )}
+
+                  {user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2 && user.idGrupoCliente !== 6 && (
+                    <SoftButton component={Link} to="/radio-cliente" variant="gradient" color="info" size="medium" fullWidth startIcon={<LocationOnIcon />} sx={menuButtonSx}>
+                      Consulta por Radio
+                    </SoftButton>
+                  )}
+
+                  {user.idGrupoCliente !== 4 && user.idGrupoCliente !== 2 && user.idGrupoCliente !== 6 && user.idGrupoCliente !== 7 && (
+                    <SoftButton component={Link} to="/consulta-firmas" variant="gradient" color="info" size="medium" fullWidth startIcon={<DrawIcon />} sx={menuButtonSx}>
+                      Consulta por Firmas
+                    </SoftButton>
+                  )}
+
+                  {user.idGrupoCliente === 1 && (
+                    <SoftButton component={Link} to="/mapa-cliente" variant="gradient" color="info" size="medium" fullWidth startIcon={<MapIcon />} sx={menuButtonSx}>
+                      Consulta por Mapa
+                    </SoftButton>
+                  )}
+
+                  {user.esAdmin && (
+                    <SoftButton component={Link} to="/admin/usuarios" variant="gradient" color="info" size="medium" fullWidth startIcon={<ManageAccountsIcon />} sx={menuButtonSx}>
+                      Administrar Usuarios
+                    </SoftButton>
+                  )}
+                </SoftBox>
               </SoftBox>
-            </Grid>
-          </Grid>
-        </div>
+            )}
+
+            <SoftBox
+              sx={{
+                display: { xs: "none", sm: "block" },
+                height: "100%",
+                width: "100%",
+                backgroundImage: `linear-gradient(180deg, rgba(10, 20, 45, 0.12) 0%, rgba(10, 20, 45, 0.32) 100%), url(${camionetas})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            />
+          </Card>
+        </SoftBox>
+
+        <Footer />
       </SoftBox>
 
       <PopUp
         estado={estadoPopUp1}
         cambiarEstado={cambiarEstadoPopUp1}
-        titulo={"Importador"}
+        titulo={"Importar Archivo"}
         mostrarHeader={true}
         mostrarOverlay={true}
         posicionModal={"center"}
         padding={"0px"}
-        width={"60vw"}
-        height={"58vh"}
-        background={
-          "linear-gradient(45deg, #0D47A1, #1976D2, #2196F3, #64B5F6, #BBDEFB)"
-        }
+        width={"460px"}
+        height={"auto"}
+        background={"linear-gradient(45deg, #0D47A1, #1976D2, #2196F3, #64B5F6, #BBDEFB)"}
+        paddingTopEncabezado={"14px"}
       >
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Contenido>
-            <SoftBox
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              pt={1}
-            >
-              <SoftTypography
-                variant="button"
-                fontWeight="medium"
-                color="dark"
-                px={1}
-              >
+        <SoftBox sx={{ p: 2 }}>
+          <SoftTypography variant="body2" color="text.secondary" mb={1}>
+            Seleccione el formato del archivo y súbalo para procesarlo
+          </SoftTypography>
+
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <SoftBox mb={1}>
+              <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
                 Formato
               </SoftTypography>
-              <SoftBox
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+              <SoftBox mt={0.5}>
                 <Controller
                   name="idFormato"
                   control={control}
@@ -371,7 +251,7 @@ const Home = () => {
                       onChange={(selectedValue) =>
                         field.onChange(selectedValue)
                       }
-                      width="30vw"
+                      width="100%"
                       list={opciones}
                       placeholder="Tipo de Formato"
                       campoAMostrar="nombre"
@@ -382,51 +262,33 @@ const Home = () => {
               </SoftBox>
             </SoftBox>
 
-            <SoftBox
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              pt={1}
-            >
-              <Controller
-                name="file"
-                control={control}
-                defaultValue={null}
-                render={({ field }) => (
-                  <DropFileInput
-                    field={field}
-                    setFileName={setFileName}
-                    fileName={fileName ? fileName.name : "init"}
-                  />
-                )}
-              />
+            <SoftBox mb={2}>
+              <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
+                Archivo
+              </SoftTypography>
+              <SoftBox mt={0.5}>
+                <Controller
+                  name="file"
+                  control={control}
+                  defaultValue={null}
+                  render={({ field }) => (
+                    <DropFileInput
+                      field={field}
+                      setFileName={setFileName}
+                      fileName={fileName ? fileName.name : "init"}
+                    />
+                  )}
+                />
+              </SoftBox>
             </SoftBox>
 
-            <SoftButton
-              variant="gradient"
-              color="info"
-              style={{
-                marginTop: "20px",
-                background:
-                  "linear-gradient(45deg, #0D47A1, #1976D2, #2196F3, #64B5F6, #BBDEFB)",
-              }}
-            >
-              <input
-                type="submit"
-                value="Cargar Archivo"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                  fontSize: "0.875rem",
-                  fontWeight: "700",
-                  color: "#FFFFFF",
-                  textTransform: "uppercase",
-                }}
-              />
-            </SoftButton>
-          </Contenido>
-        </form>
+            <SoftBox display="flex" justifyContent="flex-end">
+              <SoftButton variant="gradient" color="info" type="submit" sx={{ minWidth: '140px', py: 1 }}>
+                Cargar Archivo
+              </SoftButton>
+            </SoftBox>
+          </form>
+        </SoftBox>
       </PopUp>
 
       <PopUp

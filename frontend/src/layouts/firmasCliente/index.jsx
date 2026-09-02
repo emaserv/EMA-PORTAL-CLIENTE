@@ -17,6 +17,7 @@ import LoadingModal from '../../components/loadingModal';
 import DropdownList from "components/DropdownList";
 import { GRADIENT_MODAL_HEADER } from "assets/uiConstants";
 import FilterField from "components/FilterField";
+import Footer from "components/Footer";
 
 
 import L from 'leaflet';
@@ -179,9 +180,9 @@ const filtrarDatos = (data, plan, sucursal, radio, fechaDesde, fechaHasta) => {
           <ResponsiveAppBar />
         </SoftBox>
 
-        <Card style={{ marginTop: "7rem", width: "90%" }}>
+        <Card style={{ marginTop: "2rem", width: "90%" }}>
           <SoftBox p={3}>
-            <SoftTypography variant="h4">Filtros</SoftTypography>
+            <SoftTypography variant="h5">Consulta por firmas</SoftTypography>
             <Divider />
 
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -304,6 +305,8 @@ const filtrarDatos = (data, plan, sucursal, radio, fechaDesde, fechaHasta) => {
             </Card>
           </SoftBox>
         </SoftBox>
+
+        <Footer />
       </SoftBox>
 
       <LoadingModal isOpen={isLoading} />

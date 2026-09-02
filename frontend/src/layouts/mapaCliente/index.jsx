@@ -16,6 +16,7 @@ import SoftInputBase from "components/SoftInputBase";
 import { apiFetch } from 'services/api';
 import { GRADIENT_MODAL_HEADER } from "assets/uiConstants";
 import FilterField from "components/FilterField";
+import Footer from "components/Footer";
 
 const DataConverter = (fechaDeSincronizacion) => {
   const parsedDate = new Date(fechaDeSincronizacion);
@@ -213,9 +214,9 @@ const MapaCliente = () => {
         </SoftBox>
 
         {/* Panel de Filtros */}
-        <Card style={{ marginTop: "7rem", width: "90%" }}>
+        <Card style={{ marginTop: "2rem", width: "90%" }}>
           <SoftBox p={3}>
-            <SoftTypography variant="h4">Filtros</SoftTypography>
+            <SoftTypography variant="h5">Consulta por mapa</SoftTypography>
             <Divider />
 
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -345,6 +346,7 @@ const MapaCliente = () => {
           </SoftBox>
         </SoftBox>
 
+        <Footer />
       </SoftBox>
 
       {/* PopUp de error */}

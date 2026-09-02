@@ -20,4 +20,6 @@ export const TABLE_HEADER_CELL_SX = {
   textTransform: "uppercase",
   padding: "10px 16px",
   border: "none",
+  "&:first-of-type": { borderTopLeftRadius: "16px" },
+  "&:last-of-type": { borderTopRightRadius: "16px" },
 };

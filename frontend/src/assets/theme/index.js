@@ -47,8 +47,8 @@ import menuItem from "assets/theme/components/menu/menuItem";
 import switchButton from "assets/theme/components/form/switchButton";
 import divider from "assets/theme/components/divider";
 import tableContainer from "assets/theme/components/table/tableContainer";
-import tableHead from "assets/theme/components/table/tableHead";
 import tableCell from "assets/theme/components/table/tableCell";
+import tableRow from "assets/theme/components/table/tableRow";
 import linearProgress from "assets/theme/components/linearProgress";
 import breadcrumbs from "assets/theme/components/breadcrumbs";
 import slider from "assets/theme/components/slider";
@@ -132,6 +132,9 @@ export default createTheme({
     MuiIcon: { ...icon },
     MuiSvgIcon: { ...svgIcon },
     MuiLink: { ...link },
+    MuiTableContainer: { ...tableContainer },
+    MuiTableCell: { ...tableCell },
+    MuiTableRow: { ...tableRow },
 
   },
 });

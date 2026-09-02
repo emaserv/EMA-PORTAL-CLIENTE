@@ -16,6 +16,7 @@ import CalleAlturaTableMetro from "./data/fechaClienteCalleAlturaTableMetro";
 import CalleAlturaTableNaturgy from "./data/fechaClienteCalleAlturaTableNaturgy";
 import { apiFetch, apiClient } from 'services/api';
 import FilterField from "components/FilterField";
+import Footer from "components/Footer";
 
 const InformesCliente = () => {
   const { user } = useAuth();
@@ -223,9 +224,9 @@ const InformesCliente = () => {
           <ResponsiveAppBar />
         </SoftBox>
 
-        <Card style={{ marginTop: "7rem", width: "90%" }}>
+        <Card style={{ marginTop: "2rem", width: "90%" }}>
           <SoftBox p={3}>
-            <SoftTypography variant="h4">Filtros</SoftTypography>
+            <SoftTypography variant="h5">Consulta por emision</SoftTypography>
             <Divider />
 
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -233,7 +234,8 @@ const InformesCliente = () => {
                 display="flex"
                 flexWrap="wrap"
                 alignItems="flex-start"
-                gap={3}
+                columnGap={3}
+                rowGap={1}
               >
                 <FilterField label="Emisión" width="200px" error={errors.idEmision?.message}>
                   <Controller
@@ -257,11 +259,14 @@ const InformesCliente = () => {
                   />
                 </FilterField>
 
-                <FilterField label="Filtrar" hideLabel>
-                  <SoftButton variant="gradient" color="info" type="submit">
-                    Filtrar
-                  </SoftButton>
-                </FilterField>
+                <SoftButton
+                  variant="gradient"
+                  color="info"
+                  type="submit"
+                  sx={{ alignSelf: "center", marginLeft: "auto" }}
+                >
+                  Filtrar
+                </SoftButton>
               </SoftBox>
             </form>
           </SoftBox>
@@ -342,6 +347,8 @@ const InformesCliente = () => {
             </SoftBox>
           </SoftBox>
         ) : null}
+
+        <Footer />
       </SoftBox>
     </>
   );

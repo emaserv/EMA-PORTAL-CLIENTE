@@ -51,79 +51,62 @@ const SignIn = () => {
   return (
     <CoverLayout
       title={"Bienvenido a Portal Clientes"}
-      color={"info"}
       description="Ingrese sus credenciales para iniciar sesión"
       image={logoEma}
-      top="5rem"
     >
-      <SoftBox sx={{alignItems: 'center'}}>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <SoftBox mb={2}>
-            <SoftBox mb={1} ml={0.5}>
-              <SoftTypography
-                component="label"
-                variant="caption"
-                fontWeight="bold"
-              >
-                Nombre de Usuario
-              </SoftTypography>
-            </SoftBox>
-            <Controller
-              name="userName"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <SoftInputBase
-                  type="text"
-                  placeholder="Usuario"
-                  field={field}
-                />
-              )}
-            />
-            {errors.userName && <SoftTypography variant="caption" color="error">Campo requerido</SoftTypography>}
-          </SoftBox>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <SoftBox mb={1.5}>
+          <SoftTypography component="label" variant="caption" fontWeight="bold" sx={{ display: 'block', mb: 0.5 }}>
+            Nombre de Usuario
+          </SoftTypography>
+          <Controller
+            name="userName"
+            control={control}
+            rules={{ required: true }}
+            render={({ field }) => (
+              <SoftInputBase
+                type="text"
+                placeholder="Usuario"
+                field={field}
+              />
+            )}
+          />
+          {errors.userName && <SoftTypography variant="caption" color="error">Campo requerido</SoftTypography>}
+        </SoftBox>
 
-          <SoftBox mb={2}>
-            <SoftBox mb={1} ml={0.5}>
-              <SoftTypography
-                component="label"
-                variant="caption"
-                fontWeight="bold"
-              >
-                Contraseña
-              </SoftTypography>
-            </SoftBox>
-            <Controller
-              name="password"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <SoftInputBase
-                  type="password"
-                  placeholder="Contraseña"
-                  field={field}
-                  
-                />
-              )}
-            />
-            {errors.password && <SoftTypography variant="caption" color="error">Campo requerido</SoftTypography>}
-          </SoftBox>
+        <SoftBox mb={1.5}>
+          <SoftTypography component="label" variant="caption" fontWeight="bold" sx={{ display: 'block', mb: 0.5 }}>
+            Contraseña
+          </SoftTypography>
+          <Controller
+            name="password"
+            control={control}
+            rules={{ required: true }}
+            render={({ field }) => (
+              <SoftInputBase
+                type="password"
+                placeholder="Contraseña"
+                field={field}
+              />
+            )}
+          />
+          {errors.password && <SoftTypography variant="caption" color="error">Campo requerido</SoftTypography>}
+        </SoftBox>
 
-          {loginError && (
-            <SoftBox mb={2}>
-              <SoftTypography variant="caption" color="error">
-                {loginError}
-              </SoftTypography>
-            </SoftBox>
-          )}
-
-          <SoftBox mt={4} mb={1}>
-            <SoftButton variant="gradient" color="info" type="submit" fullWidth>
-              Iniciar Sesion
-            </SoftButton>
+        {loginError && (
+          <SoftBox mb={1.5}>
+            <SoftTypography variant="caption" color="error">
+              {loginError}
+            </SoftTypography>
           </SoftBox>
-        </form>
-      </SoftBox>
+        )}
+
+        <SoftBox mt={3}>
+          <SoftButton variant="gradient" color="info" type="submit" fullWidth>
+            Iniciar Sesión
+          </SoftButton>
+        </SoftBox>
+      </form>
     </CoverLayout>
   );
 };

@@ -21,6 +21,7 @@ import L from "leaflet";
 import { apiFetch } from 'services/api';
 import { GRADIENT_MODAL_HEADER } from "assets/uiConstants";
 import FilterField from "components/FilterField";
+import Footer from "components/Footer";
 
 
 const DataConverter = (fechaDeSincronizacion) => {
@@ -635,9 +636,9 @@ const RadioCliente = () => {
           <ResponsiveAppBar />
         </SoftBox>
 
-        <Card style={{ marginTop: "7rem", width: "90%" }}>
+        <Card style={{ marginTop: "2rem", width: "90%" }}>
           <SoftBox p={3}>
-            <SoftTypography variant="h4">Filtros</SoftTypography>
+            <SoftTypography variant="h5">Consulta por radio</SoftTypography>
             <Divider />
 
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -789,6 +790,8 @@ const RadioCliente = () => {
             </SoftBox>
           </SoftBox>
         ) : null}
+
+        <Footer />
       </SoftBox>
 
       <PopUp

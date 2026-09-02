@@ -24,6 +24,7 @@ import html2canvas from "html2canvas";
 import ReactDOM from "react-dom/client";
 import { apiFetch } from 'services/api';
 import { COLOR_ICON_ACTIVE } from 'assets/uiConstants';
+import Footer from "components/Footer";
 
 const AcuseCliente = () => {
   const { handleSubmit, control } = useForm();
@@ -610,12 +611,12 @@ const AcuseCliente = () => {
     }
   };
 
+  // El ancho de cada columna se calcula segun cuantas tarjetas se muestran en total,
+  // para que siempre se repartan el 100% del ancho de la seccion (nunca queden mas
+  // angostas que eso ni dejen espacio vacio a los costados).
   const getCardWidth = () => {
-    if (user?.userName === "imorales@emaservicios.com.ar") {
-      return { xs: 12, md: 3 }; 
-    } else {
-      return { xs: 12, md: 4 }; 
-    }
+    const seMuestraLote = user?.userName === "imorales@emaservicios.com.ar";
+    return seMuestraLote ? { xs: 12, md: 4 } : { xs: 12, md: 6 };
   };
 
   const cardWidth = getCardWidth();
@@ -732,17 +733,16 @@ const AcuseCliente = () => {
           <ResponsiveAppBar />
         </SoftBox>
 
-        {/* CONTENEDOR PRINCIPAL - MÁS AMPLIO */}
+        {/* CONTENEDOR PRINCIPAL: mismo ancho (90%) que el header y el resto de las pantallas */}
         <SoftBox
-          width="100%"
-          maxWidth="1800px"
-          px={4}
-          mt="7rem"
+          width="90%"
+          mt="2rem"
           mb={4}
         >
 
-          {/* Grid de cards */}
-          <Grid 
+          {/* Seccion general que agrupa las cards, mismo estilo (fondo blanco, ancho) que el resto de las pantallas */}
+          <Card sx={{ borderRadius: "20px", p: 3 }}>
+          <Grid
             container
             spacing={4}
             justifyContent="center"
@@ -750,34 +750,24 @@ const AcuseCliente = () => {
           >
             {/* Card Lote (solo para usuario específico) */}
             {user?.userName === "imorales@emaservicios.com.ar" && (
-              <Grid item {...cardWidth}>
-                <Card
-                  sx={{
-                    height: '445px',
-                    p: 3,
-                    boxShadow: 3,
-                    borderRadius: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 6,
-                    }
-                  }}
-                >
+              <Grid
+                item
+                {...cardWidth}
+                sx={{ '&:not(:first-of-type)': { borderLeft: { xs: 'none', md: '1px solid #e6e9ee' } } }}
+              >
+                <SoftBox sx={{ p: { xs: 0, md: 3 }, display: 'flex', flexDirection: 'column' }}>
                   <SoftBox display="flex" alignItems="center" mb={2}>
                     <InventoryIcon sx={{ fontSize: 36, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
                     <SoftTypography variant="h5" fontWeight="bold">
                       Acuse por Lote
                     </SoftTypography>
                   </SoftBox>
-                  
-                  <SoftTypography variant="body2" color="text.secondary" mb={3}>
+
+                  <SoftTypography variant="body2" color="text.secondary" mb={3} sx={{ minHeight: '3.75rem' }}>
                     Genere acuses para todos los comprobantes de un lote específico
                   </SoftTypography>
 
-                  <SoftBox flex={1}>
+                  <SoftBox mb={3}>
                     <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
                       Seleccionar Lote
                     </SoftTypography>
@@ -801,7 +791,7 @@ const AcuseCliente = () => {
                     />
                   </SoftBox>
 
-                  <SoftBox mt={3} display="flex" justifyContent="flex-end">
+                  <SoftBox display="flex" justifyContent="flex-end">
                     <SoftButton
                       variant="gradient"
                       color="info"
@@ -812,40 +802,30 @@ const AcuseCliente = () => {
                       {loading ? "Procesando..." : "Generar"}
                     </SoftButton>
                   </SoftBox>
-                </Card>
+                </SoftBox>
               </Grid>
             )}
 
             {/* Card Cliente */}
-            <Grid item {...cardWidth}>
-              <Card
-                sx={{
-                  height: '445px',
-                  p: 3,
-                  boxShadow: 3,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6,
-                  }
-                }}
-              >
+            <Grid
+              item
+              {...cardWidth}
+              sx={{ '&:not(:first-of-type)': { borderLeft: { xs: 'none', md: '1px solid #e6e9ee' } } }}
+            >
+              <SoftBox sx={{ p: { xs: 0, md: 3 }, display: 'flex', flexDirection: 'column' }}>
                 <SoftBox display="flex" alignItems="center" mb={2}>
                   <PersonIcon sx={{ fontSize: 36, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
                   <SoftTypography variant="h5" fontWeight="bold">
                     Acuse por Cliente
                   </SoftTypography>
                 </SoftBox>
-                
-                <SoftTypography variant="body2" color="text.secondary" mb={3}>
+
+                <SoftTypography variant="body2" color="text.secondary" mb={3} sx={{ minHeight: '3.75rem' }}>
                   Busque y visualice los acuses de un cliente específico
                 </SoftTypography>
 
-                <form onSubmit={handleSubmit(onDescargarPorCliente)} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <SoftBox flex={1}>
+                <form onSubmit={handleSubmit(onDescargarPorCliente)}>
+                  <SoftBox mb={3}>
                     <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
                       Número de Cliente
                     </SoftTypography>
@@ -865,10 +845,10 @@ const AcuseCliente = () => {
                     />
                   </SoftBox>
 
-                  <SoftBox mt={3} display="flex" justifyContent="flex-end">
-                    <SoftButton 
-                      variant="gradient" 
-                      color="info" 
+                  <SoftBox display="flex" justifyContent="flex-end">
+                    <SoftButton
+                      variant="gradient"
+                      color="info"
                       type="submit"
                       disabled={buscandoCliente || loading || procesandoExcel}
                       sx={{ minWidth: '140px', py: 1.5 }}
@@ -877,42 +857,32 @@ const AcuseCliente = () => {
                     </SoftButton>
                   </SoftBox>
                 </form>
-              </Card>
+              </SoftBox>
             </Grid>
 
             {/* Card Excel */}
-            <Grid item {...cardWidth}>
-              <Card
-                sx={{
-                  height: '445px',
-                  p: 3,
-                  boxShadow: 3,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6,
-                  }
-                }}
-              >
+            <Grid
+              item
+              {...cardWidth}
+              sx={{ '&:not(:first-of-type)': { borderLeft: { xs: 'none', md: '1px solid #e6e9ee' } } }}
+            >
+              <SoftBox sx={{ p: { xs: 0, md: 3 }, display: 'flex', flexDirection: 'column' }}>
                 <SoftBox display="flex" alignItems="center" mb={2}>
                   <DescriptionIcon sx={{ fontSize: 36, color: COLOR_ICON_ACTIVE, mr: 1.5 }} />
                   <SoftTypography variant="h5" fontWeight="bold">
                     Acuse por Excel
                   </SoftTypography>
                 </SoftBox>
-                
-                <SoftTypography variant="body2" color="text.secondary" mb={3}>
+
+                <SoftTypography variant="body2" color="text.secondary" mb={3} sx={{ minHeight: '3.75rem' }}>
                   Genere acuses para múltiples clientes desde un archivo Excel
                 </SoftTypography>
 
-                <SoftBox flex={1}>
+                <SoftBox mb={3}>
                   <SoftTypography component="label" variant="caption" fontWeight="medium" color="text.secondary">
                     Archivo Excel
                   </SoftTypography>
-                  
+
                   <SoftBox
                     sx={{
                       border: '2px dashed',
@@ -977,18 +947,16 @@ const AcuseCliente = () => {
                     {procesandoExcel ? "Procesando..." : "Generar ZIP"}
                   </SoftButton>
                 </SoftBox>
-              </Card>
+              </SoftBox>
             </Grid>
           </Grid>
+          </Card>
 
           {/* Tabla de resultados */}
           {dataCliente.length > 0 && (
             <SoftBox mt={4}>
-              <Card sx={{ p: 3, borderRadius: 2 }}>
-                <SoftBox mb={2} px={1}>
-                  <SoftTypography variant="h6" fontWeight="bold" color="info">
-                    Resultados de búsqueda
-                  </SoftTypography>
+              <Card sx={{ p: 3, borderRadius: 5 }}>
+                <SoftBox px={1}>
                   <SoftTypography variant="body2" color="text.secondary">
                     Se encontraron {dataCliente.length} acuses para el cliente
                   </SoftTypography>
@@ -998,6 +966,8 @@ const AcuseCliente = () => {
             </SoftBox>
           )}
         </SoftBox>
+
+        <Footer />
       </SoftBox>
     </>
   );

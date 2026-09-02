@@ -1,130 +1,128 @@
 import * as React from 'react';
 import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import Container from '@mui/material/Container';
 import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
-import Tooltip from '@mui/material/Tooltip';
-import MenuItem from '@mui/material/MenuItem';
+import LogoutIcon from '@mui/icons-material/Logout';
 import SoftBox from 'components/SoftBox';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import brand from "assets/images/Portal-Cliente-Images/Logo-ema.png";
+import LogoEma from "assets/images/Portal-Cliente-Images/logoema3.jpg";
 import LogoNaturgy from "assets/images/Portal-Cliente-Images/logo-naturgy.png";
+import LogoMetrogas from "assets/images/Portal-Cliente-Images/logometrogas.png";
+import LogoEdesur from "assets/images/Portal-Cliente-Images/logoedesur.png";
+import LogoAysa from "assets/images/Portal-Cliente-Images/logoaysa-centrado.png";
+import LogoEcogas from "assets/images/Portal-Cliente-Images/logoecogas.png";
 import SoftTypography from 'components/SoftTypography';
 import { useAuth } from 'layouts/auth/AuthContext';
+import { COLOR_ICON_ACTIVE } from 'assets/uiConstants';
 
-const pages = [];
-const settings = ['Mi Perfil', 'Cerrar Sesion'];
+// Logo a mostrar en el avatar segun el grupo de cliente del usuario logueado.
+// Si un grupo no tiene logo cargado aca, se muestran las iniciales del usuario.
+const LOGO_POR_GRUPO_CLIENTE = {
+  1: LogoEdesur,
+  2: LogoNaturgy,
+  3: LogoAysa,
+  4: LogoMetrogas,
+  5: LogoEma,
+  6: LogoEcogas,
+  7: LogoEdesur,
+};
+
+const getInitials = (nombre, apellido) => {
+  const inicialNombre = nombre?.trim()?.[0] || "";
+  const inicialApellido = apellido?.trim()?.[0] || "";
+  return (inicialNombre + inicialApellido).toUpperCase() || "?";
+};
 
 function ResponsiveAppBar() {
-  const [anchorElNav, setAnchorElNav] = React.useState(null);
-  const [anchorElUser, setAnchorElUser] = React.useState(null);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-  const handleOpenNavMenu = (event) => {
-    setAnchorElNav(event.currentTarget);
-  };
-  const handleOpenUserMenu = (event) => {
-    setAnchorElUser(event.currentTarget);
-  };
-
-  const handleCloseNavMenu = () => {
-    setAnchorElNav(null);
-  };
-  
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
 
   const handleLogout = async () => {
     await logout(); // Llama a la función de logout (limpia la cookie de sesión)
     navigate('/authentication/sign-in');
   };
 
-  return (
-    <AppBar position="static" style={{background: 'white', position: 'fixed', zIndex:'1000'}}>
-      <Container maxWidth="xl">
-        <Toolbar disableGutters>
-          
-          <SoftBox component={NavLink} to="/home" display="flex" alignItems="center" marginTop="0.8rem" marginBottom="0.8rem">
-            {brand && <SoftBox component="img" src={brand} alt="Logo EMA SERVICIOS" width="13rem" marginLeft="-7rem"/>}
-          </SoftBox>
+  // Sin idGrupoCliente (usuarios internos de EMA) se agrupan con el logo de EMA.
+  const logoCliente = user
+    ? (user.idGrupoCliente == null ? LogoEma : LOGO_POR_GRUPO_CLIENTE[user.idGrupoCliente])
+    : undefined;
 
-          <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              open={Boolean(anchorElNav)}
-              onClick={handleOpenNavMenu}
-              color="inherit"
-            >
-              
-            </IconButton>
-          </Box>
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            {pages.map((page) => (
-              <Button
-                key={page}
-                onClick={handleCloseNavMenu}
-                sx={{ my: 2, color: 'white', display: 'block' }}
-              >
-                {page}
-              </Button>
-            ))}
-          </Box>
-          <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Open settings">
-              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, marginRight: '-7rem' }}>
-                {user ? <SoftTypography marginRight='1rem'> {user.nombre} {user.apellido}</SoftTypography> : <Link to="/authentication/sign-in"> <SoftTypography marginRight='1rem'>No estás logueado</SoftTypography> </Link>}
-                <Avatar
-                  alt="User"
-                  src={user?.userName === "naturgy@ema" ? LogoNaturgy : "/static/images/avatar/2.jpg"}
-                />
-              </IconButton>
-            </Tooltip>
-            <Menu
-              sx={{ mt: '45px' }}
-              id="menu-appbar"
-              anchorEl={anchorElUser}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
+  return (
+    <AppBar
+      position="static"
+      elevation={0}
+      sx={{
+        mt: { xs: '14px', md: '24px' },
+        mx: '5%',
+        width: 'auto',
+        background: 'white',
+        zIndex: 1000,
+        borderRadius: '20px',
+        border: '1px solid #eef0f4',
+        boxShadow: '0 8px 24px rgba(20, 30, 60, 0.08)',
+      }}
+    >
+      <Toolbar
+        sx={{
+          minHeight: '5.75rem',
+          px: { xs: 4, sm: 5, md: 7, lg: 9, xl: 12 },
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <SoftBox component={NavLink} to="/home" display="flex" alignItems="center">
+          {brand && (
+            <SoftBox component="img" src={brand} alt="Logo EMA SERVICIOS" sx={{ height: '3rem', width: 'auto' }} />
+          )}
+        </SoftBox>
+
+        {user ? (
+          <SoftBox
+            onClick={handleLogout}
+            display="flex"
+            alignItems="center"
+            sx={{
+              cursor: 'pointer',
+              gap: 1,
+              py: 0.5,
+              pl: 1,
+              pr: 1.5,
+              borderRadius: '999px',
+              backgroundColor: '#f4f6fa',
+              border: '1px solid transparent',
+              transition: 'border-color 0.15s ease',
+              '&:hover': { borderColor: COLOR_ICON_ACTIVE },
+            }}
+          >
+            <Avatar
+              alt={`${user.nombre} ${user.apellido}`}
+              src={logoCliente ?? undefined}
+              sx={{
+                width: 36,
+                height: 36,
+                bgcolor: logoCliente ? 'white' : COLOR_ICON_ACTIVE,
+                border: logoCliente ? '1px solid #eef0f4' : 'none',
+                fontSize: '0.875rem',
+                fontWeight: 700,
               }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorElUser)}
-              onClose={handleCloseUserMenu}
             >
-              {settings.map((setting) => (
-                <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  {setting === 'Cerrar Sesion' && (
-                    <Link to="/authentication/login">
-                      <SoftTypography
-                sx={{ textAlign: 'center', cursor: 'pointer' }}
-                onClick={handleLogout}
-              >
-                {setting}
-              </SoftTypography>
-              </Link>
-                  )}
-                  {setting === 'Mi Perfil' && (
-                    <SoftTypography sx={{ textAlign: 'center' }}>{setting}</SoftTypography>
-                  )}
-                </MenuItem>
-              ))}
-            </Menu>
-          </Box>
-        </Toolbar>
-      </Container>
+              {!logoCliente && getInitials(user.nombre, user.apellido)}
+            </Avatar>
+            <SoftTypography variant="button" fontWeight="medium" sx={{ lineHeight: 1.1 }}>
+              {user.nombre} {user.apellido}
+            </SoftTypography>
+            <LogoutIcon sx={{ fontSize: '1.1rem', color: '#8392ab' }} />
+          </SoftBox>
+        ) : (
+          <SoftBox component={Link} to="/authentication/sign-in">
+            <SoftTypography variant="button" fontWeight="medium" color="info">
+              Iniciar sesión
+            </SoftTypography>
+          </SoftBox>
+        )}
+      </Toolbar>
     </AppBar>
   );
 }
