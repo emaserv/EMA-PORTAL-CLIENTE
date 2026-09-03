@@ -64,7 +64,7 @@ app.register_blueprint(usuarios)
 
 #Esto es para que se creen las tablas. NO TOCAR!
 from models.cliente import GrupoCliente
-from models.emision import Emision, ItemEmision
+from models.emision import Emision, ItemEmision, ResumenFechasEmision
 from models.usuario import Credencial, Usuario
 from models.dai import Dai
 

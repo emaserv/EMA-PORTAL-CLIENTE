@@ -457,23 +457,19 @@ def get_emisiones():
     idGrupoCliente = get_current_grupo_cliente()
 
     try:
-        queryBase = None
-        
-        if int(idGrupoCliente) == 4:  # Convertir a string para comparación segura
-            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
-        elif int(idGrupoCliente) == 2:
-            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icn GROUP BY "fechaEmision" ORDER BY 1')
-        elif int(idGrupoCliente) == 1:
-            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 1 GROUP BY "fechaEmision" ORDER BY 1')
-        elif int(idGrupoCliente) == 6:
-            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 6 GROUP BY "fechaEmision" ORDER BY 1')
-
-        if queryBase is None:
+        if int(idGrupoCliente) not in (1, 2, 4, 6):
             return jsonify({"message": "idGrupoCliente no válido"}), 400
+
+        # Lee de la tabla resumen (mantenida al importar) en vez de escanear
+        # itemEmision/informeClienteMetrogas/informeClienteNaturgy completas.
+        queryBase = text(
+            'SELECT "fechaEmision" AS nombre, row_number() OVER (ORDER BY "fechaEmision") AS id '
+            'FROM "resumenFechasEmision" WHERE "idGrupoCliente" = :idGrupoCliente ORDER BY "fechaEmision"'
+        )
 
         # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(queryBase)
+            data_query = session.execute(queryBase, {"idGrupoCliente": int(idGrupoCliente)})
 
         datosPiezasPostales = [{"id": row.id, "nombre": row.nombre} for row in data_query]
 

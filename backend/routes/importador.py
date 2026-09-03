@@ -67,6 +67,24 @@ def uploadFileAndData():
 
                 session.add(emision)
                 session.commit()
+
+                # Mantiene al dia la tabla resumen que usa /api/emisiones para el
+                # desplegable, evitando escanear itemEmision completa en cada consulta.
+                paresNuevos = {
+                    (item.idGrupoCliente, item.fechaEmision)
+                    for item in emision.itemsEmision
+                    if item.idGrupoCliente is not None and item.fechaEmision is not None
+                }
+                if paresNuevos:
+                    session.execute(
+                        text(
+                            'INSERT INTO "resumenFechasEmision" ("idGrupoCliente", "fechaEmision") '
+                            'VALUES (:idGrupoCliente, :fechaEmision) '
+                            'ON CONFLICT ("idGrupoCliente", "fechaEmision") DO NOTHING'
+                        ),
+                        [{"idGrupoCliente": par[0], "fechaEmision": par[1]} for par in paresNuevos],
+                    )
+                    session.commit()
             
             elif data_dict.get('idFormato') == 3:                
                 adapterLeerExcel = factoryAdapterArchivo.getAdapterByFormat(data_dict.get('idFormato'))
