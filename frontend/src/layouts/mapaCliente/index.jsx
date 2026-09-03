@@ -109,7 +109,7 @@ const MapaCliente = () => {
   // Cargar emisiones disponibles
   useEffect(() => {
     if (user) {
-      apiFetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`,
+      apiFetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`,
         { mode: "cors" }
       )
         .then((response) => response.json())

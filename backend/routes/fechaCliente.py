@@ -7,6 +7,7 @@ from db.masterRepo import DatabaseSession
 from datetime import datetime
 import requests
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask_jwt_extended import jwt_required
 from utils.auth_helpers import get_current_grupo_cliente
 
@@ -68,17 +69,15 @@ def format_date_para_url(date_str):
 def fetch_data(nroCliente, fechaEmision):
     url = f"https://metrogasdocs2.docuprint.com/Api/Form/{nroCliente}/{fechaEmision}"
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()  # Verifica si hubo un error en la solicitud
         data = response.json()  # Si la respuesta es JSON, la devuelve como un diccionario
         # Asegurarse de que la clave 'Url' existe en la respuesta
         if data:
             return data
         else:
-            print("La respuesta se encuentra vacia.")
             return None
     except requests.exceptions.RequestException as e:
-        print(f"Error al hacer la solicitud: {e}")
         return None
 
 
@@ -181,20 +180,42 @@ def tablaFC():
         
         if not all_rows:
             return jsonify({"message": "Recursos no encontrados"}), 204
-        
+
         # Procesar resultados
         datosPiezasPostales = []
-        
+
+        # Prefetch en paralelo de la API externa de Metrogas (solo grupo 4):
+        # antes se llamaba a fetch_data() una vez por fila, en serie, y cada
+        # llamada tarda ~1-1.5s (con 16 filas eso son ~11-16s). Se dedupea
+        # por (nroCliente, fechaEmision) y se resuelve todo junto.
+        api_cache = {}
+        if grupoCliente == '4':
+            claves_unicas = {
+                (row._mapping.get("nroCliente"), format_date_para_url(row._mapping.get("fechaEmision")))
+                for row in all_rows
+                if row._mapping.get("fechaEmision")
+            }
+            if claves_unicas:
+                with ThreadPoolExecutor(max_workers=20) as executor:
+                    futures = {
+                        executor.submit(fetch_data, nc, fe): (nc, fe)
+                        for nc, fe in claves_unicas
+                    }
+                    for future in as_completed(futures):
+                        clave = futures[future]
+                        api_cache[clave] = future.result()
+
         for row in all_rows:
             # Obtener diccionario de la fila
             row_dict = dict(row._mapping)
-            
+
             if grupoCliente == '4':
-                # Solo para grupo 4 llamar a fetch_data
-                res = fetch_data(row_dict.get("nroCliente"), format_date_para_url(row_dict.get("fechaEmision")))
+                res = api_cache.get(
+                    (row_dict.get("nroCliente"), format_date_para_url(row_dict.get("fechaEmision")))
+                )
                 if not isinstance(res, dict):
                     res = {}
-                
+
                 res_venc = res.get("Vencimiento", "0")
                 res_imp = str("${:,.2f}".format(res.get("Importe", 0)))
                 res_acuse = res.get("Url", "0")
@@ -309,7 +330,6 @@ def getLote():
 
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataDropDwn": lotes}), 200
     except Exception as e:
-        print()
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 @fechaCliente.route('/api/fecha/geoMapaItems', methods=['GET'])
@@ -441,7 +461,6 @@ def tablaInformacion():
         }), 200
 
     except Exception as e:
-        print(e)  # Corregido: Mostrar el error real en la consola
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
 
@@ -479,37 +498,6 @@ def get_emisiones():
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
     
 
-@fechaCliente.route( '/api/emisiones/radioClienteEdesur', methods=['GET'])
-@jwt_required()
-def get_emisionesEdesur():
-    idGrupoCliente = get_current_grupo_cliente()
-
-    try:
-        queryBase = None
-
-        if int(idGrupoCliente) == 1:
-            queryBase = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "radioCliente" ie WHERE "idGrupoCliente" = 1 GROUP BY "fechaEmision" ORDER BY 1')
-
-        if queryBase is None:
-            return jsonify({"message": "idGrupoCliente no válido"}), 400
-
-        # Ejecutar la consulta
-        with DatabaseSession().get_session() as session:
-            data_query = session.execute(queryBase)
-
-        datosPiezasPostales = [{"id": row.id, "nombre": row.nombre} for row in data_query]
-
-        if not datosPiezasPostales:
-            return jsonify({"message": "Recursos no encontrados"}), 204
-
-        keys = list(datosPiezasPostales[0].keys())
-
-        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "multiplesEmision": datosPiezasPostales}), 200
-
-    except Exception as e:
-        return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
-
-
 def buscar_por_id(data, id_buscado):
     for item in data:
         if str(item['id']) == id_buscado:
@@ -524,61 +512,88 @@ def informeEmision():
     idGrupoCliente = get_current_grupo_cliente()
 
     try:
-        if int(idGrupoCliente)  == 4:
-            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteMetrogas" icm GROUP BY "fechaEmision" ORDER BY 1')
-        elif int(idGrupoCliente)  == 2:
-            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "informeClienteNaturgy" icm GROUP BY "fechaEmision" ORDER BY 1')
-        elif int(idGrupoCliente) == 6:
-            queryBaseSearch = text('SELECT DISTINCT("fechaEmision") AS nombre, row_number() OVER () AS id FROM "itemEmision" ie WHERE "idGrupoCliente" = 6 GROUP BY "fechaEmision" ORDER BY 1')
-        
+        _t0 = time.time()
+        # Misma tabla resumen (y mismo orden) que usa /api/emisiones para
+        # llenar el desplegable: evita repetir el DISTINCT sin indice sobre
+        # las vistas/itemEmision completas, y garantiza que el id elegido en
+        # el desplegable se traduzca siempre a la misma fecha.
+        queryBaseSearch = text(
+            'SELECT "fechaEmision" AS nombre, row_number() OVER (ORDER BY "fechaEmision") AS id '
+            'FROM "resumenFechasEmision" WHERE "idGrupoCliente" = :idGrupoCliente ORDER BY "fechaEmision"'
+        )
+
         with DatabaseSession().get_session() as session:
-            data_query_search = session.execute(queryBaseSearch)
-        
+            data_query_search = session.execute(queryBaseSearch, {"idGrupoCliente": int(idGrupoCliente)})
+
         dataQueryBusqueda = []
-        
+
         for row in data_query_search:
              dataQueryBusqueda.append({
-                'id': row.id, 
+                'id': row.id,
                 'nombre': row.nombre
             })
-        
+
         fechaEncontrada = buscar_por_id(dataQueryBusqueda, idEmision)
-        
-        if int(idGrupoCliente) == 4:
-            queryBase = 'SELECT * FROM "informeClienteMetrogas" icm'
-        elif int(idGrupoCliente) == 2:
-            queryBase = 'SELECT * FROM "informeClienteNaturgy" icn'
-        elif int(idGrupoCliente) == 6:
-            queryBase = 'SELECT * FROM "informeClienteEcogas" ie'
-        
-        where_clauses = []
-        qParams = {}
 
-        # Verificar y agregar los parámetros condicionalmente
-        if idEmision and int(idGrupoCliente) == 4:
-            where_clauses.append('icm."fechaEmision" = :fechaEmision')
-            qParams['fechaEmision'] = fechaEncontrada
-        elif idEmision and int(idGrupoCliente) == 2:
-            where_clauses.append('icn."fechaEmision" = :fechaEmision')
-            qParams['fechaEmision'] = fechaEncontrada
-        elif idEmision and int(idGrupoCliente) == 6:
-            where_clauses.append('ie."fechaEmision" = :fechaEmision')
-            qParams['fechaEmision'] = fechaEncontrada
+        if int(idGrupoCliente) == 2 and idEmision:
+            # La vista "informeClienteNaturgy" dedupea por (nroCliente,
+            # estadoPieza) contra TODA la historia antes de que el WHERE de
+            # afuera filtre por fecha: un cliente que reaparece en una
+            # emision posterior "pisa" su registro de esta emision mas
+            # vieja, ademas de escanear todo idGrupoCliente=2 en cada
+            # consulta (~6.5s). Se reescribe igual pero filtrando fechaEmision
+            # antes del PARTITION BY: cada emision cuenta a sus propios
+            # clientes (confirmado con el negocio) y solo escanea esa emision.
+            query = '''
+                WITH base AS (
+                    SELECT ie.id, ie."nroCliente", ie."estadoPieza", ie."fechaEmision",
+                        CASE WHEN ie.foto IS NULL THEN 'NO VERIFICADO' ELSE 'VERIFICADO' END AS foto,
+                        row_number() OVER (PARTITION BY ie."nroCliente", ie."estadoPieza" ORDER BY ie.id DESC) AS rn
+                    FROM "itemEmision" ie
+                    WHERE ie."idGrupoCliente" = 2 AND ie."estadoMetro" IS NULL AND ie."fechaEmision" = :fechaEmision
+                )
+                SELECT row_number() OVER () AS id, "estadoPieza", "fechaEmision", foto, count("nroCliente") AS count
+                FROM base WHERE rn = 1
+                GROUP BY "estadoPieza", foto, "fechaEmision"
+            '''
+            qParams = {'fechaEmision': fechaEncontrada}
+        else:
+            if int(idGrupoCliente) == 4:
+                queryBase = 'SELECT * FROM "informeClienteMetrogas" icm'
+            elif int(idGrupoCliente) == 2:
+                queryBase = 'SELECT * FROM "informeClienteNaturgy" icn'
+            elif int(idGrupoCliente) == 6:
+                queryBase = 'SELECT * FROM "informeClienteEcogas" ie'
 
-        # Combinar cláusulas WHERE si existen
-        if where_clauses:
-            where_clause = ' WHERE ' + ' AND '.join(where_clauses)
-            query = queryBase + where_clause
+            where_clauses = []
+            qParams = {}
+
+            # Verificar y agregar los parámetros condicionalmente
+            if idEmision and int(idGrupoCliente) == 4:
+                where_clauses.append('icm."fechaEmision" = :fechaEmision')
+                qParams['fechaEmision'] = fechaEncontrada
+            elif idEmision and int(idGrupoCliente) == 6:
+                where_clauses.append('ie."fechaEmision" = :fechaEmision')
+                qParams['fechaEmision'] = fechaEncontrada
+
+            # Combinar cláusulas WHERE si existen
+            if where_clauses:
+                where_clause = ' WHERE ' + ' AND '.join(where_clauses)
+                query = queryBase + where_clause
+            else:
+                query = queryBase
 
         # Convertir a TextClause después de armar la consulta completa
         query = text(query + " ORDER BY count DESC")
 
         # Ejecutar la consulta
+        _t1 = time.time()
         with DatabaseSession().get_session() as session:
             data_query = session.execute(query, qParams)
+            data_query = list(data_query)
 
         datosPiezasPostales = []
-        
+
         for row in data_query:
             if int(idGrupoCliente) == 4:
                 datosPiezasPostales.append({
@@ -612,11 +627,9 @@ def informeEmision():
             return jsonify({"message": "Recursos no encontrados"}), 204
 
         keys = list(datosPiezasPostales[0].keys())
-        print("LLAVES ",keys,"DATOS ", datosPiezasPostales)
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
 
     except Exception as e:
-        print("ERROR: ",e)
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 
 
@@ -656,7 +669,6 @@ def informeEmisionExtendido():
             })
         
         fechaEncontrada = buscar_por_id(dataQueryBusqueda, idEmision)
-        print(fechaEncontrada)
         
         # Armar query según grupo de cliente
         qParams = {}

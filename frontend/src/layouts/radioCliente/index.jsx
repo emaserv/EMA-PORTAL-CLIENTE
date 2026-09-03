@@ -86,7 +86,7 @@ const RadioCliente = () => {
 
   useEffect(() => {
       if (user) {
-        apiFetch(`${API_BACK}/api/emisiones/radioClienteEdesur?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
+        apiFetch(`${API_BACK}/api/emisiones?idGrupoCliente=${user ? user.idGrupoCliente : null}`, { mode: "cors" })
           .then((response) => response.json())
           .then((apiData) => {
             if (apiData.multiplesEmision && apiData.columns) {

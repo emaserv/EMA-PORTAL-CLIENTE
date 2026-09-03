@@ -263,6 +263,24 @@ def getAcuses():
                 items_unicos = list({(nc, fe) for nc, fe in items_a_consultar})
                 api_cache = fetch_data_bulk(items_unicos)
 
+            # ── 3b. Prefetch fotos/firmas en paralelo (dedupe por URL) ──────
+            urls_imagenes = list({
+                url
+                for item in resultados
+                for url in (item.foto, item.firma)
+                if url
+            })
+            imagenes_cache = {}
+            if urls_imagenes:
+                with ThreadPoolExecutor(max_workers=20) as executor:
+                    futures = {
+                        executor.submit(encode_image_to_base64, url): url
+                        for url in urls_imagenes
+                    }
+                    for future in as_completed(futures):
+                        url = futures[future]
+                        imagenes_cache[url] = future.result()
+
             # ── 4. Construir respuesta ────────────────────────────────────────
             all_acuses = []
 
@@ -296,8 +314,8 @@ def getAcuses():
                         raw_venc          = api_data.get('Vencimiento')
                         vencimiento_valor = _formatear_fecha_api(raw_venc) if raw_venc else item.vencimiento
 
-                foto_base64  = encode_image_to_base64(item.foto)  if item.foto  else None
-                firma_base64 = encode_image_to_base64(item.firma) if item.firma else None
+                foto_base64  = imagenes_cache.get(item.foto)  if item.foto  else None
+                firma_base64 = imagenes_cache.get(item.firma) if item.firma else None
 
                 #Para grupo 4 y estado 1°VBPCR, no enviar dni ni aclaracion
                 if es_grupo4 and estado == '1°VBPCR':
