@@ -321,8 +321,11 @@ def mapaItems():
     grupoCliente = get_current_grupo_cliente()
     fechaEmision = request.args.get('fechaEmision')
 
-    try:        
-        queryBase = 'SELECT * FROM "geoItemEmision" gie'
+    try:
+        # El mapa solo usa latitud/longitud (ver armarArrayCoordenadas en el
+        # frontend); pedir el resto de las columnas de la vista es peso
+        # muerto cuando hay cientos de miles de puntos.
+        queryBase = 'SELECT gie.latitud, gie.longitud FROM "geoItemEmision" gie'
 
         where_clauses = []
         qParams = {}
@@ -361,26 +364,18 @@ def mapaItems():
         with DatabaseSession().get_session() as session:
             data_query = session.execute(query, qParams)
                 
-        datosPiezasPostales = []
+        # Pares [lat, lon] en vez de objetos con nombres de columna repetidos
+        # por fila: mismo dato, JSON bastante mas chico con muchos puntos.
+        puntos = [
+            [row.latitud, row.longitud]
+            for row in data_query
+            if row.latitud and row.longitud
+        ]
 
-        for row in data_query:
-            datosPiezasPostales.append({
-                'legajo': row.legajo,
-                'nroCliente': row.nroCliente,
-                'planTurno': row.planTurno,
-                'radio': row.radio,
-                'sucursal': row.sucursal,
-                'latitud': row.latitud,
-                'longitud': row.longitud,
-                'fecha': row.fechaDistrib
-            })
-
-        if not datosPiezasPostales:
+        if not puntos:
             return '{"message": "Recursos no encontrados"}', 204
-        
-        keys = list(datosPiezasPostales[0].keys())
 
-        return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
+        return jsonify({"message": "Conexión y consulta exitosas", "dataTabla": puntos}), 200
     except Exception as e:
         return jsonify({"message": f"Error al ejecutar la consulta: {str(e)}"}), 500
 

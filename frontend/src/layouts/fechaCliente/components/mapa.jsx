@@ -1,7 +1,10 @@
 import { React, useEffect, useState } from 'react';
 import PropTypes from "prop-types";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import L from 'leaflet';
 
 // Importar imágenes necesarias para el marcador
@@ -48,17 +51,21 @@ function MyMap({ arrayPuntos }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
 
-      {puntos.length > 0 && puntos.map((pos, index) => (
-        <Marker 
-          key={index} 
-          position={[parseFloat(pos[0]), parseFloat(pos[1])]} // Asegúrate de usar las coordenadas correctas
-          icon={customMarkerIcon}
-        >
-          <Popup>
-            Coordenada {index + 1}: {pos[0]}, {pos[1]}
-          </Popup>
-        </Marker>   
-      ))}
+      {puntos.length > 0 && (
+        <MarkerClusterGroup chunkedLoading>
+          {puntos.map((pos, index) => (
+            <Marker
+              key={index}
+              position={[parseFloat(pos[0]), parseFloat(pos[1])]} // Asegúrate de usar las coordenadas correctas
+              icon={customMarkerIcon}
+            >
+              <Popup>
+                Coordenada {index + 1}: {pos[0]}, {pos[1]}
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
+      )}
 
       {puntos.length > 0 ? (
         <>

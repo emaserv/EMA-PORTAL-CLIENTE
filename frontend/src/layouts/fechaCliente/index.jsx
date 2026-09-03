@@ -216,20 +216,6 @@ const FechaCliente = () => {
     setDatosFiltrados(datosFiltrados);
   };
 
-  const armarArrayCoordenadas = (data) => {
-    let arrayCoordenadas = [];
-
-    for (let i = 0; i < data.length; i++) {
-      if (data[i].latitud && data[i].longitud) {
-        const latitud = parseFloat(data[i].latitud);
-        const longitud = parseFloat(data[i].longitud);
-        arrayCoordenadas.push([latitud, longitud]);
-      }
-    }
-
-    return arrayCoordenadas;
-  };
-
   const exportarAExcel = (data) => {
     const regex = /[^/]+ \/ [^/]+ \/ [^/]+/;
 
@@ -436,7 +422,7 @@ const FechaCliente = () => {
             <SoftBox paddingBottom={3} justifyContent="center">
               <Card sx={SECTION_CARD_SX}>
                 <SoftBox p={3}>
-                  <MyMap arrayPuntos={armarArrayCoordenadas(puntosMapa)} />
+                  <MyMap arrayPuntos={puntosMapa} />
                 </SoftBox>
               </Card>
             </SoftBox>
