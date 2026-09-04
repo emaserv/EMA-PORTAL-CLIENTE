@@ -10,9 +10,6 @@ from utils.auth_helpers import get_current_grupo_cliente
 
 radioCliente = Blueprint('radioCliente', __name__)
 
-def get_column_names(model):
-    return [column.name for column in model.__table__.columns]
-
 def format_time(time_str):
     if time_str is None:
         return None

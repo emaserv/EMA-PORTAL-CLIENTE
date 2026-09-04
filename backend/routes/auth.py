@@ -16,9 +16,6 @@ from utils.auth_helpers import get_sha256_hash
 
 auth = Blueprint('auth', __name__)
 
-def get_column_names(model):
-    return [column.name for column in model._table_.columns]
-
 @auth.route('/api/login', methods=['POST'])
 def login():
     try:

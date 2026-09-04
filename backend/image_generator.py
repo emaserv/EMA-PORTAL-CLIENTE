@@ -1012,13 +1012,6 @@ class AcuseImageGenerator:
         
         return max_y + 30 
     
-    def _draw_image_placeholder(self, draw, x, y, width, height, text):
-        """Dibujar placeholder para imagen faltante o corrupta"""
-        draw.rectangle([(x, y), (x + width, y + height)],
-                      fill=(245, 245, 245), outline=self.colors['gray_border'], width=1)
-        draw.text((x + width//2, y + height//2), text,
-                 fill=(150, 150, 150), font=self.fonts['caption'], anchor="mm")
-    
     def _generate_emergency_acuse(self, data):
         """Generar acuse mínimo en caso de error catastrófico"""
         try:

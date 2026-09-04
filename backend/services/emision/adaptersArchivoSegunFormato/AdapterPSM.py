@@ -1,6 +1,5 @@
 from sqlalchemy import func, cast, Text, text
 from models.emision.ItemEmision import ItemEmision
-from db.QueryObj import QueryObj
 from db.masterRepo import DatabaseSession
 from flask import Blueprint, jsonify, request, current_app, json
 import re

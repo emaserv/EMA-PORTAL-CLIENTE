@@ -11,9 +11,6 @@ from flask_jwt_extended import jwt_required
 
 importador = Blueprint('importador', __name__)
 
-def get_column_names(model):
-    return [column.name for column in model.__table__.columns]
-
 @importador.route( '/api/upload', methods=['POST'])
 @jwt_required()
 def uploadFileAndData():

@@ -1,7 +1,6 @@
 import re
 from sqlalchemy import func, cast, Text, text
 from models.dai.Dai import Dai
-from db.QueryObj import QueryObj
 from db.masterRepo import DatabaseSession
 from flask import Blueprint, jsonify, request, current_app, json
 from datetime import datetime
@@ -12,7 +11,6 @@ class AdapterDAI:
         print("WASAAAAAAAAAAAAAA", entry['legajo'])
         latitud_, longitud_ = procesar_geo(entry)   
         dai = Dai(
-            #idGrupoCliente = obtenerIdGrupoCliente(entry['Grupo Cliente']), 
             legajoDist = str(entry['legajo']) if entry['legajo'] != None else None,
             fecha =  convertir_fecha(entry['date']),
             hora =  chequeadorHora(entry['time']),
@@ -56,30 +54,6 @@ def chequeadorHora(hora):
     else:
         return None
 
-def obtenerIdGrupoCliente(nombreGrupoCliente):
-
-    try:        
-        query = text('SELECT id FROM "grupoCliente" WHERE nombre = :nombreGrupoCliente')
-        queryParams = {'nombreGrupoCliente': nombreGrupoCliente}
-
-        with DatabaseSession().get_session() as session:
-            data_query = session.execute(query, queryParams)
-                
-        
-        # Obtener el primer resultado si existe
-        row = data_query.fetchone()
-
-        if row is None:
-            return None  # No se encontró el grupo de cliente
-
-        # Retornar el ID encontrado
-        print("aaa", row.id)
-        return row.id
-
-    except Exception as e:
-        print(f"Error al ejecutar la consulta: {str(e)}")
-        return None
-    
 def convertir_fecha(fecha_str):
     print('fecha_str', fecha_str)
     if fecha_str == '-':
