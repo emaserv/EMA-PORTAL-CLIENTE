@@ -30,6 +30,7 @@ const AcuseCliente = () => {
   const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [progreso, setProgreso] = useState("");
+  const [progresoPorcentaje, setProgresoPorcentaje] = useState(0);
   const [dataCliente, setDataCliente] = useState([]);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
   const [activeTasks, setActiveTasks] = useState([]);
@@ -115,7 +116,8 @@ const AcuseCliente = () => {
     }
     
     setLoading(true);
-    setProgreso("⏳ Iniciando generación...");
+    setProgreso("Iniciando generación...");
+    setProgresoPorcentaje(0);
     setCurrentTaskId(null);
     
     try {
@@ -150,6 +152,7 @@ const AcuseCliente = () => {
       mostrarSnackbar(` ${error.message}`, "error");
       setLoading(false);
       setProgreso("");
+      setProgresoPorcentaje(0);
       setCurrentTaskId(null);
     }
   };
@@ -177,23 +180,27 @@ const AcuseCliente = () => {
           pollingActive = false;
           setLoading(false);
           setProgreso("");
+          setProgresoPorcentaje(0);
           setCurrentTaskId(null);
           break;
         }
 
         if (status.status === 'processing') {
-          setProgreso(status.message);
+          setProgreso((status.message || "").replace(/\s*•\s*\d+%\s*$/, ""));
+          setProgresoPorcentaje(typeof status.progress === 'number' ? status.progress : 0);
         }
 
         if (status.status === 'cancelled' || status.cancelled) {
           cancelledDetected = true;
           mostrarSnackbar("Generación cancelada", "info");
           setProgreso("Cancelada");
+          setProgresoPorcentaje(0);
           setLoading(false);
           setCurrentTaskId(null);
           pollingActive = false;
           break;
         } else if (status.status === 'completed') {
+            setProgresoPorcentaje(100);
             await descargarResultado(taskId, nombreDescarga);
 
             const totalGenerados = status.total_generados || 0;
@@ -213,6 +220,7 @@ const AcuseCliente = () => {
 
             await obtenerTareasActivas();
             setProgreso("Completado");
+            setProgresoPorcentaje(0);
             setCurrentTaskId(null);
             setLoading(false);
             return;
@@ -222,6 +230,7 @@ const AcuseCliente = () => {
           pollingActive = false;
           setLoading(false);
           setProgreso("");
+          setProgresoPorcentaje(0);
           setCurrentTaskId(null);
           break;
         }
@@ -229,13 +238,14 @@ const AcuseCliente = () => {
       } catch (error) {
         console.error(`Error en monitoreo:`, error);
       }
-      
+
       attempts++;
     }
-    
+
     if (attempts >= maxAttempts && pollingActive) {
       setLoading(false);
       setProgreso("");
+      setProgresoPorcentaje(0);
       mostrarSnackbar(" Tiempo de espera agotado", "warning");
     }
   };
@@ -276,24 +286,27 @@ const AcuseCliente = () => {
       if (result.success) {
         setLoading(false);
         setProgreso("");
-        setCurrentTaskId(null); 
+        setProgresoPorcentaje(0);
+        setCurrentTaskId(null);
         mostrarSnackbar(" Tarea cancelada exitosamente", "success");
         await obtenerTareasActivas();
       } else {
         mostrarSnackbar(` Error: ${result.error || "No se pudo cancelar"}`, "error");
-        
+
         if (result.error?.includes("no encontrada") || result.error?.includes("finalizada")) {
           setLoading(false);
           setProgreso("");
+          setProgresoPorcentaje(0);
           setCurrentTaskId(null);
         }
       }
-      
+
     } catch (error) {
       console.error(`Error al cancelar:`, error);
       mostrarSnackbar(" Error al contactar al servidor", "warning");
       setLoading(false);
       setProgreso("");
+      setProgresoPorcentaje(0);
       setCurrentTaskId(null);
     }
   };
@@ -662,7 +675,11 @@ const AcuseCliente = () => {
         </MuiAlert>
       </Snackbar>
 
-    <LoadingModal isOpen={loading || procesandoExcel || renderizando} />
+    <LoadingModal
+      isOpen={loading || procesandoExcel || renderizando}
+      progress={loading ? progresoPorcentaje : undefined}
+      message={loading ? progreso : undefined}
+    />
 
       <SoftBox display="flex" flexDirection="column" alignItems="center" minHeight="100vh">
         <SoftBox width="100%">

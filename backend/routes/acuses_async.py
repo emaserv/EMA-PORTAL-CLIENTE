@@ -2,6 +2,7 @@
 Endpoints asíncronos para generación de acuses
 """
 import os
+import re
 import sys
 import threading
 import uuid
@@ -113,8 +114,16 @@ class AsyncTask:
         def update_progress(msg):
             if self.is_cancelled():
                 raise InterruptedError("Tarea cancelada por el usuario")
-            
+
             self.message = msg
+
+            # "Procesados X/Y acuses... • Z%" (batch_processor.generar_acuses_batch)
+            match_percent = re.search(r'•\s*(\d+)%', msg)
+            if match_percent:
+                self.progress = int(match_percent.group(1))
+                return
+
+            # "Acuse X/Y" (batch_processor.generar_acuse)
             if "Acuse" in msg and "/" in msg:
                 try:
                     current, total = msg.split("Acuse ")[1].split("/")
