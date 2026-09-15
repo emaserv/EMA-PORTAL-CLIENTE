@@ -127,7 +127,9 @@ def tablaFC():
                 ie.cabecera,
                 ie."rutaEcogas",
                 ie."facturaControl",
-                ie.importe
+                ie.importe,
+                ie.legajo,
+                ie.distribuidor
             FROM "itemEmision" ie
             INNER JOIN "grupoCliente" gc ON ie."idGrupoCliente" = gc.id
             WHERE 1=1
@@ -202,6 +204,19 @@ def tablaFC():
                         clave = futures[future]
                         api_cache[clave] = future.result()
 
+        # Para estadoPieza='NR' el distribuidor suele venir vacío: se completa
+        # con el legajo/distribuidor de otro registro del mismo nroCliente y
+        # fechaEmision que sí lo tenga cargado.
+        distribuidor_por_cliente_emision = {}
+        if grupoCliente == '4':
+            for row in all_rows:
+                rd = row._mapping
+                distribuidor = rd.get("distribuidor")
+                if distribuidor:
+                    clave = (rd.get("nroCliente"), rd.get("fechaEmision"))
+                    if clave not in distribuidor_por_cliente_emision:
+                        distribuidor_por_cliente_emision[clave] = (rd.get("legajo"), distribuidor)
+
         for row in all_rows:
             # Obtener diccionario de la fila
             row_dict = dict(row._mapping)
@@ -230,8 +245,8 @@ def tablaFC():
             obs_visita = row_dict.get("obsVisita")
             if grupoCliente == '4' and row_dict.get("estadoPieza") == "1°VBPCR" and obs_visita:
                 obs_visita = limpiar_obs_visita(obs_visita)
-        
-            datosPiezasPostales.append({
+
+            fila = {
                 'id': row_dict.get("idEmision"),
                 'fechaEmision': format_date(row_dict.get("fechaEmision")),
                 'fechaVencimiento': res_venc,
@@ -260,11 +275,23 @@ def tablaFC():
                 'fechaIngreso': format_date(row_dict.get("fechaIngreso")),
                 'lote': row_dict.get("lote"),
                 'cabecera': row_dict.get("cabecera"), 
-                'rutaEcogas': row_dict.get("rutaEcogas"), 
-                'facturaControl': row_dict.get("facturaControl"), 
-                'importe': row_dict.get("importe"), 
-            })
-        
+                'rutaEcogas': row_dict.get("rutaEcogas"),
+                'facturaControl': row_dict.get("facturaControl"),
+                'importe': row_dict.get("importe"),
+            }
+
+            if grupoCliente == '4':
+                legajo = row_dict.get("legajo")
+                distribuidor = row_dict.get("distribuidor")
+
+                if not distribuidor and row_dict.get("estadoPieza") == "NR":
+                    clave = (row_dict.get("nroCliente"), row_dict.get("fechaEmision"))
+                    legajo, distribuidor = distribuidor_por_cliente_emision.get(clave, (legajo, distribuidor))
+
+                fila['legajoDistribuidor'] = f"{legajo or ''} - {distribuidor or ''}"
+
+            datosPiezasPostales.append(fila)
+
         keys = list(datosPiezasPostales[0].keys())
         
         return jsonify({"message": "Conexión y consulta exitosas", "columns": keys, "dataTabla": datosPiezasPostales}), 200
@@ -670,15 +697,55 @@ def informeEmisionExtendido():
         # Armar query según grupo de cliente
         qParams = {}
         if int(idGrupoCliente) == 4:
-            queryBase = 'SELECT * FROM "fechaCliente" fc'
+            # Se consulta "itemEmision" en vez de la vista "fechaCliente" porque
+            # esta última no expone legajo/distribuidor.
+            queryBase = '''
+                SELECT
+                    row_number() OVER () AS id,
+                    ie."idEmision",
+                    ie."idGrupoCliente",
+                    gc.nombre AS "grupoCliente",
+                    ie."nroCliente",
+                    ie.titular,
+                    ie."planTurno",
+                    ie.sucursal,
+                    ie.radio,
+                    ie."estadoPieza",
+                    ie."estadoMetro",
+                    ie."geoVisita",
+                    (ie.calle || ' ' || ie.altura) AS direccion,
+                    ie.localidad,
+                    ie.foto,
+                    ie."obsVisita",
+                    ie."fechaDistrib",
+                    ie."fechaDistrib" AS fecha,
+                    ie."horaDistrib" AS hora,
+                    ie."fechaEmision",
+                    ie."fechaCertificacion",
+                    ie.firma,
+                    ie."avisoMetro",
+                    ie."fechaVencimientoMetro",
+                    ie.vencimiento,
+                    ie.importe,
+                    ie.comprobante,
+                    ie.medidor,
+                    ie."entreCalles",
+                    ie."codigoPostal",
+                    ie."fechaAsignacion",
+                    ie."fechaIngreso",
+                    ie.legajo,
+                    ie.distribuidor
+                FROM "itemEmision" ie
+                JOIN "grupoCliente" gc ON ie."idGrupoCliente" = gc.id
+            '''
             where_clauses = []
-            
+
             if idEmision:
-                where_clauses.append('fc."fechaEmision" = :fechaEmision')
+                where_clauses.append('ie."fechaEmision" = :fechaEmision')
                 qParams['fechaEmision'] = fechaEncontrada
-            where_clauses.append('fc."idGrupoCliente" = :idGrupoCliente')
+            where_clauses.append('ie."idGrupoCliente" = :idGrupoCliente')
             qParams['idGrupoCliente'] = int(idGrupoCliente)
-            
+
             if where_clauses:
                 queryBase += ' WHERE ' + ' AND '.join(where_clauses)
         
@@ -705,8 +772,19 @@ def informeEmisionExtendido():
         
         # Ejecutar la consulta
         with DatabaseSession().get_session() as session:
-            data_query = session.execute(text(queryBase), qParams)
-        
+            data_query = list(session.execute(text(queryBase), qParams))
+
+        # Para estadoPieza='NR' el distribuidor suele venir vacío: se completa
+        # con el legajo/distribuidor de otro registro del mismo nroCliente y
+        # fechaEmision que sí lo tenga cargado.
+        distribuidor_por_cliente_emision = {}
+        if int(idGrupoCliente) == 4:
+            for row in data_query:
+                if row.distribuidor:
+                    clave = (row.nroCliente, row.fechaEmision)
+                    if clave not in distribuidor_por_cliente_emision:
+                        distribuidor_por_cliente_emision[clave] = (row.legajo, row.distribuidor)
+
         datosPiezasPostales = []
         for row in data_query:
             if int(idGrupoCliente) == 4:
@@ -714,7 +792,13 @@ def informeEmisionExtendido():
                 obs_visita = row.obsVisita
                 if row.estadoPieza == "1°VBPCR" and obs_visita:
                     obs_visita = limpiar_obs_visita(obs_visita)
-                
+
+                legajo = row.legajo
+                distribuidor = row.distribuidor
+                if not distribuidor and row.estadoPieza == "NR":
+                    clave = (row.nroCliente, row.fechaEmision)
+                    legajo, distribuidor = distribuidor_por_cliente_emision.get(clave, (legajo, distribuidor))
+
                 datosPiezasPostales.append({
                     'id': row.id,
                     'fechaEmision': format_date(row.fechaEmision),
@@ -733,7 +817,8 @@ def informeEmisionExtendido():
                     'obsVisita': obs_visita,
                     'geoVisita': row.geoVisita,
                     'foto': row.foto,
-                    'firma': row.firma
+                    'firma': row.firma,
+                    'legajoDistribuidor': f"{legajo or ''} - {distribuidor or ''}"
                 })
             elif int(idGrupoCliente) == 2:
                 datosPiezasPostales.append({

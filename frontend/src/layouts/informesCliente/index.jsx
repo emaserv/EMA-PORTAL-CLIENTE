@@ -141,6 +141,7 @@ const InformesCliente = () => {
                 Localidad: row.localidad || "-",
                 Fecha: row.fecha || "-",
                 Hora: row.hora || "-",
+                Distribuidor: row.legajoDistribuidor || "-",
                 "Fecha Vencimiento": row.fechaVencimiento || "-",
                 "Diferencia (días)": diferencia,
                 "Estado Pieza": row.estadoPieza || "-",

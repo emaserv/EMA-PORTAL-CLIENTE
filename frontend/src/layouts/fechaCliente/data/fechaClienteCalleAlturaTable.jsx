@@ -411,6 +411,7 @@ export default function CalleAlturaTable({ data, columns }) {
     { id: "localidad",      label: "Localidad",      labelComplete: "Localidad" },
     { id: "fecha",          label: "F. Dist.",       labelComplete: "Fecha de Distribucion" },
     { id: "hora",           label: "Hora",           labelComplete: "Hora" },
+    ...(idGrupo === 4  ? [{ id: "legajoDistribuidor", label: "Distribuidor", labelComplete: "Distribuidor" }] : []),
     { id: "importe",        label: "Importe",        labelComplete: "Importe" },
     ...(idGrupo === 6 ? [{ id: "comprobante", label: "Comprobante", labelComplete: "Comprobante" }] : []),
     { id: "estadoPieza",    label: "Est E.",         labelComplete: "Estado EMA" },

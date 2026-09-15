@@ -219,6 +219,8 @@ const FechaCliente = () => {
   const exportarAExcel = (data) => {
     const regex = /[^/]+ \/ [^/]+ \/ [^/]+/;
 
+    const esGrupo4 = user?.idGrupoCliente === 4;
+
     const formattedData = data.map((row) => {
       // Verificar si es grupo 6
       const esGrupo6 = user?.idGrupoCliente === 6;
@@ -257,6 +259,7 @@ const FechaCliente = () => {
             Localidad: row.localidad || "-",
             "Fecha de Distribucion": row.fecha || "-",
             Hora: row.hora || "-",
+            ...(esGrupo4 ? { Distribuidor: row.legajoDistribuidor || "-" } : {}),
             "Estado EMA": row.estadoPieza || "-",
             "Estado Metrogas": row.estadoMetro || "-",
             "Observacion de Visita": splitBySlash(row.obsVisita)[2] || "-",
@@ -276,6 +279,7 @@ const FechaCliente = () => {
             Localidad: row.localidad || "-",
             "Fecha de Distribucion": row.fecha || "-",
             Hora: row.hora || "-",
+            ...(esGrupo4 ? { Distribuidor: row.legajoDistribuidor || "-" } : {}),
             "Estado EMA": row.estadoPieza || "-",
             "Estado Metrogas": row.estadoMetro || "-",
             "Observacion de Visita": row.obsVisita || "-",
