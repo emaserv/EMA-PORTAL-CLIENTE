@@ -149,7 +149,7 @@ def _parse_obs_visita(obs, estado_pieza=None):
     recibio_match = re.search(r"\(RECIBIÓ\):\s*([^,]+)", obs)
     
     # Extraer VINCULO normal para otros casos
-    vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs)
+    vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs, re.IGNORECASE)
     dni_match    = re.search(r"DNI:\s*([\d\s]+)", obs)
     nombre_match = re.search(r"NOMBRE Y APELLIDO:\s*([^,]+)", obs)
 
@@ -384,7 +384,7 @@ def getAcusesPorExcel():
                 return datos
             dni_match = re.search(r"DNI:\s*([\d\s]+)", obs)
             nombre_match = re.search(r"NOMBRE Y APELLIDO:\s*([^,]+)", obs)
-            vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs)
+            vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs, re.IGNORECASE)
 
             def ref_con_color(n):
                 ref = re.search(rf"{n}° REFERENCIA:\s*([^,]+)", obs)

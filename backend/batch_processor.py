@@ -54,7 +54,7 @@ class BatchProcessor:
                     query = query.filter(ItemEmision.nroCliente == nroCliente)
                 
                 query = query.order_by(ItemEmision.nroCliente)
-                #query = query.limit(250)
+                #query = query.limit(100)
                 #print(f" MODO PRUEBA: Limitando a 500 registros")
                 resultados = query.all()
                 
@@ -177,7 +177,7 @@ class BatchProcessor:
         try:
             dni_match = re.search(r"DNI:\s*([\d\s\.]+)", obs)
             nombre_match = re.search(r"NOMBRE Y APELLIDO:\s*([^,]+)", obs)
-            vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs)
+            vinculo_match = re.search(r"VINCULO:\s*([^,]+)", obs, re.IGNORECASE)
             
             def ref_con_color(n):
                 ref = re.search(rf"{n}° REFERENCIA:\s*([^,]+)", obs)
