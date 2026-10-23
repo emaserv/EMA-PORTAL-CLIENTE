@@ -1,12 +1,14 @@
 """
 Procesador por lotes para generar múltiples acuses eficientemente
 """
+import io
 import os
+import shutil
 import tempfile
 import zipfile
 import json
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from datetime import datetime
 from db.masterRepo import DatabaseSession
 from models.emision.ItemEmision import ItemEmision
@@ -204,60 +206,56 @@ class BatchProcessor:
         
         return datos
     
-    def generar_acuse(self, index, metadata, output_dir, update_progress=None, total=None):
+    def generar_acuse(self, index, metadata):
         """
-        Genera un acuse JPG y captura errores sin detener
+        Genera un acuse JPG en memoria y captura errores sin detener
         """
-        errores = []  
-        
+        errores = []
+
         try:
             nro_cliente = metadata.get('nroCliente', f'idx_{index}')
             codigo_barras = metadata.get('codigoBarras', f'barcode_{index}')
-            
+
             geo = metadata.get('geo', '')
             if not geo or not isinstance(geo, str):
                 errores.append("No se genero mapa, coordenadas incorrectas")
             elif 'q=' in geo:
-                import re
                 geo_match = re.search(r'q=(-?\d+\.\d+),(-?\d+\.\d+)', geo)
                 if not geo_match:
                     errores.append("Coordenadas inválidas en mapa")
-            
+
             # Verificar datos críticos ANTES de generar
             if not metadata.get('direccion'):
                 errores.append("Sin dirección")
-            
+
             if not metadata.get('nombreCliente'):
                 errores.append("Sin nombre de cliente")
-            
+
             # Generar JPG
             jpg_bytes = image_generator.generate_acuse_jpg(metadata, quality=60)
-            
+
             if not jpg_bytes:
                 errores.append("No se generó imagen")
-            
+                return {
+                    "success": False,
+                    "nroCliente": nro_cliente,
+                    "errores": errores
+                }
+
             # Nombre seguro del archivo
             safe_barcode = str(codigo_barras).replace('/', '_').replace('\\', '_')
-            filename = f"_{safe_barcode}.jpg"
-            filepath = os.path.join(output_dir, filename)
-            
-            # Guardar
-            with open(filepath, 'wb') as f:
-                f.write(jpg_bytes)
-            
-            if update_progress and total:
-                update_progress(f"Acuse {index + 1}/{total}")
-            
+
             return {
                 "success": True,
-                "filepath": filepath,
+                "filename": f"_{safe_barcode}.jpg",
+                "jpg_bytes": jpg_bytes,
                 "nroCliente": nro_cliente,
                 "errores": errores
             }
-                
+
         except Exception as e:
             error_msg = str(e)
-            
+
             # Detectar tipo de error
             if "mapa" in error_msg.lower() or "geo" in error_msg.lower():
                 errores.append("Error en mapa")
@@ -267,92 +265,80 @@ class BatchProcessor:
                 errores.append("Error en firma")
             else:
                 errores.append(f"Error: {error_msg[:50]}...")
-            
+
             return {
                 "success": False,
                 "nroCliente": metadata.get('nroCliente', f'idx_{index}'),
                 "errores": errores
             }
-    
-    def generar_acuses_batch(self, metadata_list, output_dir, update_progress=None, check_cancelled_callback=None):
+
+    def generar_acuses_batch(self, metadata_list, zipf, update_progress=None, check_cancelled_callback=None):
         """
-        Genera JPGs para un batch de acuses 
+        Genera los JPGs en paralelo y los escribe directo en el ZIP abierto.
+
+        Usa una ventana deslizante: apenas termina un acuse se encola el
+        siguiente, así un acuse lento (descarga con timeout) no deja a los
+        demás hilos esperando como pasaba al procesar por bloques fijos.
+        El ZIP se escribe solo desde este hilo (zipfile no es thread-safe).
         """
         total = len(metadata_list)
-        jpg_files = []
+        archivos_generados = set()
         errores_totales = []
-        
-        chunk_size = 30  
-        
+
+        max_en_vuelo = self.max_workers * 2
         processed_count = 0
-        
-        # Generar en paralelo
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            for chunk_start in range(0, total, chunk_size):
+        next_index = 0
+        pending = {}
+
+        executor = ThreadPoolExecutor(max_workers=self.max_workers)
+        try:
+            while next_index < total or pending:
                 if check_cancelled_callback and check_cancelled_callback():
                     break
-                
-                chunk_end = min(chunk_start + chunk_size, total)
-                
-                futures = {}
-                for i in range(chunk_start, chunk_end):
-                    metadata = metadata_list[i]
-                    future = executor.submit(self.generar_acuse, i, metadata, output_dir, None, total)
-                    futures[future] = (i, metadata)
-                
-                for future in as_completed(futures):
-                    if check_cancelled_callback and check_cancelled_callback():
-                        for f in futures:
-                            f.cancel()
-                        break
-                    
-                    i, metadata = futures[future]
+
+                while next_index < total and len(pending) < max_en_vuelo:
+                    metadata = metadata_list[next_index]
+                    future = executor.submit(self.generar_acuse, next_index, metadata)
+                    pending[future] = (next_index, metadata)
+                    next_index += 1
+
+                done, _ = wait(pending, return_when=FIRST_COMPLETED)
+
+                for future in done:
+                    i, metadata = pending.pop(future)
+                    processed_count += 1
                     try:
                         resultado = future.result()
-                        
-                        processed_count += 1
-                        
+
                         if resultado.get("success"):
-                            jpg_files.append(resultado["filepath"])
-                        
+                            filename = resultado["filename"]
+                            # Mismo código de barras = mismo nombre: se escribe una sola vez
+                            if filename not in archivos_generados:
+                                zipf.writestr(filename, resultado["jpg_bytes"])
+                                archivos_generados.add(filename)
+
                         if resultado.get("errores") and len(resultado["errores"]) > 0:
                             errores_totales.append({
                                 "nroCliente": resultado.get("nroCliente", f"idx_{i}"),
                                 "errores": ", ".join(resultado["errores"]) if isinstance(resultado["errores"], list) else str(resultado["errores"])
                             })
-                        
-                        if update_progress:
-                            percent = int((processed_count / total) * 100)
-                            update_progress(f"Procesados {processed_count}/{total} acuses... • {percent}%")
-                            
+
                     except Exception as e:
                         print(f"Error procesando acuse {i}: {e}")
                         errores_totales.append({
                             "nroCliente": metadata.get('nroCliente', f"idx_{i}"),
                             "errores": f"Error crítico: {str(e)[:100]}"
                         })
-                
-                if update_progress and processed_count > 0:
+
+                if update_progress:
                     percent = int((processed_count / total) * 100)
                     update_progress(f"Procesados {processed_count}/{total} acuses... • {percent}%")
-        
-        return jpg_files, errores_totales
-    
-    def crear_zip(self, jpg_files, lote_nombre, output_dir):
-        """
-        Crea un archivo ZIP con todos los JPGs
-        """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        zip_filename = f"acuses_{lote_nombre}_{timestamp}.zip"
-        zip_path = os.path.join(output_dir, zip_filename)
-                
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for jpg_file in jpg_files:
-                arcname = os.path.basename(jpg_file)
-                zipf.write(jpg_file, arcname)
-        
-        return zip_path
-    
+        finally:
+            # Si se canceló, descartar lo que no empezó
+            executor.shutdown(wait=True, cancel_futures=True)
+
+        return archivos_generados, errores_totales
+
     def procesar_lote_completo(self, lote, nroCliente=None, update_progress=None, check_cancelled_callback=None):
         """
         Procesa un lote completo - CON VERIFICACIÓN DE CANCELACIÓN
@@ -388,57 +374,46 @@ class BatchProcessor:
                 if check_cancelled_callback and check_cancelled_callback():
                     raise InterruptedError("Procesamiento cancelado")
             
-            try:
-                jpg_files, errores_totales = self.generar_acuses_batch(
-                    metadata_list, 
-                    temp_dir, 
-                    progress_callback,
-                    check_cancelled_callback  
-                )
-            except InterruptedError:
-                import shutil
-                try:
-                    shutil.rmtree(temp_dir, ignore_errors=True)
-                except:
-                    pass
-                return None, "Procesamiento cancelado", []
-            
-            if check_cancelled_callback and check_cancelled_callback():
-                import shutil
-                try:
-                    shutil.rmtree(temp_dir, ignore_errors=True)
-                except:
-                    pass
-                return None, "Procesamiento cancelado", []
-            
-            if not jpg_files:
-                return None, "No se pudieron generar acuses", errores_totales
-            
-            if update_progress:
-                update_progress("Creando archivo ZIP...")
-            
-            zip_path = self.crear_zip(jpg_files, lote, temp_dir)
-            
-            reporte_errores_path = None
-            if errores_totales:
-                reporte_errores_path = os.path.join(temp_dir, f"errores_{lote}.csv")
-                with open(reporte_errores_path, 'w', newline='', encoding='utf-8') as csvfile:
-                    fieldnames = ['nroCliente', 'errores']
-                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                    writer.writeheader()
-                    
-                    for error in errores_totales:
-                        nro_cliente = error['nroCliente']
-                        nro_cliente_csv = f"\t{nro_cliente}"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            zip_path = os.path.join(temp_dir, f"acuses_{lote}_{timestamp}.zip")
 
-                        writer.writerow({
-                            'nroCliente': nro_cliente_csv,
-                            'errores': error['errores']
-                        })
-                
-                with zipfile.ZipFile(zip_path, 'a', zipfile.ZIP_DEFLATED) as zipf:
-                    zipf.write(reporte_errores_path, os.path.basename(reporte_errores_path))
-            
+            try:
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                    archivos_generados, errores_totales = self.generar_acuses_batch(
+                        metadata_list,
+                        zipf,
+                        progress_callback,
+                        check_cancelled_callback
+                    )
+
+                    cancelado = check_cancelled_callback and check_cancelled_callback()
+                    if errores_totales and archivos_generados and not cancelado:
+                        reporte = io.StringIO(newline='')
+                        writer = csv.DictWriter(reporte, fieldnames=['nroCliente', 'errores'])
+                        writer.writeheader()
+
+                        for error in errores_totales:
+                            nro_cliente = error['nroCliente']
+                            nro_cliente_csv = f"\t{nro_cliente}"
+
+                            writer.writerow({
+                                'nroCliente': nro_cliente_csv,
+                                'errores': error['errores']
+                            })
+
+                        zipf.writestr(f"errores_{lote}.csv", reporte.getvalue().encode('utf-8'))
+            except InterruptedError:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                return None, "Procesamiento cancelado", []
+
+            if check_cancelled_callback and check_cancelled_callback():
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                return None, "Procesamiento cancelado", []
+
+            if not archivos_generados:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                return None, "No se pudieron generar acuses", errores_totales
+
             return zip_path, None, errores_totales
                 
         except Exception as e:

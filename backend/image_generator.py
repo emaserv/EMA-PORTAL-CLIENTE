@@ -8,9 +8,37 @@ import os
 import re
 from datetime import datetime
 import requests
-import time
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from requests.adapters import HTTPAdapter
 import cv2
 import numpy as np
+
+try:
+    from barcode.codex import Code128
+    from barcode.writer import ImageWriter
+except ImportError:
+    Code128 = None
+
+GEO_RE = re.compile(r'q=(-?\d+\.\d+),(-?\d+\.\d+)')
+
+# Pool compartido para descargar foto, firma y mapa en paralelo
+DOWNLOAD_WORKERS = 48
+_download_executor = ThreadPoolExecutor(max_workers=DOWNLOAD_WORKERS, thread_name_prefix="acuse-dl")
+
+# Una sesión HTTP por hilo: reutiliza conexiones TCP/TLS (keep-alive)
+# en vez de abrir una conexión nueva por cada imagen
+_thread_local = threading.local()
+
+def _get_http_session():
+    session = getattr(_thread_local, "session", None)
+    if session is None:
+        session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=4, pool_maxsize=4)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        _thread_local.session = session
+    return session
 
 class AcuseImageGenerator:
     """
@@ -83,37 +111,16 @@ class AcuseImageGenerator:
         
         return fonts
 
-    def __init__(self):
-        self.image_width = 1000
-        self.image_height = 2000  
-        
-        # Colores exactos del diseño
-        self.colors = {
-            'background': (255, 255, 255),  # Blanco
-            'text': (0, 0, 0),              # Negro
-            'header_blue': (33, 82, 255),   # Azul EMA #2152FF
-            'light_blue': (208, 234, 244),  # #d0eaf4
-            'pale_blue': (240, 248, 251),   # #f0f8fb
-            'gray_border': (204, 204, 204), # #ccc
-            'light_gray': (248, 248, 248)   # #f8f8f8
-        }
-        
-        # Cargar logos
-        self.logos = self._load_logos()
-        
-        # Cargar fuentes
-        self.fonts = self._load_fonts()
-
     def _download_image_safe(self, image_url, max_width=800, quality=60, timeout=10):
         """
         Descarga y optimiza una imagen directamente SIN USAR PIL para evitar rotación
         """
         if not image_url or not isinstance(image_url, str) or image_url.strip() == "":
             return None
-        
+
         try:
             # Descargar con timeout
-            response = requests.get(image_url, timeout=timeout)
+            response = _get_http_session().get(image_url, timeout=timeout)
             
             if response.status_code != 200:
                 return None
@@ -156,7 +163,64 @@ class AcuseImageGenerator:
         
         # Cargar fuentes
         self.fonts = self._load_fonts()
-    
+
+        # Recursos fijos preparados una sola vez (antes se recalculaban en cada acuse)
+        self.title_font = self._load_title_font()
+        self.logo_ema = self._fit_logo(self.logos.get('ema'), max_height=55)
+        self.logo_naturgy = self._fit_logo(self.logos.get('naturgy'), max_width=180)
+
+    def _load_title_font(self):
+        try:
+            if os.path.exists("C:/Windows/Fonts/arial.ttf"):
+                return ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 20)
+            return self.fonts.get('body1') or self.fonts['h6']
+        except:
+            return self.fonts['h6']
+
+    def _fit_logo(self, logo, max_width=None, max_height=None):
+        """Redimensiona un logo (LANCZOS) a su tamaño final de dibujo"""
+        if logo is None:
+            return None
+        try:
+            if max_height and logo.height > max_height:
+                ratio = max_height / logo.height
+                return logo.resize((int(logo.width * ratio), max_height), Image.Resampling.LANCZOS)
+            if max_width and logo.width > max_width:
+                ratio = max_width / logo.width
+                return logo.resize((max_width, int(logo.height * ratio)), Image.Resampling.LANCZOS)
+        except Exception as e:
+            print(f" Error redimensionando logo: {e}")
+        return logo
+
+    def _map_url(self, geo):
+        """URL del mapa estático, o None si las coordenadas no son válidas"""
+        geo_match = GEO_RE.search(geo or "")
+        if not geo_match:
+            return None
+        lat, lon = geo_match.groups()
+        return f"https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=800&height=400&center=lonlat:{lon},{lat}&zoom=15&marker=lonlat:{lon},{lat};type:material;color:%23ff0000;size:large&apiKey=e2055da3173c4cd7b7d0d519574d0582"
+
+    def _start_downloads(self, data):
+        """
+        Lanza EN PARALELO las descargas de foto, firma y mapa (antes eran 3
+        descargas secuenciales por acuse) y devuelve los futures, para que
+        se descarguen mientras se dibuja el resto del acuse.
+        """
+        urls = {
+            'foto': data.get('foto_url'),
+            'firma': data.get('firma_url'),
+            'mapa': self._map_url(data.get('geo')) if data.get('geo') else None,
+        }
+        return {
+            key: _download_executor.submit(self._download_image_safe, url)
+            for key, url in urls.items() if url
+        }
+
+    @staticmethod
+    def _download_result(downloads, key):
+        future = downloads.get(key)
+        return future.result() if future else None
+
     def _load_logos(self):
         """Cargar logos desde archivos Y REDIMENSIONAR INMEDIATAMENTE"""
         logos = {}
@@ -213,7 +277,8 @@ class AcuseImageGenerator:
             return self._generate_emergency_acuse({'nroCliente': 'INVALIDO'})
         
         safe_data = self._prepare_safe_data(acuse_data)
-        
+        downloads = self._start_downloads(safe_data)
+
         try:
             dynamic_height = self._calculate_height(safe_data)
             
@@ -228,7 +293,7 @@ class AcuseImageGenerator:
             y_position = self._draw_delivery_data(draw, img, safe_data, y_position)  
             y_position = self._draw_visits_safe(draw, safe_data, y_position + 30)
             y_position = self._draw_additional_data(draw, safe_data, y_position + 20)
-            y_position = self._draw_images_safe(draw, img, safe_data, y_position - 30)
+            y_position = self._draw_images_safe(draw, img, safe_data, y_position - 30, downloads)
             
             img = img.crop((0, 0, self.image_width, y_position + 50))
             
@@ -530,16 +595,9 @@ class AcuseImageGenerator:
     def _draw_header(self, draw, img, data, y):
         """Header con 3 columnas IDÉNTICO al React"""
         # Columna 1: Logo EMA (izquierda)
-        if 'ema' in self.logos:
+        if self.logo_ema is not None:
             try:
-                logo = self.logos['ema']
-                max_height = 55
-                if logo.height > max_height:
-                    ratio = max_height / logo.height
-                    new_width = int(logo.width * ratio)
-                    logo_resized = logo.resize((new_width, max_height), Image.Resampling.LANCZOS)
-                else:
-                    logo_resized = logo
+                logo_resized = self.logo_ema
 
                 x1 = 40
                 if logo_resized.mode == 'RGBA':
@@ -594,8 +652,8 @@ class AcuseImageGenerator:
         largos, y sin depender de fuentes especiales instaladas en el SO.
         """
         try:
-            from barcode.codex import Code128
-            from barcode.writer import ImageWriter
+            if Code128 is None:
+                raise ImportError("python-barcode no disponible")
 
             max_width = 500  # px disponibles en el header sin invadir logo/texto
             # Mismas proporciones que el código de barras del frontend (JsBarcode
@@ -639,17 +697,9 @@ class AcuseImageGenerator:
                     fill=self.colors['light_blue']) 
         
         title = "Acuse de recibo - Aviso de deuda - Clientes residenciales"
-        
-        try:
-            if os.path.exists("C:/Windows/Fonts/arial.ttf"):
-                title_font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 20)
-            else:
-                title_font = self.fonts.get('body1') or self.fonts['h6']
-        except:
-            title_font = self.fonts['h6']  
-        
+
         draw.text((self.image_width // 2, y + band_height // 2),
-                title, fill=self.colors['text'], font=title_font, anchor="mm")
+                title, fill=self.colors['text'], font=self.title_font, anchor="mm")
         
         return y + band_height + 10  
     
@@ -663,17 +713,10 @@ class AcuseImageGenerator:
         
         x1 = 50
         
-        if 'naturgy' in self.logos:
+        if self.logo_naturgy is not None:
             try:
-                naturgy = self.logos['naturgy']
-                max_width = 180
-                if naturgy.width > max_width:
-                    ratio = max_width / naturgy.width
-                    new_height = int(naturgy.height * ratio)
-                    naturgy_resized = naturgy.resize((max_width, new_height), Image.Resampling.LANCZOS)
-                else:
-                    naturgy_resized = naturgy
-                
+                naturgy_resized = self.logo_naturgy
+
                 logo_y = y + 10
                 if naturgy_resized.mode == 'RGBA':
                     img.paste(naturgy_resized, (x1, logo_y), naturgy_resized)
@@ -864,28 +907,53 @@ class AcuseImageGenerator:
         
         return max(checkboxes_height, references_height) + 30
     
-    def _draw_images_safe(self, draw, img, data, y):
+    @staticmethod
+    def _reduced_decode_flag(image_bytes, target_width):
+        """
+        Elige el flag de OpenCV que decodifica la foto ya reducida (1/2, 1/4, 1/8).
+        Con JPEG la reducción se hace dentro del decodificador, que es mucho más
+        rápido que decodificar a resolución completa (fotos de celular de 12 MP)
+        y después achicar. Nunca baja de target_width, así el resize final es
+        el mismo que antes.
+        """
+        try:
+            # Solo lee el encabezado; no decodifica la imagen
+            w, h = Image.open(BytesIO(image_bytes)).size
+        except Exception:
+            return cv2.IMREAD_COLOR
+        # min(w, h): la orientación EXIF puede intercambiar ancho y alto
+        lado = min(w, h)
+        for factor, flag in ((8, cv2.IMREAD_REDUCED_COLOR_8),
+                             (4, cv2.IMREAD_REDUCED_COLOR_4),
+                             (2, cv2.IMREAD_REDUCED_COLOR_2)):
+            if lado // factor >= target_width:
+                return flag
+        return cv2.IMREAD_COLOR
+
+    def _draw_images_safe(self, draw, img, data, y, downloads=None):
         """Foto, firma y mapa - SOLO FOTO con OpenCV"""
-        
-        col_width = 452  
-        spacing = 16     
-        
+
+        col_width = 452
+        spacing = 16
+
         x1 = 40
         x2 = x1 + col_width + spacing
-        
+
         max_y = y
-        
+        if downloads is None:
+            downloads = self._start_downloads(data)
+
         # 1. FOTO (si existe) - USANDO OPENCV
         if data.get('foto_url'):
             try:
-                foto_bytes = self._download_image_safe(data['foto_url'])
+                foto_bytes = self._download_result(downloads, 'foto')
                 if foto_bytes and len(foto_bytes) > 1000:
-                    
+
                     # Convertir bytes a numpy array
                     nparr = np.frombuffer(foto_bytes, np.uint8)
-                    
-                    # Decodificar con OpenCV (NO aplica rotación EXIF)
-                    img_cv = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+                    # Decodificar con OpenCV (ya reducida al tamaño necesario)
+                    img_cv = cv2.imdecode(nparr, self._reduced_decode_flag(foto_bytes, col_width))
                     
                     if img_cv is not None:
                         # Convertir BGR a RGB (para PIL)
@@ -921,7 +989,7 @@ class AcuseImageGenerator:
         # 2. FIRMA (si existe)
         if data.get('firma_url'):
             try:
-                firma_bytes = self._download_image_safe(data['firma_url'])
+                firma_bytes = self._download_result(downloads, 'firma')
                 if firma_bytes and len(firma_bytes) > 500:
                     firma_img = Image.open(BytesIO(firma_bytes))
                     try:
@@ -950,17 +1018,12 @@ class AcuseImageGenerator:
         # 3. MAPA (si existe)
         if data.get('geo'):
             try:
-                import re
-                geo = data['geo']
-                
-                geo_match = re.search(r'q=(-?\d+\.\d+),(-?\d+\.\d+)', geo)
+                geo_match = GEO_RE.search(data['geo'])
                 if not geo_match:
                     raise ValueError("Coordenadas inválidas en mapa")
-                
+
                 lat, lon = geo_match.groups()
-                map_url = f"https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=800&height=400&center=lonlat:{lon},{lat}&zoom=15&marker=lonlat:{lon},{lat};type:material;color:%23ff0000;size:large&apiKey=e2055da3173c4cd7b7d0d519574d0582"
-                
-                map_bytes = self._download_image_safe(map_url, max_width=800)
+                map_bytes = self._download_result(downloads, 'mapa')
                 if map_bytes:
                     try:
                         map_img = Image.open(BytesIO(map_bytes))
