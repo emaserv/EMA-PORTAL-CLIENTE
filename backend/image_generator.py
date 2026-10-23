@@ -118,17 +118,22 @@ class AcuseImageGenerator:
         if not image_url or not isinstance(image_url, str) or image_url.strip() == "":
             return None
 
+        # Sin el query string: la URL del mapa lleva la apiKey y no debe ir al log
+        origen = image_url.split('?')[0]
+
         try:
             # Descargar con timeout
             response = _get_http_session().get(image_url, timeout=timeout)
-            
+
             if response.status_code != 200:
+                print(f"[descarga] HTTP {response.status_code} desde {origen}")
                 return None
-            
+
             content = response.content
-            
+
             # Verificar tamaño mínimo
             if len(content) < 100:
+                print(f"[descarga] respuesta de solo {len(content)} bytes desde {origen}")
                 return None
             
             # OPCIÓN 1: Devolver la imagen EXACTAMENTE como viene de Amazon
@@ -211,8 +216,12 @@ class AcuseImageGenerator:
             'firma': data.get('firma_url'),
             'mapa': self._map_url(data.get('geo')) if data.get('geo') else None,
         }
+        # Geoapify renderiza el mapa en la primera consulta de cada coordenada
+        # (medido: 31-33s) y despues lo sirve cacheado en ~70ms. Con el timeout
+        # por defecto de 10s toda direccion nueva fallaba.
+        timeouts = {'mapa': 45}
         return {
-            key: _download_executor.submit(self._download_image_safe, url)
+            key: _download_executor.submit(self._download_image_safe, url, timeout=timeouts.get(key, 10))
             for key, url in urls.items() if url
         }
 
